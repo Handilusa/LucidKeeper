@@ -1,0 +1,18 @@
+{
+  "recordedAt": "2026-10-26T17:05:39.484Z",
+  "kind": "reviewed-public-read-extract",
+  "sdkVersion": "0.32.1",
+  "chainId": 50383,
+  "marketCount": 21,
+  "account": {
+    "address": "0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA",
+    "blockNumber": "33821736",
+    "gasWei": "90000000000000000000",
+    "walletCollateralBaseUnits": "200000000000000000000",
+    "collateralDecimals": 18,
+    "unlockedCollateralBaseUnits": "0",
+    "lockedCollateralBaseUnits": "0",
+    "activePerpPools": 0
+  },
+  "transactionHash": null
+}

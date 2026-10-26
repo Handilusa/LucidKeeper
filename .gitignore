@@ -1,0 +1,81 @@
+# Evidence is private by default; allow only individually reviewed public records.
+/evidence/*
+!/evidence/public/
+/evidence/public/*
+!/evidence/public/connectivity-2026-10-26.json
+
+# Local agent instructions, memory, notes and reference material.
+/AGENTS.md
+/docs/CODEX_MEMORY.md
+.opencode/
+.codex/
+notes/
+personal/
+inspiration/
+reference/
+drafts/
+plans/
+scratch/
+tmp/
+temp/
+# Case-insensitive legacy-project names, including prefixed/suffixed names.
+*[rR][eE][aA][lL][vV][aA][uU][lL][tT]*
+
+# Credentials and signing secrets: never publish, regardless of directory.
+.env*
+!.env.example
+.npmrc
+.netrc
+.pypirc
+*.key
+*.pem
+*.keystore
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+credentials*.json
+private*.json
+*.secret
+secrets/
+keys/
+keystore/
+keystores/
+
+# Offline handoffs and historical preparations.
+unsigned/
+signed/
+signing/
+handoffs/
+prepared-*.json
+*.raw
+*.signed
+
+# Dependencies, generated output and caches.
+node_modules/
+dist/
+build/
+out/
+.next/
+coverage/
+.nyc_output/
+.cache/
+.turbo/
+.vite/
+.parcel-cache/
+*.tsbuildinfo
+*.log
+
+# OS/editor state and scratch/backup files.
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*.tmp
+*.bak
+*~

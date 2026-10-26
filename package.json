@@ -1,0 +1,21 @@
+{
+  "name": "lucidkeeper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Verified dreamDEX perps connectivity and execution evidence on Somnia Tokyo testnet",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "check": "node scripts/connectivity.mjs",
+    "margin:prepare": "node scripts/prepare-margin.mjs",
+    "order:prepare": "node scripts/prepare-order.mjs",
+    "order:verify": "node scripts/verify-order.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@somnia-chain/markets-sdk": "0.32.1",
+    "tailwindcss": "4.3.3",
+    "viem": "2.57.11",
+    "wagmi": "3.7.9"
+  }
+}
