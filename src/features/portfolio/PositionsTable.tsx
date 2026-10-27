@@ -72,9 +72,10 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
           zeroAddress,
           0n,
         ],
-        // Explicit gas limit: prevents wallets that can't estimate gas on Somnia Tokyo
-        // from failing. 5_000_000 is a safe ceiling; actual usage is ~4.3M.
+        // Provide explicit gas and gasPrice so wallet extensions (like OKX) that fail
+        // to query dynamic EIP-1559 fees on custom testnets receive fixed values immediately
         gas: 5_000_000n,
+        gasPrice: 10_000_000_000n, // 10 gwei (standard gasPrice format)
       });
 
       toast.success('Close order submitted! Confirming...');
