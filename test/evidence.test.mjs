@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict';
 import { mock, test } from 'node:test';
-import * as fs from 'node:fs/promises';
+// Node 22 spread of a native ESM namespace inside mock.module loses named exports
+// because the namespace is a live binding object. List each export explicitly.
+import {
+  access, appendFile, chmod, chown, copyFile, cp, lchmod, lchown, link,
+  lstat, lutimes, mkdir as _mkdir, mkdtemp, open, opendir, readdir,
+  readFile, readlink, realpath, rename, rm, rmdir, stat, statfs,
+  symlink, truncate, unlink, utimes, watch, writeFile as _writeFile,
+} from 'node:fs/promises';
 
 const writes = [];
 mock.module('node:fs/promises', { exports: {
-  ...fs,
+  access, appendFile, chmod, chown, copyFile, cp, lchmod, lchown, link,
+  lstat, lutimes, mkdtemp, open, opendir, readdir,
+  readFile, readlink, realpath, rename, rm, rmdir, stat, statfs,
+  symlink, truncate, unlink, utimes, watch,
   mkdir: async () => {},
   writeFile: async (file, data, options) => { writes.push({ file: file.href, data, options }); },
 } });

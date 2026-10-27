@@ -14,11 +14,26 @@ mock.module('viem', { exports: {
   createPublicClient: () => { creates++; return rpc; },
   http: (url, options) => { transport = { url, options }; return () => {}; },
 } });
+// Avoid spreading ESM namespace objects — list each export explicitly for Node 22 compat.
 mock.module('../src/lib/dreamdex.mjs', { exports: {
-  ...dreamdex, saveEvidence: async (kind, data) => { records.push({ kind, ...structuredClone(data) }); return 'mock-evidence'; },
+  INDEXER: dreamdex.INDEXER,
+  EXPLORER: dreamdex.EXPLORER,
+  BOUNTY_EOA: dreamdex.BOUNTY_EOA,
+  json: dreamdex.json,
+  walletAddress: dreamdex.walletAddress,
+  bountyAddress: dreamdex.bountyAddress,
+  exactUnits: dreamdex.exactUnits,
+  openTokyo: dreamdex.openTokyo,
+  verifyNetwork: dreamdex.verifyNetwork,
+  verifiedMarket: dreamdex.verifiedMarket,
+  readAccount: dreamdex.readAccount,
+  orderParams: dreamdex.orderParams,
+  receiptEvidence: dreamdex.receiptEvidence,
+  buildUnsignedOrder: dreamdex.buildUnsignedOrder,
+  saveEvidence: async (kind, data) => { records.push({ kind, ...structuredClone(data) }); return 'mock-evidence'; },
 } });
 mock.module('../src/lib/operating-policy.mjs', { exports: {
-  ...policy, assertOnchainActionAllowed: () => { if (hold) throw new Error('HOLD: test policy'); },
+  assertOnchainActionAllowed: () => { if (hold) throw new Error('HOLD: test policy'); },
 } });
 const { broadcastSignedTransaction, TOKYO_RPC } = await import('../src/lib/broadcast.mjs');
 const { buildUnsignedEnvelope, envelopeTransaction, validateSignedTransaction, COLLATERAL, MARGIN_BANK, TEST_MARGIN_AMOUNT } = await import('../src/lib/offline-transactions.mjs');
