@@ -49,9 +49,13 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
     hash,
   });
 
+  const notifiedHashRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (isConfirmed && hash) {
+    if (isConfirmed && hash && notifiedHashRef.current !== hash) {
+      notifiedHashRef.current = hash;
       toast.success('Order confirmed on Somnia Tokyo!', {
+        id: `order-confirmed-${hash}`,
         description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
       });
       onOrderSuccess?.();

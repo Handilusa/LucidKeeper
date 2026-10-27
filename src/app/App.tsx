@@ -148,9 +148,9 @@ export const App: React.FC = () => {
     setCardModalOpen(true);
   };
 
-  const handlePositionClosed = () => {
+  const handlePositionClosed = React.useCallback(() => {
     refetchPosition();
-  };
+  }, [refetchPosition]);
 
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">

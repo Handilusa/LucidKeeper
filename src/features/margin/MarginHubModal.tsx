@@ -35,9 +35,13 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
     hash,
   });
 
+  const notifiedHashRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (isConfirmed && hash) {
+    if (isConfirmed && hash && notifiedHashRef.current !== hash) {
+      notifiedHashRef.current = hash;
       toast.success('Margin transaction confirmed on Somnia Tokyo!', {
+        id: `margin-tx-${hash}`,
         description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
       });
       refetchBalance();

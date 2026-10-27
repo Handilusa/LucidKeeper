@@ -38,9 +38,13 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
     hash,
   });
 
+  const notifiedHashRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (isConfirmed && hash) {
+    if (isConfirmed && hash && notifiedHashRef.current !== hash) {
+      notifiedHashRef.current = hash;
       toast.success('Position closed and settled in MarginBank!', {
+        id: `close-settled-${hash}`,
         description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
       });
       onPositionClosed?.();
