@@ -105,20 +105,22 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       toast.info('Simulating and preparing transaction in wallet...');
 
       await writeContractAsync({
+        chainId: 50383,
         address: market.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
         args: [
           side === 'buy',
-          0n, // orderId (0 for new)
+          0n, // userData (uint64)
           rawPrice,
           rawQuantity,
           expiry,
           onchainOrderType,
           0, // selfMatchingOption
           zeroAddress,
-          0n, // builderFeeBps
+          0n, // builderFeeBpsTimes1k (uint96)
         ],
+        gas: 5_000_000n,
       });
 
       toast.success('Transaction submitted! Awaiting Tokyo confirmation...');

@@ -53,34 +53,29 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
 
       // Close Long by executing an IOC Sell
       // Use 1% slippage tolerance below current mark price for IOC fill
-      const rawPrice = parseUnits((markPrice * 0.99).toFixed(1), 18);
+      const effectiveMarkPrice = markPrice > 0 ? markPrice : (pos.markPrice || pos.entryPrice || 80000);
+      const rawPrice = parseUnits((effectiveMarkPrice * 0.99).toFixed(1), 18);
       const rawQuantity = parseUnits(pos.size.toString(), 8);
       // Fresh expiry: 10 minutes from now, in nanoseconds
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
 
-      const targetAccount = (address || '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA') as `0x${string}`;
-
       await writeContractAsync({
-        account: targetAccount,
         chainId: 50383,
         address: pos.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
         args: [
           !pos.isLong, // Opposite direction: false = sell for a long close
-          0n,
-          rawPrice,
-          rawQuantity,
-          expiry,
-          2, // IOC Order type
-          0, // selfMatchingOption: CANCEL_NEWEST
-          zeroAddress,
-          0n,
+          0n, // userData (uint64)
+          rawPrice, // price (uint256)
+          rawQuantity, // quantity (uint256)
+          expiry, // expireTimestampNs (uint64)
+          2, // IOC Order type (uint8)
+          0, // selfMatchingOption: CANCEL_NEWEST (uint8)
+          zeroAddress, // builder
+          0n, // builderFeeBpsTimes1k (uint96)
         ],
-        // Explicit gas limit & legacy gasPrice: ensures OKX wallet calculates fee immediately
-        // and doesn't fail gas simulation.
-        gas: 5_000_000n,
-        gasPrice: 10_000_000_000n, // 10 gwei
+        gas: 5_000_000n, // Explicit gas limit: guarantees OKX wallet displays network fee immediately
       });
 
       toast.success('Close order submitted! Confirming...');
