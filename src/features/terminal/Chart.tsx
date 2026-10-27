@@ -25,7 +25,7 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
 
   const [activeInterval, setActiveInterval] = useState<number>(3600);
   const [loading, setLoading] = useState<boolean>(true);
-  const [noIndexerData, setNoIndexerData] = useState<boolean>(false);
+  const [noData, setNoData] = useState<boolean>(false);
 
   // Initialize Lightweight Chart
   useEffect(() => {
@@ -41,9 +41,7 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
         vertLines: { color: 'rgba(26, 37, 54, 0.4)' },
         horzLines: { color: 'rgba(26, 37, 54, 0.4)' },
       },
-      crosshair: {
-        mode: 1,
-      },
+      crosshair: { mode: 1 },
       timeScale: {
         borderColor: '#1a2536',
         timeVisible: true,
@@ -51,16 +49,12 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
       },
       rightPriceScale: {
         borderColor: '#1a2536',
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.2,
-        },
+        scaleMargins: { top: 0.1, bottom: 0.2 },
       },
       width: chartContainerRef.current.clientWidth,
       height: 480,
     });
 
-    // Lightweight charts v4 syntax
     const candleSeries = chart.addCandlestickSeries({
       upColor: '#10b981',
       downColor: '#f43f5e',
@@ -71,17 +65,12 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
 
     const volumeSeries = chart.addHistogramSeries({
       color: '#26a69a',
-      priceFormat: {
-        type: 'volume',
-      },
-      priceScaleId: '', // overlay
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
     });
 
     volumeSeries.priceScale().applyOptions({
-      scaleMargins: {
-        top: 0.8,
-        bottom: 0,
-      },
+      scaleMargins: { top: 0.8, bottom: 0 },
     });
 
     chartRef.current = chart;
@@ -108,13 +97,12 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
 
     async function loadData() {
       setLoading(true);
+      setNoData(false);
       try {
         const candles = await fetchMarketCandles(poolAddress, activeInterval);
         if (!active) return;
 
         if (candles.length > 0 && candleSeriesRef.current && volumeSeriesRef.current) {
-          setNoIndexerData(false);
-          // Format candles for lightweight-charts
           const chartCandles = candles.map((c) => ({
             time: c.time as any,
             open: c.open,
@@ -132,25 +120,11 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
           candleSeriesRef.current.setData(chartCandles);
           volumeSeriesRef.current.setData(volumes);
           chartRef.current?.timeScale().fitContent();
-        } else if (candleSeriesRef.current) {
-          setNoIndexerData(true);
-          // Testnet indexer has no historical candles yet — render a live mark
-          // price baseline with slight wicks so the chart is visibly non-empty.
-          const price = currentMarkPrice > 0 ? currentMarkPrice : 80000;
-          const now = Math.floor(Date.now() / 1000);
-          // 12 synthetic bars with tiny ±0.05% wicks so they render visibly
-          const deltas = [0.02, -0.03, 0.04, -0.01, 0.03, -0.02, 0.05, -0.04, 0.01, 0.03, -0.02, 0];
-          const snapData = deltas.map((delta, i) => {
-            const prevDelta = i > 0 ? deltas[i - 1] : 0;
-            const c = price * (1 + delta / 100);
-            const o = price * (1 + prevDelta / 100);
-            const h = Math.max(o, c) * 1.0003;
-            const l = Math.min(o, c) * 0.9997;
-            return { time: (now - (deltas.length - i) * activeInterval) as any, open: o, high: h, low: l, close: c };
-          });
-          candleSeriesRef.current.setData(snapData);
+        } else {
+          // Indexer returned no candles for this timeframe — clear the chart and show message
+          candleSeriesRef.current?.setData([]);
           volumeSeriesRef.current?.setData([]);
-          chartRef.current?.timeScale().fitContent();
+          setNoData(true);
         }
       } finally {
         if (active) setLoading(false);
@@ -158,10 +132,8 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
     }
 
     loadData();
-    return () => {
-      active = false;
-    };
-  }, [poolAddress, activeInterval, currentMarkPrice]);
+    return () => { active = false; };
+  }, [poolAddress, activeInterval]);
 
   return (
     <div className="bg-[#0d131d] border border-[#1a2536] rounded-xl overflow-hidden flex flex-col">
@@ -201,9 +173,13 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
             </div>
           </div>
         )}
-        {!loading && noIndexerData && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-[#0d131d]/90 border border-yellow-500/30 rounded px-3 py-1 text-[10px] font-mono text-yellow-400/70">
-            Testnet indexer has no candle history · showing live mark price baseline
+        {!loading && noData && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center space-y-2 z-10">
+            <span className="text-2xl">📊</span>
+            <p className="text-xs font-mono text-slate-400">No candle data from indexer for this timeframe</p>
+            <p className="text-[10px] font-mono text-slate-600">
+              Mark price live: ${currentMarkPrice.toLocaleString('en-US', { minimumFractionDigits: 1 })} USDso
+            </p>
           </div>
         )}
         <div ref={chartContainerRef} className="w-full h-full" />
