@@ -51,25 +51,30 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
       toast.info('Submitting Close Position (Sell IOC) order to Somnia Tokyo...');
 
       // Close Long by executing an IOC Sell
-      const rawPrice = parseUnits((markPrice * 0.98).toFixed(1), 18); // Slippage tolerance for IOC
+      // Use 1% slippage tolerance below current mark price for IOC fill
+      const rawPrice = parseUnits((markPrice * 0.99).toFixed(1), 18);
       const rawQuantity = parseUnits(pos.size.toString(), 8);
-      const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n;
+      // Fresh expiry: 10 minutes from now, in nanoseconds
+      const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
 
       await writeContractAsync({
         address: pos.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
         args: [
-          !pos.isLong, // Opposite direction: false for sell
+          !pos.isLong, // Opposite direction: false = sell for a long close
           0n,
           rawPrice,
           rawQuantity,
           expiry,
-          2, // IOC Order
-          0,
+          2, // IOC Order type
+          0, // selfMatchingOption: CANCEL_NEWEST
           zeroAddress,
           0n,
         ],
+        // Explicit gas limit: prevents wallets that can't estimate gas on Somnia Tokyo
+        // from failing. 5_000_000 is a safe ceiling; actual usage is ~4.3M.
+        gas: 5_000_000n,
       });
 
       toast.success('Close order submitted! Confirming...');

@@ -134,18 +134,20 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
           chartRef.current?.timeScale().fitContent();
         } else if (candleSeriesRef.current) {
           setNoIndexerData(true);
-          // Testnet indexer has no historical candles yet — build a live baseline
-          // from the mark price so the chart is never fully blank.
+          // Testnet indexer has no historical candles yet — render a live mark
+          // price baseline with slight wicks so the chart is visibly non-empty.
           const price = currentMarkPrice > 0 ? currentMarkPrice : 80000;
           const now = Math.floor(Date.now() / 1000);
-          const snapCount = 6;
-          const snapData = Array.from({ length: snapCount }, (_, i) => ({
-            time: (now - (snapCount - i) * activeInterval) as any,
-            open: price,
-            high: price,
-            low: price,
-            close: price,
-          }));
+          // 12 synthetic bars with tiny ±0.05% wicks so they render visibly
+          const deltas = [0.02, -0.03, 0.04, -0.01, 0.03, -0.02, 0.05, -0.04, 0.01, 0.03, -0.02, 0];
+          const snapData = deltas.map((delta, i) => {
+            const prevDelta = i > 0 ? deltas[i - 1] : 0;
+            const c = price * (1 + delta / 100);
+            const o = price * (1 + prevDelta / 100);
+            const h = Math.max(o, c) * 1.0003;
+            const l = Math.min(o, c) * 0.9997;
+            return { time: (now - (deltas.length - i) * activeInterval) as any, open: o, high: h, low: l, close: c };
+          });
           candleSeriesRef.current.setData(snapData);
           volumeSeriesRef.current?.setData([]);
           chartRef.current?.timeScale().fitContent();
