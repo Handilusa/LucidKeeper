@@ -152,6 +152,16 @@ export const perpPoolAbi = [
     ],
     stateMutability: 'view',
   },
+  {
+    type: 'function',
+    name: 'tryGetMarkPrice',
+    inputs: [],
+    outputs: [
+      { name: 'markPriceOk', type: 'bool' },
+      { name: 'markPrice', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
 ] as const;
 
 export const erc20Abi = [

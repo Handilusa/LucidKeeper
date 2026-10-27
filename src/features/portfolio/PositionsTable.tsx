@@ -4,6 +4,7 @@ import { parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { ExternalLink, Share2 } from 'lucide-react';
 import { perpPoolAbi } from '@/chain/abis';
+import { formatDynamicPrice } from '@/lib/math/format';
 
 export interface PositionItem {
   id: string;
@@ -15,6 +16,8 @@ export interface PositionItem {
   markPrice: number;
   margin: number;
   openTxHash: string;
+  baseDecimals?: number;
+  quoteDecimals?: number;
 }
 
 interface PositionsTableProps {
@@ -58,11 +61,11 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
 
       // For closing a Long: SELL IOC with 1% floor slippage below mark
       // For closing a Short: BUY IOC with 1% ceiling slippage above mark
-      const effectiveMarkPrice = markPrice > 0 ? markPrice : (pos.markPrice || pos.entryPrice || 80000);
+      const effectiveMarkPrice = markPrice > 0 ? markPrice : (pos.markPrice || pos.entryPrice || 1);
       const limitMultiplier = pos.isLong ? 0.99 : 1.01;
-      const slippagePrice = (effectiveMarkPrice * limitMultiplier).toFixed(1);
-      const rawPrice = parseUnits(slippagePrice, 18);
-      const rawQuantity = parseUnits(pos.size.toString(), 8);
+      const slippagePrice = (effectiveMarkPrice * limitMultiplier).toFixed(effectiveMarkPrice < 1 ? 4 : 2);
+      const rawPrice = parseUnits(slippagePrice, pos.quoteDecimals || 18);
+      const rawQuantity = parseUnits(pos.size.toString(), pos.baseDecimals || 8);
       // Fresh expiry: 10 minutes from now, in nanoseconds
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
 
@@ -182,14 +185,16 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                         </span>
                         <span>{pos.marketSymbol}-PERP</span>
                       </td>
-                      <td className="py-3 text-slate-200">{pos.size} BTC</td>
+                      <td className="py-3 text-slate-200">{pos.size} {pos.marketSymbol}</td>
                       <td className="py-3 text-slate-300">
-                        ${entry.toLocaleString('en-US', { minimumFractionDigits: 1 })}
+                        ${formatDynamicPrice(entry)}
                       </td>
                       <td className="py-3 text-slate-300 font-bold tabular-nums">
-                        ${current.toLocaleString('en-US', { minimumFractionDigits: 1 })}
+                        ${formatDynamicPrice(current)}
                       </td>
-                      <td className="py-3 text-rose-400">~$65,400.0</td>
+                      <td className="py-3 text-rose-400">
+                        ~${formatDynamicPrice(pos.isLong ? entry * 0.82 : entry * 1.18)}
+                      </td>
                       <td className="py-3 text-cyan-400">${margin.toFixed(2)} USDso</td>
                       <td
                         className={`py-3 font-bold tabular-nums ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}

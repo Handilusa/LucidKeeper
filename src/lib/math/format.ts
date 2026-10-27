@@ -22,6 +22,18 @@ export function formatPrice(
   );
 }
 
+export function formatDynamicPrice(price: number | string | bigint): string {
+  const val = typeof price === 'bigint' ? Number(price) : Number(price);
+  if (isNaN(val) || val === 0) return '0.00';
+  if (val < 0.0001) return val.toFixed(6);
+  if (val < 1) return val.toFixed(4);
+  if (val < 10) return val.toFixed(3);
+  return val.toLocaleString('en-US', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function formatTokenAmount(amount: bigint, decimals: number, displayDecimals = 4): string {
   const formatted = formatUnits(amount, decimals);
   const num = parseFloat(formatted);

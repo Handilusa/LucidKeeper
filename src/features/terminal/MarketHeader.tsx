@@ -2,6 +2,7 @@ import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Shield, ChevronDown, Activity } from 'lucide-react';
 import type { MarketInfo } from '@/lib/data/indexer';
+import { formatDynamicPrice } from '@/lib/math/format';
 
 interface MarketHeaderProps {
   markets: MarketInfo[];
@@ -93,11 +94,7 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
           <div>
             <div className="text-slate-400 text-[10px]">MARK PRICE</div>
             <div className="text-white font-bold text-sm tabular-nums">
-              $
-              {markPrice.toLocaleString('en-US', {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 2,
-              })}
+              ${formatDynamicPrice(markPrice)}
             </div>
           </div>
 

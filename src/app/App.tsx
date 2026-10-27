@@ -9,7 +9,7 @@ import { RiskGuardian } from '@/features/sentinel/RiskGuardian';
 import { MarginHubModal } from '@/features/margin/MarginHubModal';
 import { TradeCardModal } from '@/features/share/TradeCardModal';
 import { fetchPerpMarkets, type MarketInfo } from '@/lib/data/indexer';
-import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi } from '@/chain/abis';
+import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 
 export const App: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -94,6 +94,26 @@ export const App: React.FC = () => {
     args: [currentAccount],
   });
 
+  // Read Live On-Chain Mark Price directly from active PerpPool
+  const { data: markPriceRaw } = useReadContract({
+    address: selectedMarket.poolAddress as `0x${string}`,
+    abi: perpPoolAbi,
+    functionName: 'tryGetMarkPrice',
+    query: {
+      refetchInterval: 3000,
+    },
+  });
+
+  // Update markPrice dynamically when pool or markPrice changes
+  useEffect(() => {
+    if (markPriceRaw && markPriceRaw[0]) {
+      const price = parseFloat(formatUnits(markPriceRaw[1], selectedMarket.quoteDecimals));
+      if (price > 0) {
+        setMarkPrice(price);
+      }
+    }
+  }, [markPriceRaw, selectedMarket]);
+
   // Read Live On-Chain Position from MarginBank
   const { data: livePositionRaw, refetch: refetchPosition } = useReadContract({
     address: CONTRACT_ADDRESSES.MARGIN_BANK,
@@ -122,15 +142,12 @@ export const App: React.FC = () => {
             poolAddress: selectedMarket.poolAddress,
             isLong,
             size: sizeFormatted,
-            entryPrice:
-              entryPriceFormatted > 0
-                ? entryPriceFormatted
-                : isLong
-                ? 79946.0
-                : 80921.25,
-            markPrice: markPrice || 80264.9,
+            entryPrice: entryPriceFormatted > 0 ? entryPriceFormatted : markPrice,
+            markPrice: markPrice || entryPriceFormatted,
             margin: 2.0,
             openTxHash: '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
+            baseDecimals: selectedMarket.baseDecimals,
+            quoteDecimals: selectedMarket.quoteDecimals,
           },
         ]);
       }

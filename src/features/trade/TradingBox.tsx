@@ -44,6 +44,19 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const [quantity, setQuantity] = useState<string>(market.minQuantity || '0.00013');
   const [leverage, setLeverage] = useState<number>(5);
 
+  // Sync defaults when market changes
+  React.useEffect(() => {
+    if (market.minQuantity) {
+      setQuantity(market.minQuantity);
+    }
+  }, [market.id, market.minQuantity]);
+
+  React.useEffect(() => {
+    if (markPrice > 0 && orderType === 'market') {
+      setLimitPrice(markPrice < 1 ? markPrice.toFixed(4) : markPrice.toFixed(2));
+    }
+  }, [market.id, markPrice, orderType]);
+
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
@@ -69,11 +82,22 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const marginRequired = leverage > 0 ? notional / leverage : notional;
   const estFee = notional * takerFeeRate;
 
+  // Precision matching market grid and quote decimals
+  const tickDecimals =
+    market.tickSize && market.tickSize.includes('.')
+      ? market.tickSize.split('.')[1].length
+      : executionPrice < 1
+      ? 4
+      : 2;
+
   // Projected liquidation price calculation using real on-chain parameters
   const dummyEquity = parseUnits((availableMargin > 0 ? availableMargin : 2.0).toString(), 18);
   const dummyMmReq = parseUnits((notional * (Number(maintenanceMarginBps) / 10000)).toFixed(6), 18);
   const rawSize = parseUnits(quantity || '0', market.baseDecimals);
-  const rawMark = parseUnits(executionPrice.toFixed(2), market.quoteDecimals);
+  const rawMark = parseUnits(
+    executionPrice.toFixed(Math.min(tickDecimals, market.quoteDecimals)),
+    market.quoteDecimals
+  );
   const oneBase = 10n ** BigInt(market.baseDecimals);
 
   const projectedLiq = computeLiquidationPrice({
@@ -86,7 +110,9 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   });
 
   const formattedLiqPrice = projectedLiq
-    ? parseFloat(formatUnits(projectedLiq, 18)).toFixed(1)
+    ? executionPrice < 1
+      ? parseFloat(formatUnits(projectedLiq, 18)).toFixed(4)
+      : parseFloat(formatUnits(projectedLiq, 18)).toFixed(1)
     : 'Safe';
 
   const handleExecuteOrder = async () => {
@@ -97,7 +123,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
 
     try {
       const rawPrice = parseUnits(
-        executionPrice.toFixed(market.quoteDecimals > 6 ? 2 : 1),
+        executionPrice.toFixed(Math.min(tickDecimals, market.quoteDecimals)),
         market.quoteDecimals
       );
       const rawQuantity = parseUnits(quantity, market.baseDecimals);
