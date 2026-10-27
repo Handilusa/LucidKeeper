@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useBalance } from 'wagmi';
+import { useAccount, useReadContract, useBalance, useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits } from 'viem';
 import { MarketHeader } from '@/features/terminal/MarketHeader';
 import { Chart } from '@/features/terminal/Chart';
@@ -12,7 +12,9 @@ import { fetchPerpMarkets, type MarketInfo } from '@/lib/data/indexer';
 import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi } from '@/chain/abis';
 
 export const App: React.FC = () => {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
 
   // State
   const [markets, setMarkets] = useState<MarketInfo[]>([]);
@@ -119,6 +121,22 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+      {/* Network Alert Banner */}
+      {isConnected && chainId !== 50383 && (
+        <div className="bg-rose-500/20 border-b border-rose-500 text-rose-200 px-4 py-2.5 flex items-center justify-between text-xs font-mono z-50">
+          <div className="flex items-center space-x-2">
+            <span className="text-rose-400 font-bold">⚠️ Red Incorrecta:</span>
+            <span>Tu wallet está conectada a la red con Chain ID {chainId}. Debes estar en Somnia Tokyo (Chain ID 50383).</span>
+          </div>
+          <button
+            onClick={() => switchChain({ chainId: 50383 })}
+            className="px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded text-xs transition-colors cursor-pointer"
+          >
+            Cambiar a Somnia Tokyo (50383)
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <MarketHeader
         markets={markets}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { ExternalLink, Share2 } from 'lucide-react';
@@ -31,6 +31,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
   onPositionClosed,
 }) => {
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
+  const { address } = useAccount();
 
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -57,7 +58,11 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
       // Fresh expiry: 10 minutes from now, in nanoseconds
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
 
+      const targetAccount = (address || '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA') as `0x${string}`;
+
       await writeContractAsync({
+        account: targetAccount,
+        chainId: 50383,
         address: pos.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
@@ -72,10 +77,10 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
           zeroAddress,
           0n,
         ],
-        // Provide explicit gas and gasPrice so wallet extensions (like OKX) that fail
-        // to query dynamic EIP-1559 fees on custom testnets receive fixed values immediately
+        // Explicit gas limit & legacy gasPrice: ensures OKX wallet calculates fee immediately
+        // and doesn't fail gas simulation.
         gas: 5_000_000n,
-        gasPrice: 10_000_000_000n, // 10 gwei (standard gasPrice format)
+        gasPrice: 10_000_000_000n, // 10 gwei
       });
 
       toast.success('Close order submitted! Confirming...');
