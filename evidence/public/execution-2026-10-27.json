@@ -1,0 +1,59 @@
+{
+  "recordedAt": "2026-10-27T00:17:00.000Z",
+  "kind": "reviewed-public-execution-record",
+  "sdkVersion": "0.32.1",
+  "chainId": 50383,
+  "network": "Somnia Tokyo Testnet (Hideki v2)",
+  "account": "0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA",
+  "funding": {
+    "collateral": "0xed7993A74dAe1e6656B704A424DcD8711aAf4F72",
+    "marginBank": "0x478769E1177C0773c43A593DCCc4Ad15F15F1394",
+    "amount": "2000000000000000000",
+    "amountFormatted": "2.0 USDso",
+    "approveTransaction": {
+      "hash": "0x50342ddedec388240ce2ee8054c17a694b90ecfcfc0eb779eff8f2975f739a17",
+      "blockNumber": "34042277",
+      "status": "success",
+      "explorerUrl": "https://explorer.testnet.somnia.network/tokyo/tx/0x50342ddedec388240ce2ee8054c17a694b90ecfcfc0eb779eff8f2975f739a17"
+    },
+    "depositTransaction": {
+      "hash": "0xce3214b4a7af9a200d485cc1822a71e4dea13f5bf64399e1de92c0514833399a",
+      "blockNumber": "34042291",
+      "status": "success",
+      "explorerUrl": "https://explorer.testnet.somnia.network/tokyo/tx/0xce3214b4a7af9a200d485cc1822a71e4dea13f5bf64399e1de92c0514833399a"
+    }
+  },
+  "execution": {
+    "market": "BTC",
+    "poolAddress": "0x4181dd08e73bbcdd1ba3e615a18f6abd941b94c0",
+    "orderType": "IOC",
+    "side": "buy",
+    "orderQuantityBaseUnits": "13000",
+    "orderQuantityFormatted": "0.00013 BTC",
+    "limitPriceBaseUnits": "80105900000000000000000",
+    "limitPriceFormatted": "80105.9 USDso",
+    "notionalUSDso": "10.413767",
+    "orderTransaction": {
+      "hash": "0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a",
+      "blockNumber": "34044423",
+      "status": "success",
+      "explorerUrl": "https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a"
+    },
+    "fill": {
+      "observed": true,
+      "quantityFilled": "13000",
+      "quantityFilledFormatted": "0.00013 BTC",
+      "fillPrice": "79946000000000000000000",
+      "fillPriceFormatted": "79946.0 USDso",
+      "takerOrderId": "8061227160211082042424",
+      "makerOrderId": "15587498742284579101740"
+    },
+    "resultingPosition": {
+      "perpPool": "0x4181dd08e73bbcdd1ba3e615a18f6abd941b94c0",
+      "newSize": "13000",
+      "newSizeFormatted": "0.00013 BTC",
+      "avgEntryPrice": "79946000000000000000000",
+      "avgEntryPriceFormatted": "79946.0 USDso"
+    }
+  }
+}

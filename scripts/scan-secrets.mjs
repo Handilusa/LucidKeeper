@@ -1,0 +1,100 @@
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+console.log('🔍 Running comprehensive secret scan across working tree and git history...\n');
+
+// Patterns to identify potential secrets
+const SECRET_PATTERNS = [
+  { name: 'Private Key Assignment', regex: /(?:private_key|privatekey|secret_key|secretkey|seed_phrase|mnemonic)\s*[:=]\s*["']?([a-zA-Z0-9_\-]{20,})["']?/i },
+  { name: 'PEM Private Key Header', regex: /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/ },
+  { name: 'Raw 32-byte Hex Key', regex: /(?:^|[^a-zA-Z0-9])(0x[a-fA-F0-9]{64})(?:[^a-zA-Z0-9]|$)/ },
+  { name: 'Generic API Secret', regex: /(?:api_secret|app_secret|client_secret)\s*[:=]\s*["']?([a-zA-Z0-9_\-]{20,})["']?/i },
+];
+
+// Whitelisted known hashes or non-secret fixtures
+const KNOWN_SAFE_HASHES = new Set([
+  // Known public transaction hashes
+  '0x50342ddedec388240ce2ee8054c17a694b90ecfcfc0eb779eff8f2975f739a17'.toLowerCase(),
+  '0xce3214b4a7af9a200d485cc1822a71e4dea13f5bf64399e1de92c0514833399a'.toLowerCase(),
+  '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a'.toLowerCase(),
+  // Somnia Tokyo genesis hash
+  '0x2b2ebef7db781fc01d1fa75ff13dbba2e6cfa3fbc865d4fa394df183bdca36fb'.toLowerCase(),
+]);
+
+let findingsCount = 0;
+
+// 1. Scan tracked files in working tree
+console.log('1️⃣ Scanning working tree files...');
+const files = execSync('git ls-files', { encoding: 'utf8' })
+  .split('\n')
+  .map(f => f.trim())
+  .filter(f => f && !f.endsWith('.png') && !f.endsWith('.ico') && !f.endsWith('.lock'));
+
+for (const file of files) {
+  try {
+    const content = readFileSync(file, 'utf8');
+    const lines = content.split('\n');
+    lines.forEach((line, idx) => {
+      for (const pattern of SECRET_PATTERNS) {
+        const match = line.match(pattern.regex);
+        if (match) {
+          const matchedVal = (match[1] || match[0]).toLowerCase();
+          if (KNOWN_SAFE_HASHES.has(matchedVal)) {
+            continue; // Whitelisted public transaction or block hash
+          }
+          // Ignore test fixture mock signatures or non-sensitive schema validators
+          if (file.includes('test/') && (line.includes('fixture') || line.includes('mock') || line.includes('0xgenesis'))) {
+            continue;
+          }
+          console.error(`🚨 [${pattern.name}] in ${file}:${idx + 1}`);
+          console.error(`   ${line.trim().slice(0, 80)}`);
+          findingsCount++;
+        }
+      }
+    });
+  } catch (err) {
+    // Ignore binary or unreadable files
+  }
+}
+
+// 2. Scan git commit history
+console.log('2️⃣ Scanning git commit history...');
+try {
+  const patch = execSync('git log -p -n 100', { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+  const patchLines = patch.split('\n');
+  let currentCommit = '';
+
+  patchLines.forEach((line, idx) => {
+    if (line.startsWith('commit ')) {
+      currentCommit = line.slice(7, 15);
+    }
+    if (line.startsWith('+') && !line.startsWith('+++')) {
+      for (const pattern of SECRET_PATTERNS) {
+        const match = line.match(pattern.regex);
+        if (match) {
+          const matchedVal = (match[1] || match[0]).toLowerCase();
+          if (KNOWN_SAFE_HASHES.has(matchedVal)) {
+            continue;
+          }
+          if (line.includes('test/') || line.includes('fixture') || line.includes('mock')) {
+            continue;
+          }
+          console.error(`🚨 [${pattern.name}] in git history commit ${currentCommit}: line ${idx + 1}`);
+          console.error(`   ${line.trim().slice(0, 80)}`);
+          findingsCount++;
+        }
+      }
+    }
+  });
+} catch (err) {
+  console.warn('⚠️ Git history scan error:', err.message);
+}
+
+console.log('\n--- Scan Summary ---');
+if (findingsCount === 0) {
+  console.log('✅ ZERO secrets or private keys detected in working tree and git history.');
+  process.exit(0);
+} else {
+  console.error(`❌ Found ${findingsCount} potential secret(s). Remediation required!`);
+  process.exit(1);
+}

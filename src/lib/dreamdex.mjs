@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import {
   SomniaMarkets, SOMNIA_HIDEKI_TESTNET_ADDRESSES,
   orderBookEventsAbi, marginBankEventsAbi, perpPoolWriteAbi,
@@ -142,7 +143,7 @@ export function buildUnsignedOrder(params, blockTimestamp) {
 export async function saveEvidence(kind, data) {
   const directory = new URL('../../evidence/', import.meta.url);
   await mkdir(directory, { recursive: true });
-  const file = new URL(`${kind}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`, directory);
+  const file = new URL(`${kind}-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID()}.json`, directory);
   await writeFile(file, json({ recordedAt: new Date().toISOString(), ...data }) + '\n', { flag: 'wx' });
   return file;
 }

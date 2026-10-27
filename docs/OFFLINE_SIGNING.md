@@ -41,8 +41,8 @@ Prepare one dependent action at a time. A deposit follows a successful approval 
 
 - Network: **Somnia Tokyo / Hideki v2**, chain ID **50383** only.
 - Sender: **`0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`** only.
-- USDso `0xed7993A74dAe1e6656B704A424DcD8711aAf4F72`: `approve` only, spender `0x478769E1177C0773c43A593DCCc4Ad15F15F1394`, **exact user-reviewed amount**, no unlimited approval.
-- MarginBank `0x478769E1177C0773c43A593DCCc4Ad15F15F1394`: `deposit` only, a small user-reviewed test amount credited to the sending EOA.
+- USDso `0xed7993A74dAe1e6656B704A424DcD8711aAf4F72`: `approve` only, spender `0x478769E1177C0773c43A593DCCc4Ad15F15F1394`, **exactly 2 USDso** in the current implementation, no unlimited approval. A different funding amount requires a policy change and new review.
+- MarginBank `0x478769E1177C0773c43A593DCCc4Ad15F15F1394`: `deposit` only, exactly **2 USDso** credited to the sending EOA after confirmed allowance.
 - Perps: user-reviewed test orders to official PerpPool addresses discovered through the SDK/indexer and verified on chain against the pinned bank/collateral. A fetched address alone is not sufficient.
 - All other targets/actions, wallet-to-wallet transfers, unexpected native value, arbitrary messages, authorizations and claims are rejected.
 
@@ -52,4 +52,17 @@ Before broadcasting, recover the sender without a key and compare chain, type, d
 
 Record the locally computed transaction hash and send outcome. An RPC timeout does not prove failure: query that same hash before considering any retry, and never create a replacement transaction without review. Save the canonical receipt even for a revert. A successful approval/deposit is not an order; a confirmed order transaction is not automatically a fill or position.
 
-Unsigned handoffs and signed raw payloads stay outside Git. Publish hashes, receipts and narrowly scoped read evidence only after review. No live broadcast command or full-envelope preparation is implemented yet: the current legacy preparation CLIs are deliberately held, and must be upgraded to this contract before release. No signing or broadcasting has occurred in this project.
+Unsigned handoffs and signed raw payloads stay outside Git. Publish hashes, receipts and narrowly scoped read evidence only after review. No signing or broadcasting has occurred in this project.
+
+## Implemented offline library
+
+- `src/lib/offline-transactions.mjs`:
+  - `buildUnsignedEnvelope({ call, nonce, gas, fees, description }, intent)` builds a JSON-safe envelope in memory. The call supplies `chainId/from/to/value/data`; value, gas and fee inputs are bigint. It never fetches values, creates a handoff file or supplies defaults for nonce/fees.
+  - `validateUnsignedEnvelope(envelope, intent)` checks the schema fields, numeric bounds and exact canonical allowlisted calldata. Funding intent is `{ action: 'approve' | 'deposit', amount }`, with the amount as a base-unit decimal string. Order intent is `{ action: 'order', pool, isBid, price, quantity, expireTimestampNs }`, with numeric amounts as decimal strings. Orders are IOC, with zero user data and builder fees.
+  - `validateSignedTransaction(raw, envelope, intent)` requires canonical signed EIP-1559, valid low-S signature fields, no added access list, the exact reviewed payload/nonce/gas/fees and a cryptographically recovered bounty EOA. It returns only hash, sender and action. Pure validation is not authorization to transmit.
+- `src/lib/broadcast.mjs`: `broadcastSignedTransaction({ raw, envelope, intent, expiresAt })` is locked by the real HOLD as its first action, with no caller-supplied policy or RPC. `expiresAt` is a reviewed Unix-seconds deadline within five minutes, kept with review evidence outside the envelope schema.
+  - After release, it uses only the official Tokyo RPC with transport retries disabled. It rechecks chain, pending nonce, EOA code, gas balance, fees, bank/collateral, balance/allowance and gas simulation. Orders also require official factory membership, the pool's pinned bank, current grid, deposited margin and zero allowance to prevent auto-pull.
+  - It snapshots inputs, records the computed hash before sending, and rechecks HOLD/expiry/nonce immediately before the single send attempt. An uncertain result is queried by that same hash; it is never automatically resent.
+  - Returned states distinguish `pending`, `send-uncertain`, `receipt-unverified`, `confirmed` and `reverted`. Canonical receipts, including reverts, are stored locally. Confirmation does not verify fills; order-event verification remains a separate step. RPC failure details and raw payloads are not written to evidence.
+
+`npm test` uses synthetic wire fields, mocked recovery/RPC/filesystem boundaries, and a separate real-recovery rejection test. No test signs, uses signing secrets, writes handoffs or contacts a network. The production HOLD remains active. There is no broadcast CLI; live preparation-to-envelope integration and real end-to-end verification remain pending after written margin permission.

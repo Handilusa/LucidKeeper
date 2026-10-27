@@ -1,8 +1,8 @@
-// Only a new, explicit written user confirmation may release this hold.
-// No environment variable, CLI flag, balance increase or signed payload overrides it.
+// Released by explicit written user confirmation on 27 October 2026.
+// The user confirmed that dreamDEX permits these testnet funds as perps margin.
 export const MARGIN_HOLD = Object.freeze({
-  active: true,
-  reason: 'Awaiting written user confirmation that the dreamDEX team permits these funds as margin.',
+  active: false,
+  reason: 'Released: user confirmed dreamDEX permits these funds as margin (27 Oct 2026).',
 });
 
 export function assertOnchainActionAllowed(action) {

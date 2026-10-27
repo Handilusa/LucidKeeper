@@ -3,6 +3,7 @@
 !/evidence/public/
 /evidence/public/*
 !/evidence/public/connectivity-2026-10-26.json
+!/evidence/public/execution-2026-10-27.json
 
 # Local agent instructions, memory, notes and reference material.
 /AGENTS.md
@@ -60,6 +61,8 @@ build/
 out/
 .next/
 coverage/
+test-results/
+playwright-report/
 .nyc_output/
 .cache/
 .turbo/

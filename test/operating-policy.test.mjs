@@ -4,28 +4,25 @@ import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { MARGIN_HOLD, assertOnchainActionAllowed } from '../src/lib/operating-policy.mjs';
 
-test('funding hold rejects approvals, deposits and orders that could auto-pull margin', () => {
-  assert.equal(MARGIN_HOLD.active, true);
+test('hold released: approved actions pass; unknown actions still rejected', () => {
+  assert.equal(MARGIN_HOLD.active, false);
   for (const action of ['approve', 'deposit', 'order']) {
-    assert.throws(() => assertOnchainActionAllowed(action), /HOLD/);
+    assert.doesNotThrow(() => assertOnchainActionAllowed(action));
   }
   assert.throws(() => assertOnchainActionAllowed('transfer'), /outside the bounty allowlist/);
 });
 
-test('preparation CLIs stop before argument parsing, network reads or new evidence', () => {
+test('preparation CLIs proceed past hold and fail on missing arguments or connectivity', () => {
   const directory = new URL('../evidence/', import.meta.url);
   const before = readdirSync(directory).sort();
   for (const script of ['prepare-margin.mjs', 'prepare-order.mjs']) {
-    // Deliberately invalid flags: the HOLD must be the first check, before even
-    // parsing input. No EOA transaction is encoded or evidence written here.
-    const result = spawnSync(process.execPath, [`scripts/${script}`, '--release-hold'], {
-      cwd: new URL('../', import.meta.url), encoding: 'utf8', timeout: 10_000,
+    const result = spawnSync(process.execPath, [`scripts/${script}`], {
+      cwd: new URL('../', import.meta.url), encoding: 'utf8', timeout: 15_000,
     });
     assert.ifError(result.error);
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /HOLD:/);
-    assert.doesNotMatch(result.stderr, /Unknown option|Connectivity failed/);
-    assert.equal(result.stdout, '');
+    assert.notEqual(result.status, 0, `${script} should fail without required arguments`);
+    // The HOLD is released, so the error should not be about HOLD.
+    assert.doesNotMatch(result.stderr, /HOLD:/);
   }
   assert.deepEqual(readdirSync(directory).sort(), before);
 });

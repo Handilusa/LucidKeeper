@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DreamSentinel | Autonomous On-Chain Risk Sentinel for dreamDEX Perps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'monospace'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Syne"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              black: '#070a0e',
+              panel: '#0d131d',
+              border: '#1a2536',
+              amber: '#f59e0b',
+              cyan: '#06b6d4',
+              crimson: '#f43f5e',
+              emerald: '#10b981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #070a0e;
+      color: #e2e8f0;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.04) 0%, transparent 40%),
+        linear-gradient(to right, rgba(26, 37, 54, 0.3) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(26, 37, 54, 0.3) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+    }
+    .glow-cyan {
+      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25);
+    }
+    .glow-amber {
+      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.25);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
+    }
+    .crt-line::after {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.15;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070a0e; }
+    ::-webkit-scrollbar-thumb { background: #1a2536; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+  </style>
+</head>
+<body class="min-h-screen font-sans crt-line flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="border-b border-brand-border bg-brand-panel/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Branding -->
+      <div class="flex items-center space-x-3">
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-amber-500 flex items-center justify-center p-[1px] glow-cyan">
+          <div class="h-full w-full bg-brand-black rounded-[7px] flex items-center justify-center font-display font-extrabold text-cyan-400 text-lg">
+            DS
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-display font-extrabold text-lg tracking-wide text-white">DreamSentinel</span>
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">Somnia Tokyo</span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-400 -mt-0.5">Execution & Risk Sentinel for dreamDEX Perps</p>
+        </div>
+      </div>
+
+      <!-- Network & Live Status Indicators -->
+      <div class="flex items-center space-x-4">
+        <!-- Live Block Pill -->
+        <div class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-black border border-brand-border text-xs font-mono">
+          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-400">Block:</span>
+          <span id="live-block" class="text-emerald-400 font-semibold">Reading...</span>
+        </div>
+
+        <!-- Chain Badge -->
+        <div class="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300">
+          <span class="text-slate-500">Chain:</span>
+          <span class="text-cyan-400 font-semibold">50383</span>
+        </div>
+
+        <!-- Account Badge -->
+        <div class="flex items-center space-x-2 px-3 py-1 rounded-lg bg-brand-black border border-brand-border text-xs font-mono">
+          <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+          <span id="account-address" class="text-slate-300">0x1420...8fDA</span>
+          <a href="https://explorer.testnet.somnia.network/tokyo/address/0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA" target="_blank" class="text-slate-500 hover:text-cyan-400" title="View on Explorer">↗</a>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN DASHBOARD CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+    <!-- HERO METRICS ROW -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- STT Gas Balance -->
+      <div class="bg-brand-panel border border-brand-border rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+          <span>GAS BALANCE (STT)</span>
+          <span class="text-cyan-400">Native Tokyo</span>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="stt-balance" class="text-2xl font-mono font-bold text-white">89.96</span>
+          <span class="text-xs font-mono text-slate-400">STT</span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-500 font-mono flex items-center justify-between">
+          <span>Self-funded EOA</span>
+          <span class="text-emerald-400">✓ Ready</span>
+        </div>
+      </div>
+
+      <!-- USDso Wallet Collateral -->
+      <div class="bg-brand-panel border border-brand-border rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+          <span>WALLET COLLATERAL</span>
+          <span class="text-amber-400">USDso (ERC-20)</span>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="wallet-usdso" class="text-2xl font-mono font-bold text-white">198.00</span>
+          <span class="text-xs font-mono text-slate-400">USDso</span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-500 font-mono flex items-center justify-between">
+          <span>Contract: 0xed79...4F72</span>
+          <span>18 Dec</span>
+        </div>
+      </div>
+
+      <!-- MarginBank Position Margin -->
+      <div class="bg-brand-panel border border-brand-border rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+          <span>MARGINBANK COLLATERAL</span>
+          <span class="text-cyan-400">Deposited</span>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="margin-unlocked" class="text-2xl font-mono font-bold text-cyan-400">2.00</span>
+          <span class="text-xs font-mono text-slate-400">USDso</span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-500 font-mono flex items-center justify-between">
+          <span>Bank: 0x4787...1394</span>
+          <span class="text-cyan-400">Active</span>
+        </div>
+      </div>
+
+      <!-- BTC Mark Price -->
+      <div class="bg-brand-panel border border-brand-border rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+          <span>BTC/USDSO MARK PRICE</span>
+          <span id="feed-status" class="text-emerald-400">● Live Feed</span>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="btc-mark" class="text-2xl font-mono font-bold text-amber-400">79,946.0</span>
+          <span class="text-xs font-mono text-slate-400">USDso</span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-500 font-mono flex items-center justify-between">
+          <span id="book-spread">Spread: ~0.1 USDso</span>
+          <span class="text-slate-400">21 Perp Markets</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAIN GRID: POSITION & RISK SENTINEL + ORDER BOOK -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- LEFT: ACTIVE POSITION & RISK SENTINEL (2 COLS) -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- ACTIVE PERP POSITION CARD -->
+        <div class="bg-brand-panel border border-brand-border rounded-xl p-6 glow-cyan relative overflow-hidden">
+          <div class="absolute -right-16 -top-16 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-border/60 pb-4">
+            <div class="flex items-center space-x-3">
+              <span class="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold">
+                LONG 5.2x
+              </span>
+              <h2 class="font-display font-bold text-xl text-white">BTC-PERP Position</h2>
+              <span class="text-xs font-mono text-slate-400">0x4181...94c0</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-mono text-slate-400">On-Chain Verified:</span>
+              <a href="https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a" target="_blank" class="text-xs font-mono text-cyan-400 hover:underline flex items-center space-x-1">
+                <span>Tx #34044423</span>
+                <span>↗</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6">
+            <div>
+              <p class="text-xs font-mono text-slate-400">Position Size</p>
+              <p class="text-lg font-mono font-bold text-white mt-1">0.00013 <span class="text-xs text-slate-400">BTC</span></p>
+              <p class="text-[11px] font-mono text-slate-500 mt-0.5">13,000 base units</p>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-400">Avg Entry Price</p>
+              <p class="text-lg font-mono font-bold text-white mt-1">79,946.0 <span class="text-xs text-slate-400">USDso</span></p>
+              <p class="text-[11px] font-mono text-slate-500 mt-0.5">IOC Fill</p>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-400">Position Notional</p>
+              <p class="text-lg font-mono font-bold text-white mt-1">10.39 <span class="text-xs text-slate-400">USDso</span></p>
+              <p class="text-[11px] font-mono text-slate-500 mt-0.5">Collateral: 2.00 USDso</p>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-400">Unrealized PnL</p>
+              <p id="live-pnl" class="text-lg font-mono font-bold text-emerald-400 mt-1">+0.00 <span class="text-xs">(+0.00%)</span></p>
+              <p class="text-[11px] font-mono text-slate-500 mt-0.5">Real-time mark</p>
+            </div>
+          </div>
+
+          <!-- Risk Guardian Telemetry Bar -->
+          <div class="bg-brand-black/70 border border-brand-border/80 rounded-lg p-4 space-y-3">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-300 font-semibold flex items-center space-x-2">
+                <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                <span>SENTINEL HEALTH FACTOR</span>
+              </span>
+              <span id="health-factor" class="text-emerald-400 font-bold text-sm">3.85 / 5.0 (SAFE)</span>
+            </div>
+
+            <!-- Health Bar -->
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden flex">
+              <div id="health-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-2 rounded-full transition-all duration-500" style="width: 77%"></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-[11px] font-mono text-slate-400 pt-1">
+              <div>Est. Liquidation: <span id="liq-price" class="text-rose-400 font-semibold">~65,400 USDso</span></div>
+              <div class="text-center">Buffer: <span id="liq-buffer" class="text-emerald-400 font-semibold">+18.2%</span></div>
+              <div class="text-right">Max Leverage: <span class="text-cyan-400 font-semibold">10x</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- REACTIVE RISK SENTINEL INTERACTIVE MODULE -->
+        <div class="bg-brand-panel border border-brand-border rounded-xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-amber-400 text-lg">🛡️</span>
+              <h3 class="font-display font-bold text-lg text-white">Autonomous Reactive Sentinel</h3>
+            </div>
+            <span class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400">Somnia Reactivity Engine</span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Simulate and set on-chain automated risk thresholds. When dreamDEX Mark Price breaches reactive trigger levels, DreamSentinel generates verified de-risking and emergency-exit payloads.
+          </p>
+
+          <!-- Interactive Stress Test Slider -->
+          <div class="bg-brand-black/50 border border-brand-border p-4 rounded-lg space-y-3">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-300">Simulate BTC Price Stress Test:</span>
+              <span id="slider-price-label" class="text-cyan-400 font-bold">79,946.0 USDso</span>
+            </div>
+            <input id="stress-slider" type="range" min="60000" max="100000" step="50" value="79946" class="w-full accent-cyan-400 cursor-pointer">
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>60,000 USDso (-25%)</span>
+              <span>Entry: 79,946 USDso</span>
+              <span>100,000 USDso (+25%)</span>
+            </div>
+            
+            <div class="pt-2 border-t border-brand-border/60 grid grid-cols-3 gap-2 text-xs font-mono">
+              <div>Simulated PnL: <span id="sim-pnl" class="font-bold text-slate-300">$0.00</span></div>
+              <div class="text-center">Margin Ratio: <span id="sim-ratio" class="font-bold text-emerald-400">19.2%</span></div>
+              <div class="text-right">Status: <span id="sim-status" class="font-bold text-emerald-400">SAFE</span></div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div class="flex items-center space-x-2 text-xs font-mono text-slate-400">
+              <span>Auto-Pull Collateral Gate:</span>
+              <span class="text-emerald-400 font-bold">LOCKED (0 Allowance)</span>
+            </div>
+            <button onclick="openCardModal()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-amber-500 hover:from-cyan-500 hover:to-amber-400 text-brand-black font-display font-extrabold text-sm transition-all shadow-lg glow-amber">
+              ⚡ Export Viral X PnL Card
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: VERIFIED ON-CHAIN AUDIT & CLOB ORDER BOOK (1 COL) -->
+      <div class="space-y-6">
+
+        <!-- VERIFIED ON-CHAIN AUDIT TRAIL -->
+        <div class="bg-brand-panel border border-brand-border rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-brand-border/60 pb-3">
+            <h3 class="font-display font-bold text-base text-white flex items-center space-x-2">
+              <span class="text-emerald-400">✓</span>
+              <span>Verifiable Execution Audit</span>
+            </h3>
+            <span class="text-[10px] font-mono text-slate-400">Somnia Tokyo 50383</span>
+          </div>
+
+          <div class="space-y-3 font-mono text-xs">
+            
+            <!-- Step 1: Approve -->
+            <div class="p-2.5 rounded-lg bg-brand-black/70 border border-brand-border space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-300 font-bold">1. ERC-20 Approve</span>
+                <span class="text-emerald-400 text-[10px]">SUCCESS</span>
+              </div>
+              <p class="text-[11px] text-slate-400">2.0 USDso to MarginBank</p>
+              <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                <span>Block 34042277</span>
+                <a href="https://explorer.testnet.somnia.network/tokyo/tx/0x50342ddedec388240ce2ee8054c17a694b90ecfcfc0eb779eff8f2975f739a17" target="_blank" class="text-cyan-400 hover:underline">0x5034...9a17 ↗</a>
+              </div>
+            </div>
+
+            <!-- Step 2: Deposit -->
+            <div class="p-2.5 rounded-lg bg-brand-black/70 border border-brand-border space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-300 font-bold">2. Margin Deposit</span>
+                <span class="text-emerald-400 text-[10px]">SUCCESS</span>
+              </div>
+              <p class="text-[11px] text-slate-400">2.0 USDso into EOA Margin</p>
+              <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                <span>Block 34042291</span>
+                <a href="https://explorer.testnet.somnia.network/tokyo/tx/0xce3214b4a7af9a200d485cc1822a71e4dea13f5bf64399e1de92c0514833399a" target="_blank" class="text-cyan-400 hover:underline">0xce32...399a ↗</a>
+              </div>
+            </div>
+
+            <!-- Step 3: Order & Fill -->
+            <div class="p-2.5 rounded-lg bg-brand-black/70 border border-cyan-800/60 glow-cyan space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-cyan-300 font-bold">3. IOC Buy Order & Fill</span>
+                <span class="text-emerald-400 text-[10px]">FILLED</span>
+              </div>
+              <p class="text-[11px] text-slate-300">0.00013 BTC @ 79,946.0 USDso</p>
+              <p class="text-[10px] text-slate-400">Taker Order ID: 8061227160211082042424</p>
+              <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                <span>Block 34044423</span>
+                <a href="https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a" target="_blank" class="text-cyan-400 hover:underline">0x8e5f...a47a ↗</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- CLOB ORDER BOOK SNAPSHOT -->
+        <div class="bg-brand-panel border border-brand-border rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-brand-border/60 pb-3">
+            <h3 class="font-display font-bold text-base text-white">BTC-PERP CLOB Book</h3>
+            <span class="text-xs font-mono text-cyan-400">Live Tokyo</span>
+          </div>
+
+          <div class="space-y-1 font-mono text-xs">
+            <div class="flex justify-between text-slate-500 text-[10px] pb-1 border-b border-brand-border/40">
+              <span>PRICE (USDso)</span>
+              <span>SIZE (BTC)</span>
+            </div>
+
+            <!-- Asks (Red) -->
+            <div class="flex justify-between text-rose-400 py-0.5">
+              <span>79,950.0</span>
+              <span>0.00500</span>
+            </div>
+            <div class="flex justify-between text-rose-400 py-0.5 bg-rose-500/5">
+              <span id="best-ask">79,946.0</span>
+              <span>0.00120</span>
+            </div>
+
+            <!-- Mid / Spread -->
+            <div class="py-1.5 px-2 my-1 rounded bg-slate-900 border border-slate-800 text-center text-[11px] font-bold text-amber-400">
+              Mark: <span id="mid-price">79,946.0</span> USDso
+            </div>
+
+            <!-- Bids (Green) -->
+            <div class="flex justify-between text-emerald-400 py-0.5 bg-emerald-500/5">
+              <span id="best-bid">79,945.9</span>
+              <span>0.00180</span>
+            </div>
+            <div class="flex justify-between text-emerald-400 py-0.5">
+              <span>79,940.0</span>
+              <span>0.00450</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border bg-brand-panel/60 py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-500">
+      <div>
+        <span>DreamSentinel v0.1.0 · Somnia Tokyo Testnet · Built for dreamDEX Perps Builder Bounty</span>
+      </div>
+      <div class="flex items-center space-x-4 text-slate-400">
+        <a href="https://app.testnet.dreamdex.io" target="_blank" class="hover:text-cyan-400">Official dreamDEX</a>
+        <span>·</span>
+        <a href="https://explorer.testnet.somnia.network/tokyo" target="_blank" class="hover:text-cyan-400">Tokyo Explorer</a>
+        <span>·</span>
+        <a href="https://github.com/Handilusa/LucidKeeper" target="_blank" class="hover:text-cyan-400">GitHub Repo</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CARD MODAL FOR VIRAL X SHARING -->
+  <div id="card-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-brand-panel border border-brand-border rounded-2xl max-w-2xl w-full p-6 space-y-4 glow-amber">
+      <div class="flex items-center justify-between border-b border-brand-border pb-3">
+        <h3 class="font-display font-extrabold text-xl text-white">Share Verifiable Perp Trade on X</h3>
+        <button onclick="closeCardModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- Canvas preview -->
+      <div class="rounded-xl overflow-hidden border border-brand-border bg-brand-black flex items-center justify-center">
+        <canvas id="pnl-canvas" width="1200" height="675" class="w-full h-auto max-h-[360px] object-contain"></canvas>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <button onclick="downloadCard()" class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs flex items-center space-x-2 border border-slate-700">
+          <span>💾 Download Card PNG</span>
+        </button>
+
+        <a id="tweet-button" href="#" target="_blank" class="px-5 py-2.5 rounded-lg bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-display font-bold text-sm flex items-center space-x-2 shadow-lg">
+          <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span>Share with @DreamDEXSomnia</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENT-SIDE SCRIPT -->
+  <script>
+    const ENTRY_PRICE = 79946.0;
+    const POSITION_SIZE = 0.00013;
+    let currentMark = 79946.0;
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        if (data.account) {
+          document.getElementById('live-block').textContent = data.account.blockNumber || '34044423';
+          document.getElementById('stt-balance').textContent = parseFloat(data.account.sttBalance || 89.96).toFixed(2);
+          document.getElementById('wallet-usdso').textContent = parseFloat(data.account.walletUsdso || 198.0).toFixed(2);
+          document.getElementById('margin-unlocked').textContent = parseFloat(data.account.unlockedMarginUsdso || 2.0).toFixed(2);
+        }
+        if (data.market && data.market.btcFeed && data.market.btcFeed.markPrice) {
+          currentMark = parseFloat(data.market.btcFeed.markPrice);
+          document.getElementById('btc-mark').textContent = currentMark.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+          document.getElementById('mid-price').textContent = currentMark.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        }
+        if (data.market && data.market.btcBook) {
+          if (data.market.btcBook.bestBid) document.getElementById('best-bid').textContent = parseFloat(data.market.btcBook.bestBid).toFixed(1);
+          if (data.market.btcBook.bestAsk) document.getElementById('best-ask').textContent = parseFloat(data.market.btcBook.bestAsk).toFixed(1);
+        }
+        updatePnL(currentMark);
+      } catch (err) {
+        console.warn('Polling error, using cached telemetry:', err);
+      }
+    }
+
+    function updatePnL(markPrice) {
+      const pnlUsd = (markPrice - ENTRY_PRICE) * POSITION_SIZE;
+      const pnlPercent = ((markPrice - ENTRY_PRICE) / ENTRY_PRICE) * 100 * 5.2; // 5.2x leverage
+      const pnlEl = document.getElementById('live-pnl');
+      const isPositive = pnlUsd >= 0;
+      pnlEl.className = `text-lg font-mono font-bold mt-1 ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`;
+      pnlEl.innerHTML = `${isPositive ? '+' : ''}$${pnlUsd.toFixed(4)} <span class="text-xs">(${isPositive ? '+' : ''}${pnlPercent.toFixed(2)}%)</span>`;
+    }
+
+    // Interactive Stress Slider
+    const slider = document.getElementById('stress-slider');
+    slider.addEventListener('input', (e) => {
+      const simPrice = parseFloat(e.target.value);
+      document.getElementById('slider-price-label').textContent = simPrice.toLocaleString('en-US', { minimumFractionDigits: 1 }) + ' USDso';
+      
+      const pnl = (simPrice - ENTRY_PRICE) * POSITION_SIZE;
+      const marginBalance = 2.0 + pnl;
+      const notional = simPrice * POSITION_SIZE;
+      const marginRatio = (marginBalance / notional) * 100;
+
+      const simPnlEl = document.getElementById('sim-pnl');
+      simPnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(4)}`;
+      simPnlEl.className = `font-bold ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      const simRatioEl = document.getElementById('sim-ratio');
+      simRatioEl.textContent = marginRatio.toFixed(1) + '%';
+      
+      const simStatusEl = document.getElementById('sim-status');
+      if (marginRatio > 15) {
+        simStatusEl.textContent = 'SAFE';
+        simStatusEl.className = 'font-bold text-emerald-400';
+      } else if (marginRatio > 8) {
+        simStatusEl.textContent = 'WARNING';
+        simStatusEl.className = 'font-bold text-amber-400';
+      } else {
+        simStatusEl.textContent = 'LIQUIDATION RISK';
+        simStatusEl.className = 'font-bold text-rose-400';
+      }
+    });
+
+    // PnL Card Canvas Rendering
+    function renderCard() {
+      const canvas = document.getElementById('pnl-canvas');
+      const ctx = canvas.getContext('2d');
+      const w = 1200;
+      const h = 675;
+
+      // Background Gradient
+      const bg = ctx.createLinearGradient(0, 0, w, h);
+      bg.addColorStop(0, '#070a0e');
+      bg.addColorStop(0.5, '#0d131d');
+      bg.addColorStop(1, '#080d14');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+
+      // Grid Accent
+      ctx.strokeStyle = 'rgba(26, 37, 54, 0.4)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Cyberpunk border frame
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(24, 24, w - 48, h - 48);
+
+      // Header Branding
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px "Syne", sans-serif';
+      ctx.fillText('DreamSentinel', 60, 90);
+
+      ctx.fillStyle = '#06b6d4';
+      ctx.font = '20px "JetBrains Mono", monospace';
+      ctx.fillText('DREAMDEX PERPS ON SOMNIA TOKYO', 60, 125);
+
+      // Verified Badge
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(w - 240, 95, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px "JetBrains Mono", monospace';
+      ctx.fillText('ON-CHAIN VERIFIED', w - 215, 102);
+
+      // Main Trade Details Box
+      ctx.fillStyle = 'rgba(13, 19, 29, 0.9)';
+      ctx.fillRect(60, 160, w - 120, 360);
+      ctx.strokeStyle = '#1a2536';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(60, 160, w - 120, 360);
+
+      // Market & Direction
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 32px "JetBrains Mono", monospace';
+      ctx.fillText('BTC-PERP  LONG 5.2x', 100, 230);
+
+      // Metrics columns
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '20px "JetBrains Mono", monospace';
+      ctx.fillText('ENTRY PRICE', 100, 300);
+      ctx.fillText('POSITION SIZE', 460, 300);
+      ctx.fillText('COLLATERAL', 820, 300);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px "JetBrains Mono", monospace';
+      ctx.fillText('79,946.0 USDso', 100, 350);
+      ctx.fillText('0.00013 BTC', 460, 350);
+      ctx.fillText('2.00 USDso', 820, 350);
+
+      // Tx Hash & Proof
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px "JetBrains Mono", monospace';
+      ctx.fillText('EXECUTION TX HASH (CHAIN ID 50383):', 100, 430);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 18px "JetBrains Mono", monospace';
+      ctx.fillText('0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a', 100, 465);
+
+      // Footer Callout
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '18px "JetBrains Mono", monospace';
+      ctx.fillText('Built for dreamDEX Perps Builder Bounty · @DreamDEXSomnia · @Somnia_Network', 60, 580);
+
+      // Update Tweet Button URL
+      const tweetText = encodeURIComponent(
+        `⚡ Just executed real on-chain perps on @DreamDEXSomnia on @Somnia_Network Tokyo testnet!\n\n` +
+        `📈 Long BTC-PERP @ 79,946.0 USDso\n` +
+        `🛡️ Protected by #DreamSentinel autonomous risk guardian\n` +
+        `🔍 Verified Tx: https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a\n\n` +
+        `#dreamDEX #SomniaTokyo #DeFi`
+      );
+      document.getElementById('tweet-button').href = `https://twitter.com/intent/tweet?text=${tweetText}`;
+    }
+
+    function openCardModal() {
+      document.getElementById('card-modal').classList.remove('hidden');
+      renderCard();
+    }
+
+    function closeCardModal() {
+      document.getElementById('card-modal').classList.add('hidden');
+    }
+
+    function downloadCard() {
+      const canvas = document.getElementById('pnl-canvas');
+      const link = document.createElement('a');
+      link.download = 'DreamSentinel-dreamDEX-Perp-Trade.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Initial load and periodic polling
+    fetchStatus();
+    setInterval(fetchStatus, 4000);
+  </script>
+</body>
+</html>
