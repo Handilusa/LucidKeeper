@@ -26,11 +26,37 @@ export interface ChartCandle {
  * Fetch real OHLCV candlestick data directly from dreamDEX GraphQL Indexer.
  * Returns chart-ready items formatted for TradingView Lightweight Charts.
  */
+/**
+ * Aggregate fine-grained candles into a coarser interval.
+ * Groups input candles (sorted ascending) by floor(time / intervalSeconds) * intervalSeconds.
+ */
+function aggregateCandles(candles: ChartCandle[], intervalSeconds: number): ChartCandle[] {
+  if (intervalSeconds <= 0 || candles.length === 0) return candles;
+
+  const buckets = new Map<number, ChartCandle>();
+
+  for (const c of candles) {
+    const bucket = Math.floor(c.time / intervalSeconds) * intervalSeconds;
+    const existing = buckets.get(bucket);
+    if (!existing) {
+      buckets.set(bucket, { time: bucket, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume });
+    } else {
+      existing.high = Math.max(existing.high, c.high);
+      existing.low = Math.min(existing.low, c.low);
+      existing.close = c.close; // candles arrive ascending, last one is close
+      existing.volume += c.volume;
+    }
+  }
+
+  return Array.from(buckets.values()).sort((a, b) => a.time - b.time);
+}
+
 export async function fetchMarketCandles(
   poolAddress: string,
-  _intervalSeconds: number = 3600,
+  intervalSeconds: number = 3600,
   limit: number = 300
 ): Promise<ChartCandle[]> {
+  // Fetch the finest granularity available (up to 2000 raw candles so aggregation has material)
   const query = `
     query Candles($pool: String!, $limit: Int) {
       Candle(
@@ -59,7 +85,7 @@ export async function fetchMarketCandles(
         query,
         variables: {
           pool: poolAddress.toLowerCase(),
-          limit,
+          limit: 2000, // fetch as many raw candles as possible for aggregation
         },
       }),
     });
@@ -76,7 +102,7 @@ export async function fetchMarketCandles(
       (a, b) => parseInt(a.bucketStart, 10) - parseInt(b.bucketStart, 10)
     );
 
-    return sorted.map((c) => ({
+    const baseCandles = sorted.map((c) => ({
       time: Math.floor(parseInt(c.bucketStart, 10)),
       open: parseFloat(c.openPrice) / 1e18,
       high: parseFloat(c.high) / 1e18,
@@ -84,6 +110,19 @@ export async function fetchMarketCandles(
       close: parseFloat(c.closePrice) / 1e18,
       volume: parseFloat(c.baseVolume) / 1e8,
     }));
+
+    // Detect native bucket size from the first two candles
+    const nativeBucket = baseCandles.length >= 2
+      ? baseCandles[1].time - baseCandles[0].time
+      : 60;
+
+    // Only aggregate if the requested interval is larger than the native bucket
+    const aggregated = intervalSeconds > nativeBucket
+      ? aggregateCandles(baseCandles, intervalSeconds)
+      : baseCandles;
+
+    // Return at most `limit` candles (most recent)
+    return aggregated.slice(-limit);
   } catch (error) {
     console.warn('[Indexer] Could not fetch candles from indexer:', error);
     return [];
