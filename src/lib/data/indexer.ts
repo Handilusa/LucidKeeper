@@ -1,3 +1,5 @@
+import { ALL_VERIFIED_PERP_MARKETS } from './markets';
+
 export const INDEXER_GRAPHQL_URL = 'https://hideki-dev.smk.somnia.host/v1/graphql';
 
 export interface MarketInfo {
@@ -130,54 +132,8 @@ export async function fetchMarketCandles(
 }
 
 /**
- * Query 21 perp markets directly from the official GraphQL indexer.
+ * Query 21 perp markets directly from verified Somnia Tokyo parameters.
  */
 export async function fetchPerpMarkets(): Promise<MarketInfo[]> {
-  const query = `
-    query GetPerpMarkets {
-      perpMarkets(limit: 50) {
-        id
-        baseSymbol
-        quoteSymbol
-        baseDecimals
-        quoteDecimals
-        poolAddress
-        marginBank
-        minQuantity
-        tickSize
-        lotSize
-      }
-    }
-  `;
-
-  try {
-    const res = await fetch(INDEXER_GRAPHQL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
-
-    const json = await res.json();
-    if (json?.data?.perpMarkets && json.data.perpMarkets.length > 0) {
-      return json.data.perpMarkets;
-    }
-  } catch (err) {
-    console.warn('[Indexer] Error fetching perp markets:', err);
-  }
-
-  // Fallback verified BTC perp pool if indexer is temporarily unreachable
-  return [
-    {
-      id: '0x4181dd08e73bbcdd1ba3e615a18f6abd941b94c0',
-      baseSymbol: 'BTC',
-      quoteSymbol: 'USDso',
-      baseDecimals: 8,
-      quoteDecimals: 18,
-      poolAddress: '0x4181dd08e73bbcdd1ba3e615a18f6abd941b94c0',
-      marginBank: '0x478769E1177C0773c43A593DCCc4Ad15F15F1394',
-      minQuantity: '0.00013',
-      tickSize: '0.1',
-      lotSize: '0.00001',
-    },
-  ];
+  return ALL_VERIFIED_PERP_MARKETS;
 }

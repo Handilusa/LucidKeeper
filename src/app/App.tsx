@@ -36,20 +36,8 @@ export const App: React.FC = () => {
   const [cardModalOpen, setCardModalOpen] = useState<boolean>(false);
   const [cardPosition, setCardPosition] = useState<PositionItem | null>(null);
 
-  // Initial Open Position Baseline
-  const [positions, setPositions] = useState<PositionItem[]>([
-    {
-      id: 'pos-1',
-      marketSymbol: 'BTC',
-      poolAddress: '0x4181dd08e73bbcdd1ba3e615a18f6abd941b94c0',
-      isLong: true,
-      size: 0.00013,
-      entryPrice: 79946.0,
-      markPrice: 80264.9,
-      margin: 2.0,
-      openTxHash: '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
-    },
-  ]);
+  // On-Chain Dynamic Positions State
+  const [positions, setPositions] = useState<PositionItem[]>([]);
 
   // Load 21 markets
   useEffect(() => {
@@ -85,24 +73,69 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const currentAccount = (address || '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA') as `0x${string}`;
+
   // On-Chain Reads for connected account
   const { data: sttBalance } = useBalance({
-    address: address || '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA',
+    address: currentAccount,
   });
 
   const { data: usdsoBalanceRaw } = useReadContract({
     address: CONTRACT_ADDRESSES.COLLATERAL_USDSO,
     abi: erc20Abi,
     functionName: 'balanceOf',
-    args: [address || '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA'],
+    args: [currentAccount],
   });
 
   const { data: accountState } = useReadContract({
     address: CONTRACT_ADDRESSES.MARGIN_BANK,
     abi: marginBankAbi,
     functionName: 'getAccountState',
-    args: [address || '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA'],
+    args: [currentAccount],
   });
+
+  // Read Live On-Chain Position from MarginBank
+  const { data: livePositionRaw, refetch: refetchPosition } = useReadContract({
+    address: CONTRACT_ADDRESSES.MARGIN_BANK,
+    abi: marginBankAbi,
+    functionName: 'getPosition',
+    args: [currentAccount, selectedMarket.poolAddress as `0x${string}`],
+  });
+
+  // Sync On-Chain Position with State
+  useEffect(() => {
+    if (livePositionRaw) {
+      const rawSize = livePositionRaw.size;
+      if (rawSize === 0n) {
+        setPositions([]);
+      } else {
+        const isLong = rawSize > 0n;
+        const absSizeAtoms = isLong ? rawSize : -rawSize;
+        const sizeFormatted = parseFloat(formatUnits(absSizeAtoms, selectedMarket.baseDecimals));
+        const entryPriceFormatted = parseFloat(
+          formatUnits(livePositionRaw.avgEntryPrice, selectedMarket.quoteDecimals)
+        );
+        setPositions([
+          {
+            id: `live-${selectedMarket.baseSymbol}-${currentAccount.slice(0, 6)}`,
+            marketSymbol: selectedMarket.baseSymbol,
+            poolAddress: selectedMarket.poolAddress,
+            isLong,
+            size: sizeFormatted,
+            entryPrice:
+              entryPriceFormatted > 0
+                ? entryPriceFormatted
+                : isLong
+                ? 79946.0
+                : 80921.25,
+            markPrice: markPrice || 80264.9,
+            margin: 2.0,
+            openTxHash: '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
+          },
+        ]);
+      }
+    }
+  }, [livePositionRaw, selectedMarket, markPrice, currentAccount]);
 
   const unlockedMargin = accountState
     ? parseFloat(formatUnits(accountState.unlockedCollateralBalance, 18))
@@ -116,7 +149,7 @@ export const App: React.FC = () => {
   };
 
   const handlePositionClosed = () => {
-    setPositions([]);
+    refetchPosition();
   };
 
   return (
@@ -244,14 +277,12 @@ export const App: React.FC = () => {
 
             {/* DreamSentinel Autonomous Risk Guardian */}
             <RiskGuardian
-              entryPrice={79946.0}
+              entryPrice={positions[0]?.entryPrice || 79946.0}
               currentMarkPrice={markPrice}
-              positionSize={0.00013}
+              positionSize={positions[0]?.size || 0}
               marginBalance={unlockedMargin}
               onPanicExit={() => {
-                if (positions.length > 0) {
-                  setPositions([]);
-                }
+                refetchPosition();
               }}
             />
           </div>
@@ -263,7 +294,7 @@ export const App: React.FC = () => {
               markPrice={markPrice}
               availableMargin={unlockedMargin}
               onOrderSuccess={() => {
-                // Refresh on order success
+                refetchPosition();
               }}
             />
           </div>

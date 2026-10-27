@@ -52,6 +52,26 @@ export const marginBankAbi = [
     ],
     stateMutability: 'view',
   },
+  {
+    type: 'function',
+    name: 'getPosition',
+    inputs: [
+      { name: 'account', type: 'address' },
+      { name: 'perpPool', type: 'address' },
+    ],
+    outputs: [
+      {
+        type: 'tuple',
+        name: 'position',
+        components: [
+          { name: 'size', type: 'int256' },
+          { name: 'avgEntryPrice', type: 'uint256' },
+          { name: 'entryFundingIndex', type: 'uint256' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
 ] as const;
 
 export const perpPoolAbi = [

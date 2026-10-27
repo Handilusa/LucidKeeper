@@ -49,12 +49,15 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
 
   const handleClosePosition = async (pos: PositionItem) => {
     try {
-      toast.info('Submitting Close Position (Sell IOC) order to Somnia Tokyo...');
+      const actionName = pos.isLong ? 'Sell IOC' : 'Buy IOC';
+      toast.info(`Submitting Close Position (${actionName}) order to Somnia Tokyo...`);
 
-      // Close Long by executing an IOC Sell
-      // Use 1% slippage tolerance below current mark price for IOC fill
+      // For closing a Long: SELL IOC with 1% floor slippage below mark
+      // For closing a Short: BUY IOC with 1% ceiling slippage above mark
       const effectiveMarkPrice = markPrice > 0 ? markPrice : (pos.markPrice || pos.entryPrice || 80000);
-      const rawPrice = parseUnits((effectiveMarkPrice * 0.99).toFixed(1), 18);
+      const limitMultiplier = pos.isLong ? 0.99 : 1.01;
+      const slippagePrice = (effectiveMarkPrice * limitMultiplier).toFixed(1);
+      const rawPrice = parseUnits(slippagePrice, 18);
       const rawQuantity = parseUnits(pos.size.toString(), 8);
       // Fresh expiry: 10 minutes from now, in nanoseconds
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
@@ -65,7 +68,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
         abi: perpPoolAbi,
         functionName: 'placeOrder',
         args: [
-          !pos.isLong, // Opposite direction: false = sell for a long close
+          !pos.isLong, // Opposite direction: false = sell to close long, true = buy to close short
           0n, // userData (uint64)
           rawPrice, // price (uint256)
           rawQuantity, // quantity (uint256)
@@ -151,30 +154,39 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
               </thead>
               <tbody className="divide-y divide-[#1a2536]/60">
                 {positions.map((pos) => {
-                  const pnl = (markPrice - pos.entryPrice) * pos.size;
-                  const pnlPercent =
-                    ((markPrice - pos.entryPrice) / pos.entryPrice) *
-                    100 *
-                    ((pos.size * markPrice) / pos.margin);
+                  const entry = pos.entryPrice > 0 ? pos.entryPrice : 80000;
+                  const current = markPrice > 0 ? markPrice : entry;
+                  const margin = pos.margin > 0 ? pos.margin : 2.0;
+
+                  const pnl = pos.isLong
+                    ? (current - entry) * pos.size
+                    : (entry - current) * pos.size;
+                  const pnlPercent = (pnl / margin) * 100;
                   const isProfit = pnl >= 0;
 
                   return (
                     <tr key={pos.id} className="hover:bg-slate-900/50 transition-colors">
                       <td className="py-3 font-bold text-white flex items-center space-x-2">
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] border border-emerald-500/30">
-                          {pos.isLong ? 'LONG 5.2x' : 'SHORT'}
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] border ${
+                            pos.isLong
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                              : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                          }`}
+                        >
+                          {pos.isLong ? 'LONG 5.2x' : 'SHORT 5.2x'}
                         </span>
                         <span>{pos.marketSymbol}-PERP</span>
                       </td>
                       <td className="py-3 text-slate-200">{pos.size} BTC</td>
                       <td className="py-3 text-slate-300">
-                        ${pos.entryPrice.toLocaleString('en-US', { minimumFractionDigits: 1 })}
+                        ${entry.toLocaleString('en-US', { minimumFractionDigits: 1 })}
                       </td>
                       <td className="py-3 text-slate-300 font-bold tabular-nums">
-                        ${markPrice.toLocaleString('en-US', { minimumFractionDigits: 1 })}
+                        ${current.toLocaleString('en-US', { minimumFractionDigits: 1 })}
                       </td>
                       <td className="py-3 text-rose-400">~$65,400.0</td>
-                      <td className="py-3 text-cyan-400">${pos.margin.toFixed(2)} USDso</td>
+                      <td className="py-3 text-cyan-400">${margin.toFixed(2)} USDso</td>
                       <td
                         className={`py-3 font-bold tabular-nums ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}
                       >
@@ -196,7 +208,9 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                           onClick={() => handleClosePosition(pos)}
                           className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500 border border-rose-500 text-rose-300 hover:text-white text-[11px] font-bold transition-all"
                         >
-                          {isPending || isConfirming ? 'Closing...' : 'Close (Sell IOC)'}
+                          {isPending || isConfirming
+                            ? 'Closing...'
+                            : `Close (${pos.isLong ? 'Sell' : 'Buy'} IOC)`}
                         </button>
                       </td>
                     </tr>
