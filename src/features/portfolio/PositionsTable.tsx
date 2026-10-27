@@ -4,7 +4,8 @@ import { parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { ExternalLink, Share2 } from 'lucide-react';
 import { perpPoolAbi } from '@/chain/abis';
-import { formatDynamicPrice } from '@/lib/math/format';
+import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
+import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 
 export interface PositionItem {
   id: string;
@@ -59,13 +60,33 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
       const actionName = pos.isLong ? 'Sell IOC' : 'Buy IOC';
       toast.info(`Submitting Close Position (${actionName}) order to Somnia Tokyo...`);
 
-      // For closing a Long: SELL IOC with 1% floor slippage below mark
-      // For closing a Short: BUY IOC with 1% ceiling slippage above mark
+      // For closing a Long: SELL IOC with 2% floor slippage below mark
+      // For closing a Short: BUY IOC with 2% ceiling slippage above mark
       const effectiveMarkPrice = markPrice > 0 ? markPrice : (pos.markPrice || pos.entryPrice || 1);
-      const limitMultiplier = pos.isLong ? 0.99 : 1.01;
-      const slippagePrice = (effectiveMarkPrice * limitMultiplier).toFixed(effectiveMarkPrice < 1 ? 4 : 2);
-      const rawPrice = parseUnits(slippagePrice, pos.quoteDecimals || 18);
-      const rawQuantity = parseUnits(pos.size.toString(), pos.baseDecimals || 8);
+      const baseMarkPrice = parseUnits(
+        effectiveMarkPrice.toFixed(pos.quoteDecimals && pos.quoteDecimals > 6 ? 6 : 2),
+        pos.quoteDecimals || 18
+      );
+      const slippagePrice = pos.isLong
+        ? (baseMarkPrice * 98n) / 100n
+        : (baseMarkPrice * 102n) / 100n;
+
+      const marketMeta = ALL_VERIFIED_PERP_MARKETS.find(
+        (m) => m.poolAddress.toLowerCase() === pos.poolAddress.toLowerCase()
+      );
+      const tickSize = marketMeta?.tickSize
+        ? parseUnits(marketMeta.tickSize, pos.quoteDecimals || 18)
+        : parseUnits('0.00001', pos.quoteDecimals || 18);
+      const lotSize = marketMeta?.lotSize
+        ? parseUnits(marketMeta.lotSize, pos.baseDecimals || 8)
+        : parseUnits('0.00001', pos.baseDecimals || 8);
+
+      const rawPrice = quantizeToGrid(slippagePrice, tickSize, 'floor');
+      const rawQuantity = quantizeToGrid(
+        parseUnits(pos.size.toString(), pos.baseDecimals || 8),
+        lotSize,
+        'floor'
+      );
       // Fresh expiry: 10 minutes from now, in nanoseconds
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
 

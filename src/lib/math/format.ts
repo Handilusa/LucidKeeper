@@ -54,3 +54,29 @@ export function shortenAddress(address: string, chars = 4): string {
   if (!address || address.length < 10) return address;
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
+
+/**
+ * Quantize a raw bigint value (price or quantity in token atoms) to exact grid step (tickSize or lotSize).
+ * Guarantees rawVal % step === 0n, preventing EVM revert 0xaf608abb (InvalidPrice/InvalidQuantity).
+ */
+export function quantizeToGrid(
+  value: bigint,
+  step: bigint,
+  mode: 'floor' | 'ceil' | 'round' = 'round'
+): bigint {
+  if (step <= 1n) return value;
+  const remainder = value % step;
+  if (remainder === 0n) return value;
+
+  if (mode === 'floor') {
+    return value - remainder;
+  }
+  if (mode === 'ceil') {
+    return value + (step - remainder);
+  }
+  // round to nearest
+  if (remainder >= step / 2n) {
+    return value + (step - remainder);
+  }
+  return value - remainder;
+}

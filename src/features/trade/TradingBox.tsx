@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { perpPoolAbi } from '@/chain/abis';
 import type { MarketInfo } from '@/lib/data/indexer';
 import { computeLiquidationPrice } from '@/lib/math/liquidation';
+import { quantizeToGrid } from '@/lib/math/format';
 
 interface TradingBoxProps {
   market: MarketInfo;
@@ -26,6 +27,13 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
     address: market.poolAddress as `0x${string}`,
     abi: perpPoolAbi,
     functionName: 'getPerpPoolParameters',
+  });
+
+  // Read orderbook grid parameters (tickSize, minQuantity, lotSize)
+  const { data: orderBookParams } = useReadContract({
+    address: market.poolAddress as `0x${string}`,
+    abi: perpPoolAbi,
+    functionName: 'getOrderBookParameters',
   });
 
   const maxLeverage = poolParams?.initialMarginBps
@@ -122,11 +130,43 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
     }
 
     try {
-      const rawPrice = parseUnits(
-        executionPrice.toFixed(Math.min(tickDecimals, market.quoteDecimals)),
-        market.quoteDecimals
-      );
-      const rawQuantity = parseUnits(quantity, market.baseDecimals);
+      const rawTickSize =
+        orderBookParams?.tickSize ??
+        parseUnits(market.tickSize || '0.00001', market.quoteDecimals);
+      const rawLotSize =
+        orderBookParams?.lotSize ??
+        parseUnits(market.lotSize || '0.00001', market.baseDecimals);
+
+      let rawPrice: bigint;
+      if (orderType === 'market') {
+        // 2% IOC slippage: ceiling for buy, floor for sell to cross book
+        const basePriceAtoms = parseUnits(
+          executionPrice.toFixed(market.quoteDecimals > 6 ? 6 : 2),
+          market.quoteDecimals
+        );
+        const slippagePrice =
+          side === 'buy'
+            ? (basePriceAtoms * 102n) / 100n
+            : (basePriceAtoms * 98n) / 100n;
+        rawPrice = quantizeToGrid(slippagePrice, rawTickSize, 'floor');
+        if (rawPrice === 0n) rawPrice = rawTickSize;
+      } else {
+        const baseLimitPrice = parseUnits(
+          limitPrice || executionPrice.toString(),
+          market.quoteDecimals
+        );
+        rawPrice = quantizeToGrid(baseLimitPrice, rawTickSize, 'round');
+        if (rawPrice === 0n) rawPrice = rawTickSize;
+      }
+
+      const parsedQty = parseUnits(quantity || '0', market.baseDecimals);
+      const rawQuantity = quantizeToGrid(parsedQty, rawLotSize, 'floor');
+
+      if (orderBookParams?.minQuantity && rawQuantity < orderBookParams.minQuantity) {
+        toast.error(`Order size is below market minimum (${market.minQuantity} ${market.baseSymbol})`);
+        return;
+      }
+
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n; // 5 mins in ns
 
       // Type 2 = IOC for Market, Type 0 = Limit

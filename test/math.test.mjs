@@ -14,9 +14,11 @@ import {
 import { computeLiquidationPrice } from '../src/lib/math/liquidation.ts';
 import {
   formatPrice,
+  formatDynamicPrice,
   formatTokenAmount,
   formatPercent,
   shortenAddress,
+  quantizeToGrid,
 } from '../src/lib/math/format.ts';
 
 test('PnL: computes long and short unrealized PnL accurately', () => {
@@ -185,4 +187,34 @@ test('Format utilities: prices, token amounts, percentages, addresses', () => {
 
   assert.equal(shortenAddress('0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA'), '0x1420...8fDA');
   assert.equal(shortenAddress('0x123'), '0x123');
+});
+
+test('Grid quantization: enforces strict tick and lot grid alignment', () => {
+  const tickBtc = 100000000000000000n; // 0.1 USDso
+  const tickDoge = 10000000000000n; // 0.00001 USDso
+
+  // BTC tick quantization
+  const rawBtcPrice = 80007220000000000000000n; // 80,007.22 (unaligned)
+  const quantizedBtc = quantizeToGrid(rawBtcPrice, tickBtc, 'floor');
+  assert.equal(quantizedBtc, 80007200000000000000000n); // 80,007.20 (aligned)
+  assert.equal(quantizedBtc % tickBtc, 0n);
+
+  // DOGE tick quantization
+  const rawDogePrice = 78648805703500000n; // 0.0786488... (unaligned)
+  const quantizedDoge = quantizeToGrid(rawDogePrice, tickDoge, 'floor');
+  assert.equal(quantizedDoge, 78640000000000000n); // 0.07864 (aligned)
+  assert.equal(quantizedDoge % tickDoge, 0n);
+
+  // DOGE lot size quantization
+  const lotDoge = 1000000000n; // 10 DOGE (8 decimals)
+  const qty = 13500000000n; // 135 DOGE
+  const quantizedQty = quantizeToGrid(qty, lotDoge, 'floor');
+  assert.equal(quantizedQty, 13000000000n); // 130 DOGE (multiple of 10)
+  assert.equal(quantizedQty % lotDoge, 0n);
+
+  // Dynamic price formatting
+  assert.equal(formatDynamicPrice(80815.38), '80,815.38');
+  assert.equal(formatDynamicPrice(0.07856), '0.0786');
+  assert.equal(formatDynamicPrice(0.000052), '0.000052');
+  assert.equal(formatDynamicPrice(0), '0.00');
 });
