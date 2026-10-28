@@ -172,6 +172,16 @@ export const App: React.FC = () => {
                 if (markFormatted > 0) poolMark = markFormatted;
               }
 
+              const notional = sizeFormatted * (entryPriceFormatted > 0 ? entryPriceFormatted : poolMark);
+              let posLeverage = 5;
+              if (typeof window !== 'undefined') {
+                const savedLev = localStorage.getItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`);
+                if (savedLev && !isNaN(parseInt(savedLev, 10))) {
+                  posLeverage = parseInt(savedLev, 10);
+                }
+              }
+              const calculatedMargin = posLeverage > 0 ? notional / posLeverage : notional;
+
               items.push({
                 id: `live-${market.baseSymbol}-${currentAccount.slice(0, 6)}`,
                 marketSymbol: market.baseSymbol,
@@ -180,7 +190,8 @@ export const App: React.FC = () => {
                 size: sizeFormatted,
                 entryPrice: entryPriceFormatted > 0 ? entryPriceFormatted : poolMark,
                 markPrice: poolMark,
-                margin: 2.0,
+                margin: calculatedMargin,
+                leverage: posLeverage,
                 openTxHash: '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
                 baseDecimals: market.baseDecimals,
                 quoteDecimals: market.quoteDecimals,

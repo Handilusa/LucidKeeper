@@ -87,7 +87,7 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
     ctx.fillStyle = position.isLong ? '#10b981' : '#f43f5e';
     ctx.font = 'bold 32px "JetBrains Mono", monospace';
     ctx.fillText(
-      `${position.marketSymbol}-PERP  ${position.isLong ? 'LONG 5.2x' : 'SHORT'}`,
+      `${position.marketSymbol}-PERP  ${position.isLong ? 'LONG' : 'SHORT'} ${position.leverage || 5}x`,
       100,
       230
     );

@@ -16,6 +16,7 @@ export interface PositionItem {
   entryPrice: number;
   markPrice: number;
   margin: number;
+  leverage?: number;
   openTxHash: string;
   baseDecimals?: number;
   quoteDecimals?: number;
@@ -185,12 +186,12 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                 {positions.map((pos) => {
                   const entry = pos.entryPrice > 0 ? pos.entryPrice : 80000;
                   const current = pos.markPrice > 0 ? pos.markPrice : (markPrice > 0 ? markPrice : entry);
-                  const margin = pos.margin > 0 ? pos.margin : 2.0;
+                  const margin = pos.margin > 0 ? pos.margin : (pos.size * entry) / (pos.leverage || 5);
 
                   const pnl = pos.isLong
                     ? (current - entry) * pos.size
                     : (entry - current) * pos.size;
-                  const pnlPercent = (pnl / margin) * 100;
+                  const pnlPercent = margin > 0 ? (pnl / margin) * 100 : 0;
                   const isProfit = pnl >= 0;
 
                   return (
@@ -203,7 +204,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                               : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                           }`}
                         >
-                          {pos.isLong ? 'LONG 5.2x' : 'SHORT 5.2x'}
+                          {pos.isLong ? 'LONG' : 'SHORT'} {pos.leverage ? `${pos.leverage}x` : '5x'}
                         </span>
                         <button
                           onClick={() => onSelectMarket?.(pos.marketSymbol)}

@@ -53,14 +53,57 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [limitPrice, setLimitPrice] = useState<string>(markPrice ? markPrice.toString() : '');
   const [quantity, setQuantity] = useState<string>(market.minQuantity || '0.00013');
-  const [leverage, setLeverage] = useState<number>(5);
-
-  // Sync defaults when market changes
-  React.useEffect(() => {
-    if (market.minQuantity) {
-      setQuantity(market.minQuantity);
+  const [marginInput, setMarginInput] = useState<string>('2.0');
+  const [lastEdited, setLastEdited] = useState<'size' | 'margin'>('margin');
+  const [leverage, setLeverage] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`);
+      if (saved && !isNaN(parseInt(saved, 10))) return parseInt(saved, 10);
     }
-  }, [market.id, market.minQuantity]);
+    return 5;
+  });
+
+  const executionPrice = orderType === 'market' ? markPrice : parseFloat(limitPrice) || markPrice;
+
+  const lotDecimals =
+    market.lotSize && market.lotSize.includes('.')
+      ? market.lotSize.split('.')[1].length
+      : 5;
+
+  const syncQuantityFromMargin = React.useCallback(
+    (targetMargin: number, currentLev: number, price: number) => {
+      if (price <= 0 || targetMargin <= 0) return;
+      const targetNotional = targetMargin * currentLev;
+      const rawQty = targetNotional / price;
+      const minQty = parseFloat(market.minQuantity || '0.00001');
+      const lotStep = parseFloat(market.lotSize || '0.00001');
+      const snapped = Math.max(Math.round(rawQty / lotStep) * lotStep, minQty);
+      setQuantity(snapped.toFixed(lotDecimals));
+    },
+    [market.minQuantity, market.lotSize, lotDecimals]
+  );
+
+  // Sync leverage when market changes
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`);
+      if (saved && !isNaN(parseInt(saved, 10))) {
+        setLeverage(parseInt(saved, 10));
+      }
+    }
+  }, [market.poolAddress]);
+
+  // Sync defaults when market or price changes
+  React.useEffect(() => {
+    if (executionPrice > 0) {
+      if (lastEdited === 'margin') {
+        const numMargin = parseFloat(marginInput) || 2.0;
+        syncQuantityFromMargin(numMargin, leverage, executionPrice);
+      } else if (market.minQuantity && !quantity) {
+        setQuantity(market.minQuantity);
+      }
+    }
+  }, [market.id, executionPrice, lastEdited, leverage, marginInput, syncQuantityFromMargin]);
 
   React.useEffect(() => {
     if (markPrice > 0 && orderType === 'market') {
@@ -88,10 +131,51 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
 
   // Dynamic Calculations
   const numericQty = parseFloat(quantity) || 0;
-  const executionPrice = orderType === 'market' ? markPrice : parseFloat(limitPrice) || markPrice;
   const notional = numericQty * executionPrice;
   const marginRequired = leverage > 0 ? notional / leverage : notional;
   const estFee = notional * takerFeeRate;
+
+  const handleLeverageChange = (newLev: number) => {
+    setLeverage(newLev);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`, newLev.toString());
+    }
+    if (lastEdited === 'margin' && executionPrice > 0) {
+      const numMargin = parseFloat(marginInput) || 2.0;
+      syncQuantityFromMargin(numMargin, newLev, executionPrice);
+    }
+  };
+
+  const handleQuantityInput = (newQty: string) => {
+    setLastEdited('size');
+    setQuantity(newQty);
+    const num = parseFloat(newQty) || 0;
+    const derivedNotional = num * executionPrice;
+    const derivedMargin = leverage > 0 ? derivedNotional / leverage : derivedNotional;
+    setMarginInput(derivedMargin.toFixed(2));
+  };
+
+  const handleMarginInput = (newMargin: string) => {
+    setLastEdited('margin');
+    setMarginInput(newMargin);
+    const num = parseFloat(newMargin) || 0;
+    syncQuantityFromMargin(num, leverage, executionPrice);
+  };
+
+  const handleMarginPreset = (amount: number) => {
+    setLastEdited('margin');
+    setMarginInput(amount.toString());
+    syncQuantityFromMargin(amount, leverage, executionPrice);
+  };
+
+  const handlePercentPreset = (percent: number) => {
+    setLastEdited('margin');
+    const base = availableMargin > 0 ? availableMargin : 2.0;
+    const calc = Math.max((base * percent) / 100, 0.1);
+    const formatted = parseFloat(calc.toFixed(2)).toString();
+    setMarginInput(formatted);
+    syncQuantityFromMargin(parseFloat(formatted), leverage, executionPrice);
+  };
 
   // Precision matching market grid and quote decimals
   const tickDecimals =
@@ -174,6 +258,11 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
 
       // Type 2 = IOC for Market, Type 0 = Limit
       const onchainOrderType = orderType === 'market' ? 2 : 0;
+
+      // Save chosen leverage before submitting
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`, leverage.toString());
+      }
 
       toast.info('Simulating and preparing transaction in wallet...');
 
@@ -302,6 +391,55 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
         </div>
       )}
 
+      {/* Margin Collateral Input with Presets */}
+      <div className="space-y-1.5">
+        <div className="flex justify-between text-xs font-mono text-slate-400">
+          <span className="font-semibold text-slate-300">Margin to Risk</span>
+          <span>Avail: {availableMargin.toFixed(2)} USDso</span>
+        </div>
+        <div className="relative">
+          <input
+            type="number"
+            step="0.5"
+            min="0.1"
+            value={marginInput}
+            onChange={(e) => handleMarginInput(e.target.value)}
+            aria-label="Margin amount to risk in USDso"
+            className="w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border border-[#1a2536] text-cyan-400 font-mono text-sm font-bold focus:outline-hidden focus:border-cyan-500"
+          />
+          <span className="absolute right-3 top-2 text-xs font-mono text-cyan-400 font-bold">
+            USDso
+          </span>
+        </div>
+        {/* Quick Margin Presets */}
+        <div className="grid grid-cols-6 gap-1 font-mono text-[10px]">
+          {[2, 5, 10].map((amt) => (
+            <button
+              key={amt}
+              type="button"
+              onClick={() => handleMarginPreset(amt)}
+              className={`py-1 rounded border text-center font-bold cursor-pointer transition-colors ${
+                marginInput === amt.toString()
+                  ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40'
+                  : 'bg-[#070a0e] hover:bg-slate-800 border-[#1a2536] text-slate-300'
+              }`}
+            >
+              ${amt}
+            </button>
+          ))}
+          {[25, 50, 100].map((pct) => (
+            <button
+              key={pct}
+              type="button"
+              onClick={() => handlePercentPreset(pct)}
+              className="py-1 rounded bg-[#070a0e] hover:bg-slate-800 border border-[#1a2536] text-slate-400 hover:text-white text-center cursor-pointer"
+            >
+              {pct === 100 ? 'Max' : `${pct}%`}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Order Quantity Input */}
       <div className="space-y-1">
         <div className="flex justify-between text-xs font-mono text-slate-400">
@@ -316,7 +454,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
             step={market.lotSize}
             min={market.minQuantity}
             value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
+            onChange={(e) => handleQuantityInput(e.target.value)}
             aria-label={`Order Quantity in ${market.baseSymbol}`}
             className="w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border border-[#1a2536] text-white font-mono text-sm focus:outline-hidden focus:border-cyan-500"
           />
@@ -326,11 +464,11 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
         </div>
       </div>
 
-      {/* Leverage Slider */}
+      {/* Leverage Slider & Quick Multipliers */}
       <div className="space-y-2 pt-1">
         <div className="flex justify-between text-xs font-mono">
           <span className="text-slate-400">Leverage (Max {maxLeverage}x)</span>
-          <span className="text-cyan-400 font-bold">{leverage}x</span>
+          <span className="text-cyan-400 font-bold text-sm">{leverage}x</span>
         </div>
         <input
           type="range"
@@ -338,15 +476,26 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
           max={maxLeverage}
           step="1"
           value={leverage}
-          onChange={(e) => setLeverage(parseInt(e.target.value, 10))}
+          onChange={(e) => handleLeverageChange(parseInt(e.target.value, 10))}
           aria-label="Trading leverage multiplier"
           className="w-full accent-cyan-400 cursor-pointer"
         />
-        <div className="flex justify-between text-[10px] font-mono text-slate-500">
-          <span>1x</span>
-          <span>5x</span>
-          <span>10x</span>
-          <span>{maxLeverage}x (Pool Max)</span>
+        {/* Quick Multipliers */}
+        <div className="flex items-center justify-between gap-1 font-mono text-[10px]">
+          {[1, 2, 5, 10, Math.min(20, maxLeverage)].map((lev) => (
+            <button
+              key={lev}
+              type="button"
+              onClick={() => handleLeverageChange(lev)}
+              className={`flex-1 py-1 rounded text-center font-bold transition-all cursor-pointer ${
+                leverage === lev
+                  ? 'bg-cyan-500 text-black shadow-xs'
+                  : 'bg-[#070a0e] hover:bg-slate-800 border border-[#1a2536] text-slate-400 hover:text-white'
+              }`}
+            >
+              {lev}x
+            </button>
+          ))}
         </div>
       </div>
 
