@@ -78,22 +78,24 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const syncQuantityFromMargin = React.useCallback(
     (targetMargin: number, currentLev: number, price: number, syncInput = false) => {
       if (price <= 0 || targetMargin <= 0) return;
-      const targetNotional = targetMargin * currentLev;
+      // In dreamDEX, market IOC orders lock position margin + 2% adverse slippage buffer on-chain
+      const effectiveMarginRate =
+        (currentLev > 0 ? 1 / currentLev : 1) + (orderType === 'market' ? 0.02 : 0);
+      const targetNotional = targetMargin / effectiveMarginRate;
       const rawQty = targetNotional / price;
       const minQty = parseFloat(market.minQuantity || '0.00001');
       const lotStep = parseFloat(market.lotSize || '0.00001');
       const snapped = Math.max(Math.round(rawQty / lotStep) * lotStep, minQty);
       setQuantity(snapped.toFixed(lotDecimals));
 
-      // If requested or if the user's target margin is smaller than what minQty requires,
-      // update marginInput so the displayed margin and order size are always coherent
+      // Calculate the true total margin locked on-chain for this snapped quantity
       const actualNotional = snapped * price;
-      const actualMargin = currentLev > 0 ? actualNotional / currentLev : actualNotional;
-      if (syncInput || targetMargin < actualMargin - 0.01) {
-        setMarginInput(actualMargin.toFixed(2));
+      const actualTotalMargin = actualNotional * effectiveMarginRate;
+      if (syncInput || targetMargin < actualTotalMargin - 0.01) {
+        setMarginInput(actualTotalMargin.toFixed(2));
       }
     },
-    [market.minQuantity, market.lotSize, lotDecimals]
+    [market.minQuantity, market.lotSize, lotDecimals, orderType]
   );
 
   // Sync leverage when market changes
@@ -215,8 +217,10 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
     setQuantity(newQty);
     const num = parseFloat(newQty) || 0;
     const derivedNotional = num * executionPrice;
-    const derivedMargin = leverage > 0 ? derivedNotional / leverage : derivedNotional;
-    setMarginInput(derivedMargin.toFixed(2));
+    const effectiveMarginRate =
+      (leverage > 0 ? 1 / leverage : 1) + (orderType === 'market' ? 0.02 : 0);
+    const totalMargin = derivedNotional * effectiveMarginRate;
+    setMarginInput(totalMargin.toFixed(2));
   };
 
   const handleMarginInput = (newMargin: string) => {
@@ -627,15 +631,33 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       <div className="p-3 rounded-lg bg-[#070a0e]/60 border border-[#1a2536] space-y-2 text-xs font-mono">
         <div className="flex justify-between text-slate-400">
           <span>Order Notional:</span>
-          <span className="text-white">${notional.toFixed(2)} USDso</span>
+          <span className="text-white font-semibold">${notional.toFixed(2)} USDso</span>
         </div>
         <div className="flex justify-between text-slate-400">
-          <span>Margin Required:</span>
+          <span>Position Margin ({leverage}x):</span>
+          <span className="text-cyan-400 font-semibold">${baseMargin.toFixed(2)} USDso</span>
+        </div>
+        {orderType === 'market' && slippageBuffer > 0 && (
+          <div className="flex justify-between text-slate-400 text-[11px]">
+            <span className="flex items-center gap-1">
+              <span>IOC Slippage Reserve (2%):</span>
+              <span
+                className="text-slate-500 cursor-help"
+                title="Reserva temporal de dreamDEX para absorber deslizamiento de mercado. El sobrante se reembolsa al confirmar el fill."
+              >
+                ℹ️
+              </span>
+            </span>
+            <span className="text-slate-300 font-mono">+${slippageBuffer.toFixed(2)} USDso</span>
+          </div>
+        )}
+        <div className="flex justify-between text-slate-400 border-t border-[#1a2536] pt-1">
+          <span className="font-semibold text-slate-300">Total Margin Required:</span>
           <span
             className={
               hasInsufficientMargin
                 ? 'text-rose-400 font-bold'
-                : 'text-cyan-400 font-semibold'
+                : 'text-cyan-400 font-bold'
             }
           >
             ${effectiveMarginRequired.toFixed(2)} USDso
@@ -659,11 +681,17 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
               ? `~$${formattedLiqPrice} USDso`
               : availableMargin <= 0
               ? '--'
-              : 'Safe (No Liq at 1x)'}
+              : leverage === 1
+              ? 'Safe (No Liq at 1x)'
+              : 'Safe (No Liq)'}
           </span>
         </div>
         <div className="flex justify-between text-slate-400">
-          <span>Est. Fees (0.05%):</span>
+          <span>
+            {takerFeeRate > 0
+              ? `Est. Fees (${(takerFeeRate * 100).toFixed(2)}%):`
+              : 'Est. Fees (0% Testnet Promo):'}
+          </span>
           <span className="text-slate-300">${estFee.toFixed(4)} USDso</span>
         </div>
 
