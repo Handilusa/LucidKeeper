@@ -54,6 +54,18 @@ export const marginBankAbi = [
   },
   {
     type: 'function',
+    name: 'getAccountHealth',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [
+      { name: 'equity', type: 'int256' },
+      { name: 'imReq', type: 'uint256' },
+      { name: 'mmReq', type: 'uint256' },
+      { name: 'cmReq', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'getPosition',
     inputs: [
       { name: 'account', type: 'address' },

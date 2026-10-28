@@ -100,6 +100,17 @@ export const App: React.FC = () => {
     },
   });
 
+  // Read Live Cross-Margin Account Health (Equity & IM requirements across all active positions)
+  const { data: accountHealth, refetch: refetchAccountHealth } = useReadContract({
+    address: CONTRACT_ADDRESSES.MARGIN_BANK,
+    abi: marginBankAbi,
+    functionName: 'getAccountHealth',
+    args: [currentAccount],
+    query: {
+      refetchInterval: 3000,
+    },
+  });
+
   // Read Live On-Chain Mark Price directly from active PerpPool
   const { data: markPriceRaw } = useReadContract({
     address: selectedMarket.poolAddress as `0x${string}`,
@@ -223,6 +234,19 @@ export const App: React.FC = () => {
     ? parseFloat(formatUnits(accountState.unlockedCollateralBalance, 18))
     : 0;
 
+  const totalEquity = accountHealth
+    ? parseFloat(formatUnits(accountHealth[0], 18))
+    : unlockedMargin;
+
+  const totalImReq = accountHealth
+    ? parseFloat(formatUnits(accountHealth[1], 18))
+    : 0;
+
+  // Free actionable collateral that can open new positions without reverting
+  const freeCollateral = accountHealth
+    ? Math.max(0, totalEquity - totalImReq)
+    : unlockedMargin;
+
   const walletUsdso = usdsoBalanceRaw ? parseFloat(formatUnits(usdsoBalanceRaw, 18)) : 0;
 
   const handleOpenCard = (pos: PositionItem) => {
@@ -232,8 +256,9 @@ export const App: React.FC = () => {
 
   const handlePositionClosed = React.useCallback(() => {
     refetchAccountState();
+    refetchAccountHealth();
     refetchPositions();
-  }, [refetchAccountState, refetchPositions]);
+  }, [refetchAccountState, refetchAccountHealth, refetchPositions]);
 
   const activeMarketPosition = positions.find(
     (p) => p.poolAddress.toLowerCase() === selectedMarket.poolAddress.toLowerCase()
@@ -322,7 +347,16 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
               <span>Bank: 0x4787...1394</span>
-              <span className="text-cyan-400">Active</span>
+              {totalImReq > 0 ? (
+                <span
+                  className="text-amber-400 font-semibold"
+                  title={`Margen inicial usado por posiciones activas: $${totalImReq.toFixed(2)} USDso`}
+                >
+                  Free: ${freeCollateral.toFixed(2)}
+                </span>
+              ) : (
+                <span className="text-cyan-400">Active</span>
+              )}
             </div>
           </div>
 
@@ -365,6 +399,7 @@ export const App: React.FC = () => {
               marginBalance={unlockedMargin}
               onPanicExit={() => {
                 refetchAccountState();
+                refetchAccountHealth();
                 refetchPositions();
               }}
             />
@@ -375,10 +410,12 @@ export const App: React.FC = () => {
             <TradingBox
               market={selectedMarket}
               markPrice={markPrice}
-              availableMargin={unlockedMargin}
+              availableMargin={freeCollateral}
+              totalUnlockedMargin={unlockedMargin}
               currentPosition={activeMarketPosition}
               onOrderSuccess={() => {
                 refetchAccountState();
+                refetchAccountHealth();
                 refetchPositions();
               }}
             />

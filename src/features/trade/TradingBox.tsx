@@ -13,6 +13,7 @@ interface TradingBoxProps {
   market: MarketInfo;
   markPrice: number;
   availableMargin: number;
+  totalUnlockedMargin?: number;
   currentPosition?: PositionItem;
   onOrderSuccess?: () => void;
 }
@@ -21,6 +22,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   market,
   markPrice,
   availableMargin,
+  totalUnlockedMargin,
   currentPosition,
   onOrderSuccess,
 }) => {
@@ -150,13 +152,34 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   // Dynamic Calculations
   const numericQty = parseFloat(quantity) || 0;
   const notional = numericQty * executionPrice;
-  const marginRequired = leverage > 0 ? notional / leverage : notional;
+  const baseMargin = leverage > 0 ? notional / leverage : notional;
+  // DreamDEX reserves an adverse slippage buffer on-chain for market IOC orders (2%)
+  const slippageBuffer = orderType === 'market' ? notional * 0.02 : 0;
+  const totalOrderMargin = baseMargin + slippageBuffer;
   const estFee = notional * takerFeeRate;
 
   // Netting projections when active position exists in this market
   const isSameSide =
     currentPosition &&
     ((currentPosition.isLong && side === 'buy') || (!currentPosition.isLong && side === 'sell'));
+
+  // Calculate actual incremental margin required for this order
+  // If order is purely reducing/closing an active position, on-chain IM check is bypassed
+  let effectiveMarginRequired = totalOrderMargin;
+  if (currentPosition && !isSameSide) {
+    if (numericQty <= currentPosition.size) {
+      effectiveMarginRequired = 0; // Purely reducing / closing
+    } else {
+      const increasingQty = numericQty - currentPosition.size;
+      const incNotional = increasingQty * executionPrice;
+      const incBaseMargin = leverage > 0 ? incNotional / leverage : incNotional;
+      const incSlippage = orderType === 'market' ? incNotional * 0.02 : 0;
+      effectiveMarginRequired = incBaseMargin + incSlippage;
+    }
+  }
+
+  const hasInsufficientMargin = effectiveMarginRequired > availableMargin;
+  const marginShortfall = hasInsufficientMargin ? effectiveMarginRequired - availableMargin : 0;
 
   const projectedNewSize = currentPosition && isSameSide ? currentPosition.size + numericQty : numericQty;
   const projectedAvgPrice =
@@ -251,6 +274,13 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const handleExecuteOrder = async () => {
     if (!isConnected) {
       toast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (hasInsufficientMargin) {
+      toast.error('Margen Insuficiente', {
+        description: `El trade requiere $${effectiveMarginRequired.toFixed(2)} USDso de margen pero solo dispones de $${availableMargin.toFixed(2)} USDso en MarginBank.`,
+      });
       return;
     }
 
@@ -451,7 +481,14 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs font-mono text-slate-400">
           <span className="font-semibold text-slate-300">Margin to Risk</span>
-          <span>Avail: {availableMargin.toFixed(2)} USDso</span>
+          <span className={hasInsufficientMargin ? 'text-rose-400 font-semibold' : 'text-slate-400'}>
+            Avail: {availableMargin.toFixed(2)} USDso
+            {totalUnlockedMargin !== undefined && totalUnlockedMargin > availableMargin + 0.01 && (
+              <span className="text-slate-500 text-[10px] ml-1" title="Collateral total en MarginBank antes de descontar márgenes activos">
+                (Total: ${totalUnlockedMargin.toFixed(2)})
+              </span>
+            )}
+          </span>
         </div>
         <div className="relative">
           <input
@@ -461,9 +498,13 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
             value={marginInput}
             onChange={(e) => handleMarginInput(e.target.value)}
             aria-label="Margin amount to risk in USDso"
-            className="w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border border-[#1a2536] text-cyan-400 font-mono text-sm font-bold focus:outline-hidden focus:border-cyan-500"
+            className={`w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border font-mono text-sm font-bold focus:outline-hidden transition-colors ${
+              hasInsufficientMargin
+                ? 'border-rose-500/80 text-rose-400 focus:border-rose-500'
+                : 'border-[#1a2536] text-cyan-400 focus:border-cyan-500'
+            }`}
           />
-          <span className="absolute right-3 top-2 text-xs font-mono text-cyan-400 font-bold">
+          <span className={`absolute right-3 top-2 text-xs font-mono font-bold ${hasInsufficientMargin ? 'text-rose-400' : 'text-cyan-400'}`}>
             USDso
           </span>
         </div>
@@ -563,7 +604,20 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
         </div>
         <div className="flex justify-between text-slate-400">
           <span>Margin Required:</span>
-          <span className="text-cyan-400 font-semibold">${marginRequired.toFixed(2)} USDso</span>
+          <span
+            className={
+              hasInsufficientMargin
+                ? 'text-rose-400 font-bold'
+                : 'text-cyan-400 font-semibold'
+            }
+          >
+            ${effectiveMarginRequired.toFixed(2)} USDso
+            {hasInsufficientMargin && (
+              <span className="text-[10px] ml-1 text-rose-400/80">
+                (Faltan ${marginShortfall.toFixed(2)})
+              </span>
+            )}
+          </span>
         </div>
         <div className="flex justify-between text-slate-400">
           <span>Est. Liquidation Price:</span>
@@ -597,12 +651,37 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
         )}
       </div>
 
+      {/* Insufficient Margin Warning Alert */}
+      {hasInsufficientMargin && (
+        <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-xs font-mono space-y-1">
+          <div className="flex items-center space-x-1.5 text-rose-400 font-bold">
+            <span className="text-sm">⚠️</span>
+            <span>Margen Insuficiente / Insufficient Margin</span>
+          </div>
+          <p className="text-slate-200 text-[11px] leading-relaxed">
+            El trade requiere <strong className="text-white">${effectiveMarginRequired.toFixed(2)} USDso</strong> de margen
+            {orderType === 'market' && ' (incluye buffer de slippage 2%)'}, pero solo tienes{' '}
+            <strong className="text-rose-400">${availableMargin.toFixed(2)} USDso</strong> disponibles en MarginBank.
+          </p>
+          <p className="text-slate-400 text-[10px]">
+            Por seguridad, la orden está bloqueada para evitar que la transacción revierta en Somnia Tokyo y la wallet falle al estimar el gas.
+          </p>
+        </div>
+      )}
+
       {/* Action Button */}
       <button
-        disabled={isPending || isConfirming || numericQty < parseFloat(market.minQuantity)}
+        disabled={
+          isPending ||
+          isConfirming ||
+          numericQty < parseFloat(market.minQuantity) ||
+          hasInsufficientMargin
+        }
         onClick={handleExecuteOrder}
         className={`w-full py-3 rounded-lg font-display font-extrabold text-sm transition-all shadow-lg ${
-          side === 'buy'
+          hasInsufficientMargin
+            ? 'bg-rose-950/60 border border-rose-800/60 text-rose-300 cursor-not-allowed'
+            : side === 'buy'
             ? 'bg-emerald-500 hover:bg-emerald-400 text-black glow-emerald'
             : 'bg-rose-500 hover:bg-rose-400 text-white glow-rose'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -611,6 +690,14 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
           <span className="flex items-center justify-center space-x-2">
             <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
             <span>Confirming on Somnia...</span>
+          </span>
+        ) : hasInsufficientMargin ? (
+          <span>
+            Margen Insuficiente (${effectiveMarginRequired.toFixed(2)} &gt; ${availableMargin.toFixed(2)} USDso)
+          </span>
+        ) : numericQty < parseFloat(market.minQuantity) ? (
+          <span>
+            Mínimo: {market.minQuantity} {market.baseSymbol}
           </span>
         ) : (
           <span>
