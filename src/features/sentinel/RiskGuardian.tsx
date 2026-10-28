@@ -31,18 +31,22 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
     positions.find((p) => p.marketSymbol.toUpperCase() === selectedSymbol.toUpperCase()) ||
     positions[0];
 
-  const effectiveEntry = activePosition?.entryPrice ?? (entryPrice ?? 80000);
-  const effectiveMark = activePosition?.markPrice ?? (currentMarkPrice ?? effectiveEntry);
+  const effectiveEntry = activePosition?.entryPrice ?? (entryPrice ?? 0);
+  const effectiveMark = activePosition?.markPrice ?? (currentMarkPrice ?? (effectiveEntry > 0 ? effectiveEntry : 0));
   const effectiveSize = activePosition ? activePosition.size : (positionSize ?? 0);
   const effectiveIsLong = activePosition ? activePosition.isLong : true;
   const effectiveSymbol = activePosition ? activePosition.marketSymbol : selectedSymbol;
 
-  const [stressPrice, setStressPrice] = useState<number>(effectiveMark || 80000);
+  const [stressPrice, setStressPrice] = useState<number>(effectiveMark > 0 ? effectiveMark : (effectiveEntry > 0 ? effectiveEntry : 0));
   const [stopLossPrice, setStopLossPrice] = useState<string>(
-    effectiveIsLong ? (effectiveEntry * 0.9).toFixed(2) : (effectiveEntry * 1.1).toFixed(2)
+    effectiveEntry > 0
+      ? (effectiveIsLong ? (effectiveEntry * 0.9).toFixed(2) : (effectiveEntry * 1.1).toFixed(2))
+      : ''
   );
   const [takeProfitPrice, setTakeProfitPrice] = useState<string>(
-    effectiveIsLong ? (effectiveEntry * 1.2).toFixed(2) : (effectiveEntry * 0.8).toFixed(2)
+    effectiveEntry > 0
+      ? (effectiveIsLong ? (effectiveEntry * 1.2).toFixed(2) : (effectiveEntry * 0.8).toFixed(2))
+      : ''
   );
 
   useEffect(() => {
@@ -52,28 +56,33 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   }, [effectiveMark, effectiveSymbol]);
 
   // Simulated Stress Math
-  const simPnl = effectiveIsLong
-    ? (stressPrice - effectiveEntry) * effectiveSize
-    : (effectiveEntry - stressPrice) * effectiveSize;
-  const simEquity = marginBalance + simPnl;
-  const simNotional = stressPrice * effectiveSize;
+  const hasActiveRisk = effectiveSize > 0 && effectiveEntry > 0;
+  const simPnl = hasActiveRisk && stressPrice > 0
+    ? (effectiveIsLong
+        ? (stressPrice - effectiveEntry) * effectiveSize
+        : (effectiveEntry - stressPrice) * effectiveSize)
+    : 0;
+  const simEquity = Math.max(0, marginBalance + simPnl);
+  const simNotional = hasActiveRisk ? (stressPrice > 0 ? stressPrice : effectiveEntry) * effectiveSize : 0;
   const simMmReq = simNotional * 0.05; // 5% maintenance
   const healthFactor = simMmReq > 0 ? Math.max(simEquity / simMmReq, 0) : 5.0;
 
   // Status Level
-  let status = 'SAFE';
+  let status = hasActiveRisk ? 'SAFE' : 'STANDBY (NO RISK)';
   let statusColor = 'text-emerald-400';
   let barGradient = 'from-emerald-500 to-cyan-400';
   let gaugePercent = Math.min(Math.max((healthFactor / 5.0) * 100, 5), 100);
 
-  if (healthFactor <= 1.05) {
-    status = 'CRITICAL DANGER (LIQUIDATION)';
-    statusColor = 'text-rose-500 animate-pulse';
-    barGradient = 'from-rose-600 to-rose-400';
-  } else if (healthFactor <= 1.5) {
-    status = 'HIGH RISK (MARGIN CALL)';
-    statusColor = 'text-amber-400';
-    barGradient = 'from-amber-600 to-amber-400';
+  if (hasActiveRisk) {
+    if (healthFactor <= 1.05) {
+      status = 'CRITICAL DANGER (LIQUIDATION)';
+      statusColor = 'text-rose-500 animate-pulse';
+      barGradient = 'from-rose-600 to-rose-400';
+    } else if (healthFactor <= 1.5) {
+      status = 'HIGH RISK (MARGIN CALL)';
+      statusColor = 'text-amber-400';
+      barGradient = 'from-amber-600 to-amber-400';
+    }
   }
 
   const handlePanic = (percent: number) => {
@@ -83,8 +92,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
     onPanicExit?.(percent, activePosition);
   };
 
-  const minStress = effectiveEntry * 0.7;
-  const maxStress = effectiveEntry * 1.3;
+  const minStress = effectiveEntry > 0 ? effectiveEntry * 0.7 : 0;
+  const maxStress = effectiveEntry > 0 ? effectiveEntry * 1.3 : 1;
   const stepStress = Math.max((maxStress - minStress) / 100, 0.0001);
 
   return (
@@ -178,7 +187,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
             </span>
           </div>
           <span className="text-cyan-400 font-bold">
-            ${formatDynamicPrice(stressPrice)} USDso
+            {stressPrice > 0 ? `$${formatDynamicPrice(stressPrice)} USDso` : '--'}
           </span>
         </div>
 
@@ -195,15 +204,16 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
           max={maxStress}
           step={stepStress}
           value={stressPrice}
+          disabled={!hasActiveRisk}
           onChange={(e) => setStressPrice(parseFloat(e.target.value))}
           aria-label="Simulated stress test market price"
-          className="w-full accent-cyan-400 cursor-pointer"
+          className="w-full accent-cyan-400 cursor-pointer disabled:opacity-40"
         />
 
         <div className="flex justify-between text-[10px] font-mono text-slate-500">
-          <span>${formatDynamicPrice(minStress)} (-30%)</span>
-          <span>Entry: ${formatDynamicPrice(effectiveEntry)}</span>
-          <span>${formatDynamicPrice(maxStress)} (+30%)</span>
+          <span>{minStress > 0 ? `$${formatDynamicPrice(minStress)} (-30%)` : '--'}</span>
+          <span>Entry: {effectiveEntry > 0 ? `$${formatDynamicPrice(effectiveEntry)}` : '--'}</span>
+          <span>{maxStress > 0 ? `$${formatDynamicPrice(maxStress)} (+30%)` : '--'}</span>
         </div>
 
         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#1a2536]/80 text-xs font-mono">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { parseUnits, formatUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
@@ -7,6 +7,7 @@ import type { MarketInfo } from '@/lib/data/indexer';
 import { computeLiquidationPrice } from '@/lib/math/liquidation';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
+import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
 
 interface TradingBoxProps {
   market: MarketInfo;
@@ -23,7 +24,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   currentPosition,
   onOrderSuccess,
 }) => {
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
 
   // Read pool parameters dynamically from the contract
   const { data: poolParams } = useReadContract({
@@ -97,8 +98,10 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   React.useEffect(() => {
     if (executionPrice > 0) {
       if (lastEdited === 'margin') {
-        const numMargin = parseFloat(marginInput) || 2.0;
-        syncQuantityFromMargin(numMargin, leverage, executionPrice);
+        const numMargin = parseFloat(marginInput) || 0;
+        if (numMargin > 0) {
+          syncQuantityFromMargin(numMargin, leverage, executionPrice);
+        }
       } else if (market.minQuantity && !quantity) {
         setQuantity(market.minQuantity);
       }
@@ -117,17 +120,32 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   });
 
   const notifiedHashRef = React.useRef<string | null>(null);
+  const lastOrderRef = useRef<{ symbol: string; side: 'buy' | 'sell'; size: number; price: number } | null>(null);
 
   React.useEffect(() => {
     if (isConfirmed && hash && notifiedHashRef.current !== hash) {
       notifiedHashRef.current = hash;
+      if (lastOrderRef.current && address) {
+        const o = lastOrderRef.current;
+        saveTradeHistoryItem(address, {
+          id: `trade-${hash}`,
+          hash,
+          type: 'order',
+          marketSymbol: o.symbol,
+          side: o.side,
+          size: o.size,
+          price: o.price,
+          timestamp: Date.now(),
+          description: `OrderPlaced & Filled (${o.side === 'buy' ? 'Long' : 'Short'} ${o.size} ${o.symbol} @ $${o.price.toFixed(2)})`,
+        });
+      }
       toast.success('Order confirmed on Somnia Tokyo!', {
         id: `order-confirmed-${hash}`,
         description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
       });
       onOrderSuccess?.();
     }
-  }, [isConfirmed, hash, onOrderSuccess]);
+  }, [isConfirmed, hash, onOrderSuccess, address]);
 
   // Dynamic Calculations
   const numericQty = parseFloat(quantity) || 0;
@@ -141,8 +159,10 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       localStorage.setItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`, newLev.toString());
     }
     if (lastEdited === 'margin' && executionPrice > 0) {
-      const numMargin = parseFloat(marginInput) || 2.0;
-      syncQuantityFromMargin(numMargin, newLev, executionPrice);
+      const numMargin = parseFloat(marginInput) || 0;
+      if (numMargin > 0) {
+        syncQuantityFromMargin(numMargin, newLev, executionPrice);
+      }
     }
   };
 
@@ -170,8 +190,11 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
 
   const handlePercentPreset = (percent: number) => {
     setLastEdited('margin');
-    const base = availableMargin > 0 ? availableMargin : 2.0;
-    const calc = Math.max((base * percent) / 100, 0.1);
+    if (availableMargin <= 0) {
+      toast.error('No unlocked collateral available in MarginBank');
+      return;
+    }
+    const calc = Math.max((availableMargin * percent) / 100, 0.01);
     const formatted = parseFloat(calc.toFixed(2)).toString();
     setMarginInput(formatted);
     syncQuantityFromMargin(parseFloat(formatted), leverage, executionPrice);
@@ -186,29 +209,33 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       : 2;
 
   // Projected liquidation price calculation using real on-chain parameters
-  const dummyEquity = parseUnits((availableMargin > 0 ? availableMargin : 2.0).toString(), 18);
-  const dummyMmReq = parseUnits((notional * (Number(maintenanceMarginBps) / 10000)).toFixed(6), 18);
+  const accountEquity = parseUnits(Math.max(0, availableMargin).toString(), 18);
+  const projectedMmReq = parseUnits((notional * (Number(maintenanceMarginBps) / 10000)).toFixed(6), 18);
   const rawSize = parseUnits(quantity || '0', market.baseDecimals);
   const rawMark = parseUnits(
-    executionPrice.toFixed(Math.min(tickDecimals, market.quoteDecimals)),
+    executionPrice > 0
+      ? executionPrice.toFixed(Math.min(tickDecimals, market.quoteDecimals))
+      : '0',
     market.quoteDecimals
   );
   const oneBase = 10n ** BigInt(market.baseDecimals);
 
-  const projectedLiq = computeLiquidationPrice({
-    equity: dummyEquity,
-    mmReq: dummyMmReq,
-    size: side === 'buy' ? rawSize : -rawSize,
-    markPrice: rawMark,
-    maintenanceMarginBps,
-    oneBase,
-  });
+  const projectedLiq = availableMargin > 0 && executionPrice > 0 && notional > 0
+    ? computeLiquidationPrice({
+        equity: accountEquity,
+        mmReq: projectedMmReq,
+        size: side === 'buy' ? rawSize : -rawSize,
+        markPrice: rawMark,
+        maintenanceMarginBps,
+        oneBase,
+      })
+    : null;
 
   const formattedLiqPrice = projectedLiq
     ? executionPrice < 1
       ? parseFloat(formatUnits(projectedLiq, 18)).toFixed(4)
       : parseFloat(formatUnits(projectedLiq, 18)).toFixed(1)
-    : 'Safe';
+    : availableMargin <= 0 ? '--' : 'Safe';
 
   const handleExecuteOrder = async () => {
     if (!isConnected) {
@@ -263,6 +290,13 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       if (typeof window !== 'undefined') {
         localStorage.setItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`, leverage.toString());
       }
+
+      lastOrderRef.current = {
+        symbol: market.baseSymbol,
+        side,
+        size: numericQty,
+        price: executionPrice,
+      };
 
       toast.info('Simulating and preparing transaction in wallet...');
 

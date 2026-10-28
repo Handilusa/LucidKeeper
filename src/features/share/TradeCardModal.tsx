@@ -109,15 +109,18 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
     ctx.fillText(`${position.size} ${position.marketSymbol}`, 460, 350);
     ctx.fillText(`$${position.margin.toFixed(2)} USDso`, 820, 350);
 
-    // On-Chain Tx Hash
+    // On-Chain Tx Hash / Contract Identifier
     ctx.fillStyle = theme === 'dark' ? '#94a3b8' : '#64748b';
     ctx.font = '16px "JetBrains Mono", monospace';
-    ctx.fillText('EXECUTION TX HASH (SOMNIA TOKYO TESTNET):', 100, 430);
+    const txLabel = position.openTxHash
+      ? 'EXECUTION TX HASH (SOMNIA TOKYO TESTNET):'
+      : 'PERP POOL CONTRACT (SOMNIA TOKYO 50383):';
+    ctx.fillText(txLabel, 100, 430);
 
     ctx.fillStyle = '#f59e0b';
     ctx.font = 'bold 18px "JetBrains Mono", monospace';
     ctx.fillText(
-      position.openTxHash || '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
+      position.openTxHash || position.poolAddress,
       100,
       465
     );

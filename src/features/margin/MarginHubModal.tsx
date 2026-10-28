@@ -4,6 +4,7 @@ import { parseUnits, formatUnits } from 'viem';
 import { toast } from 'sonner';
 import { X, ArrowDownRight, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi } from '@/chain/abis';
+import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
 
 interface MarginHubModalProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
     args: address ? [address] : undefined,
   });
 
-  const walletUsdso = walletBalanceRaw ? parseFloat(formatUnits(walletBalanceRaw, 18)) : 198.0;
+  const walletUsdso = walletBalanceRaw ? parseFloat(formatUnits(walletBalanceRaw, 18)) : 0;
 
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -40,13 +41,23 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
   React.useEffect(() => {
     if (isConfirmed && hash && notifiedHashRef.current !== hash) {
       notifiedHashRef.current = hash;
+      if (address) {
+        saveTradeHistoryItem(address, {
+          id: `margin-${hash}`,
+          hash,
+          type: activeTab,
+          amountUsdso: parseFloat(amount) || 0,
+          timestamp: Date.now(),
+          description: `Margin ${activeTab === 'deposit' ? 'Deposit' : 'Withdrawal'} (${amount} USDso)`,
+        });
+      }
       toast.success('Margin transaction confirmed on Somnia Tokyo!', {
         id: `margin-tx-${hash}`,
         description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
       });
       refetchBalance();
     }
-  }, [isConfirmed, hash, refetchBalance]);
+  }, [isConfirmed, hash, refetchBalance, address, activeTab, amount]);
 
   if (!isOpen) return null;
 
@@ -129,7 +140,7 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
           <div className="p-3 rounded-lg bg-[#070a0e] border border-[#1a2536]">
             <span className="text-slate-400 text-[10px]">WALLET BALANCE</span>
             <div className="text-white font-bold text-base mt-1">
-              {walletUsdso.toFixed(2)} USDso
+              {walletBalanceRaw !== undefined ? `${walletUsdso.toFixed(2)} USDso` : '--'}
             </div>
             <span className="text-[10px] text-slate-500">ERC-20 Token</span>
           </div>
@@ -137,7 +148,7 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
           <div className="p-3 rounded-lg bg-[#070a0e] border border-[#1a2536]">
             <span className="text-slate-400 text-[10px]">UNLOCKED MARGIN</span>
             <div className="text-cyan-400 font-bold text-base mt-1">
-              {unlockedMargin.toFixed(2)} USDso
+              {unlockedMargin > 0 ? `${unlockedMargin.toFixed(2)} USDso` : '0.00 USDso'}
             </div>
             <span className="text-[10px] text-slate-500">MarginBank Deposited</span>
           </div>

@@ -86,3 +86,11 @@
 - **Date:** 27 October 2026
 - **Decision:** Used npm `overrides` in `package.json` to pin `ws` to `^8.22.0` and `decode-uri-component` to `^0.5.1`. Avoided running `npm audit fix --force` which would break Wagmi 2 / RainbowKit 2 compatibility.
 - **Reason:** Transitive dependencies inside `@walletconnect` and `@metamask/sdk` cannot force Wagmi 3 without breaking RainbowKit 2. Selective overrides patch known issues cleanly.
+
+---
+
+### DEC-012: Zero-Mock & Complete Protocol Data Integrity
+- **Date:** 28 October 2026
+- **Decision:** Eliminate every hardcoded mock, placeholder number, simulated PnL, fake tx hash, and synthetic balance across the entire codebase. When on-chain data is loading or absent, explicitly show `"--"` or empty states. All trade history, positions, mark prices, leverage, and margin are derived directly on-chain from Somnia Tokyo testnet.
+- **Reason:** Absolute mandate for accuracy and compliance with dreamDEX Perps Builder Bounty rules. Deceiving users with fake prices or simulated PnL is strictly prohibited. Detailed in `docs/DATA_INTEGRITY_POLICY.md`.
+

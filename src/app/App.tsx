@@ -12,6 +12,8 @@ import { TradeCardModal } from '@/features/share/TradeCardModal';
 import { fetchPerpMarkets, type MarketInfo } from '@/lib/data/indexer';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi, perpPoolAbi } from '@/chain/abis';
+import { getTradeHistory } from '@/lib/data/tradeHistory';
+import { formatDynamicPrice } from '@/lib/math/format';
 
 export const App: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -33,7 +35,7 @@ export const App: React.FC = () => {
     lotSize: '0.00001',
   });
 
-  const [markPrice, setMarkPrice] = useState<number>(80264.9);
+  const [markPrice, setMarkPrice] = useState<number>(0);
   const [marginHubOpen, setMarginHubOpen] = useState<boolean>(false);
   const [cardModalOpen, setCardModalOpen] = useState<boolean>(false);
   const [cardPosition, setCardPosition] = useState<PositionItem | null>(null);
@@ -182,6 +184,11 @@ export const App: React.FC = () => {
               }
               const calculatedMargin = posLeverage > 0 ? notional / posLeverage : notional;
 
+              const userHistory = getTradeHistory(currentAccount);
+              const matchingTrade = userHistory.find(
+                (h) => h.type === 'order' && h.marketSymbol === market.baseSymbol
+              );
+
               items.push({
                 id: `live-${market.baseSymbol}-${currentAccount.slice(0, 6)}`,
                 marketSymbol: market.baseSymbol,
@@ -192,7 +199,7 @@ export const App: React.FC = () => {
                 markPrice: poolMark,
                 margin: calculatedMargin,
                 leverage: posLeverage,
-                openTxHash: '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
+                openTxHash: matchingTrade ? matchingTrade.hash : '',
                 baseDecimals: market.baseDecimals,
                 quoteDecimals: market.quoteDecimals,
               });
@@ -214,9 +221,9 @@ export const App: React.FC = () => {
 
   const unlockedMargin = accountState
     ? parseFloat(formatUnits(accountState.unlockedCollateralBalance, 18))
-    : 2.0;
+    : 0;
 
-  const walletUsdso = usdsoBalanceRaw ? parseFloat(formatUnits(usdsoBalanceRaw, 18)) : 198.0;
+  const walletUsdso = usdsoBalanceRaw ? parseFloat(formatUnits(usdsoBalanceRaw, 18)) : 0;
 
   const handleOpenCard = (pos: PositionItem) => {
     setCardPosition(pos);
@@ -256,8 +263,8 @@ export const App: React.FC = () => {
         selectedMarket={selectedMarket}
         onSelectMarket={setSelectedMarket}
         markPrice={markPrice}
-        priceChange24h={0.85}
-        fundingRate8h={0.01}
+        priceChange24h={null}
+        fundingRate8h={null}
         onOpenMarginHub={() => setMarginHubOpen(true)}
       />
 
@@ -273,7 +280,7 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-bold text-white tabular-nums">
-                {sttBalance ? parseFloat(sttBalance.formatted).toFixed(2) : '89.96'}
+                {sttBalance ? parseFloat(sttBalance.formatted).toFixed(4) : '--'}
               </span>
               <span className="text-xs text-slate-400">STT</span>
             </div>
@@ -291,7 +298,7 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-bold text-white tabular-nums">
-                {walletUsdso.toFixed(2)}
+                {usdsoBalanceRaw !== undefined ? walletUsdso.toFixed(2) : '--'}
               </span>
               <span className="text-xs text-slate-400">USDso</span>
             </div>
@@ -309,7 +316,7 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-bold text-cyan-400 tabular-nums">
-                {unlockedMargin.toFixed(2)}
+                {accountState ? unlockedMargin.toFixed(2) : '--'}
               </span>
               <span className="text-xs text-slate-400">USDso</span>
             </div>
@@ -330,17 +337,13 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-2 flex items-baseline space-x-2">
               <span className="text-2xl font-bold text-amber-400 tabular-nums">
-                $
-                {markPrice.toLocaleString('en-US', {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })}
+                {markPrice > 0 ? `$${formatDynamicPrice(markPrice)}` : '--'}
               </span>
               <span className="text-xs text-slate-400">USDso</span>
             </div>
             <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
-              <span>CLOB Spread: ~0.1 USDso</span>
-              <span className="text-slate-400">21 Pairs</span>
+              <span>Tick: {selectedMarket.tickSize || '--'} USDso</span>
+              <span className="text-slate-400">21 Verified Pools</span>
             </div>
           </div>
         </div>
@@ -386,6 +389,7 @@ export const App: React.FC = () => {
         <PositionsTable
           positions={positions}
           markPrice={markPrice}
+          account={currentAccount}
           onOpenCardModal={handleOpenCard}
           onPositionClosed={handlePositionClosed}
           onSelectMarket={(symbol) => {

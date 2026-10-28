@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { ExternalLink, Share2 } from 'lucide-react';
 import { perpPoolAbi } from '@/chain/abis';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
+import { getTradeHistory, saveTradeHistoryItem, type TradeHistoryItem } from '@/lib/data/tradeHistory';
 
 export interface PositionItem {
   id: string;
@@ -25,6 +26,7 @@ export interface PositionItem {
 interface PositionsTableProps {
   positions: PositionItem[];
   markPrice: number;
+  account?: string;
   onOpenCardModal: (pos: PositionItem) => void;
   onPositionClosed?: () => void;
   onSelectMarket?: (marketSymbol: string) => void;
@@ -33,32 +35,58 @@ interface PositionsTableProps {
 export const PositionsTable: React.FC<PositionsTableProps> = ({
   positions,
   markPrice,
+  account,
   onOpenCardModal,
   onPositionClosed,
   onSelectMarket,
 }) => {
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
+  const [historyItems, setHistoryItems] = useState<TradeHistoryItem[]>(() =>
+    getTradeHistory(account || '0x1420cf8bb9d92c3fdb674ecc5a57295c59078fda')
+  );
+
+  const activeAccount = account || '0x1420cf8bb9d92c3fdb674ecc5a57295c59078fda';
+
+  useEffect(() => {
+    setHistoryItems(getTradeHistory(activeAccount));
+  }, [activeAccount]);
 
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   });
 
-  const notifiedHashRef = React.useRef<string | null>(null);
+  const notifiedHashRef = useRef<string | null>(null);
+  const lastClosedPosRef = useRef<PositionItem | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isConfirmed && hash && notifiedHashRef.current !== hash) {
       notifiedHashRef.current = hash;
+      if (lastClosedPosRef.current) {
+        const closed = lastClosedPosRef.current;
+        saveTradeHistoryItem(activeAccount, {
+          id: `close-${hash}`,
+          hash,
+          type: 'close',
+          marketSymbol: closed.marketSymbol,
+          side: closed.isLong ? 'sell' : 'buy',
+          size: closed.size,
+          timestamp: Date.now(),
+          description: `Closed ${closed.marketSymbol}-PERP position via IOC`,
+        });
+        setHistoryItems(getTradeHistory(activeAccount));
+      }
       toast.success('Position closed and settled in MarginBank!', {
         id: `close-settled-${hash}`,
         description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
       });
       onPositionClosed?.();
     }
-  }, [isConfirmed, hash, onPositionClosed]);
+  }, [isConfirmed, hash, onPositionClosed, activeAccount]);
 
   const handleClosePosition = async (pos: PositionItem) => {
     try {
+      lastClosedPosRef.current = pos;
       const actionName = pos.isLong ? 'Sell IOC' : 'Buy IOC';
       toast.info(`Submitting Close Position (${actionName}) order for ${pos.marketSymbol}-PERP to Somnia Tokyo...`);
 
@@ -154,7 +182,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
             activeTab === 'history' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span>Trade History (3 Verified)</span>
+          <span>Trade History ({historyItems.length})</span>
           {activeTab === 'history' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400"></div>
           )}
@@ -184,15 +212,16 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
               </thead>
               <tbody className="divide-y divide-[#1a2536]/60">
                 {positions.map((pos) => {
-                  const entry = pos.entryPrice > 0 ? pos.entryPrice : 80000;
+                  const entry = pos.entryPrice > 0 ? pos.entryPrice : pos.markPrice;
                   const current = pos.markPrice > 0 ? pos.markPrice : (markPrice > 0 ? markPrice : entry);
-                  const margin = pos.margin > 0 ? pos.margin : (pos.size * entry) / (pos.leverage || 5);
+                  const margin = pos.margin > 0 ? pos.margin : (pos.leverage && pos.leverage > 0 ? (pos.size * (entry || current)) / pos.leverage : pos.size * (entry || current));
 
-                  const pnl = pos.isLong
-                    ? (current - entry) * pos.size
-                    : (entry - current) * pos.size;
+                  const pnl = entry > 0 && current > 0
+                    ? (pos.isLong ? (current - entry) * pos.size : (entry - current) * pos.size)
+                    : 0;
                   const pnlPercent = margin > 0 ? (pnl / margin) * 100 : 0;
                   const isProfit = pnl >= 0;
+                  const estLiq = entry > 0 ? (pos.isLong ? entry * 0.82 : entry * 1.18) : 0;
 
                   return (
                     <tr key={pos.id} className="hover:bg-slate-900/50 transition-colors">
@@ -216,20 +245,23 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                       </td>
                       <td className="py-3 text-slate-200">{pos.size} {pos.marketSymbol}</td>
                       <td className="py-3 text-slate-300">
-                        ${formatDynamicPrice(entry)}
+                        {entry > 0 ? `$${formatDynamicPrice(entry)}` : '--'}
                       </td>
                       <td className="py-3 text-slate-300 font-bold tabular-nums">
-                        ${formatDynamicPrice(current)}
+                        {current > 0 ? `$${formatDynamicPrice(current)}` : '--'}
                       </td>
                       <td className="py-3 text-rose-400">
-                        ~${formatDynamicPrice(pos.isLong ? entry * 0.82 : entry * 1.18)}
+                        {estLiq > 0 ? `~$${formatDynamicPrice(estLiq)}` : '--'}
                       </td>
-                      <td className="py-3 text-cyan-400">${margin.toFixed(2)} USDso</td>
+                      <td className="py-3 text-cyan-400">
+                        {margin > 0 ? `$${margin.toFixed(2)} USDso` : '--'}
+                      </td>
                       <td
                         className={`py-3 font-bold tabular-nums ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}
                       >
-                        {isProfit ? '+' : ''}${pnl.toFixed(4)} ({isProfit ? '+' : ''}
-                        {pnlPercent.toFixed(2)}%)
+                        {margin > 0
+                          ? `${isProfit ? '+' : ''}$${pnl.toFixed(4)} (${isProfit ? '+' : ''}${pnlPercent.toFixed(2)}%)`
+                          : '--'}
                       </td>
                       <td className="py-3 text-right space-x-2">
                         <button
@@ -266,71 +298,38 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
 
         {activeTab === 'history' && (
           <div className="space-y-3 font-mono text-xs">
-            {/* Tx 1 */}
-            <div className="p-3 rounded-lg bg-[#070a0e] border border-[#1a2536] flex items-center justify-between">
-              <div>
-                <div className="font-bold text-white flex items-center space-x-2">
-                  <span className="text-emerald-400">✓</span>
-                  <span>OrderPlaced & OrderFilled (0.00013 BTC @ 79,946.0 USDso)</span>
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Block 34044423 · Taker ID: 8061227160211082042424
-                </div>
+            {historyItems.length === 0 ? (
+              <div className="py-8 text-center text-xs font-mono text-slate-500">
+                No recorded transactions for this account yet. Executed trades and margin operations on Somnia Tokyo will appear here.
               </div>
-              <a
-                href="https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a"
-                target="_blank"
-                rel="noreferrer"
-                className="text-cyan-400 hover:underline flex items-center space-x-1"
-              >
-                <span>0x8e5f...a47a</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            {/* Tx 2 */}
-            <div className="p-3 rounded-lg bg-[#070a0e] border border-[#1a2536] flex items-center justify-between">
-              <div>
-                <div className="font-bold text-white flex items-center space-x-2">
-                  <span className="text-emerald-400">✓</span>
-                  <span>Margin Deposit (2.0 USDso into MarginBank)</span>
+            ) : (
+              historyItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 rounded-lg bg-[#070a0e] border border-[#1a2536] flex items-center justify-between"
+                >
+                  <div>
+                    <div className="font-bold text-white flex items-center space-x-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>{item.description}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {item.blockNumber ? `Block ${item.blockNumber} · ` : ''}
+                      {new Date(item.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                  <a
+                    href={`https://explorer.testnet.somnia.network/tokyo/tx/${item.hash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-cyan-400 hover:underline flex items-center space-x-1 shrink-0 ml-4"
+                  >
+                    <span>{`${item.hash.slice(0, 8)}...${item.hash.slice(-6)}`}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Block 34042291 · MarginBank: 0x4787...1394
-                </div>
-              </div>
-              <a
-                href="https://explorer.testnet.somnia.network/tokyo/tx/0xce3214b4a7af9a200d485cc1822a71e4dea13f5bf64399e1de92c0514833399a"
-                target="_blank"
-                rel="noreferrer"
-                className="text-cyan-400 hover:underline flex items-center space-x-1"
-              >
-                <span>0xce32...399a</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            {/* Tx 3 */}
-            <div className="p-3 rounded-lg bg-[#070a0e] border border-[#1a2536] flex items-center justify-between">
-              <div>
-                <div className="font-bold text-white flex items-center space-x-2">
-                  <span className="text-emerald-400">✓</span>
-                  <span>ERC-20 Approve (2.0 USDso Collateral)</span>
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Block 34042277 · Allowance auto-reset confirmed
-                </div>
-              </div>
-              <a
-                href="https://explorer.testnet.somnia.network/tokyo/tx/0x50342ddedec388240ce2ee8054c17a694b90ecfcfc0eb779eff8f2975f739a17"
-                target="_blank"
-                rel="noreferrer"
-                className="text-cyan-400 hover:underline flex items-center space-x-1"
-              >
-                <span>0x5034...9a17</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
+              ))
+            )}
           </div>
         )}
       </div>

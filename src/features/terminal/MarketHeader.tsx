@@ -9,8 +9,8 @@ interface MarketHeaderProps {
   selectedMarket: MarketInfo;
   onSelectMarket: (market: MarketInfo) => void;
   markPrice: number;
-  priceChange24h?: number;
-  fundingRate8h?: number;
+  priceChange24h?: number | null;
+  fundingRate8h?: number | null;
   onOpenMarginHub: () => void;
 }
 
@@ -19,8 +19,8 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
   selectedMarket,
   onSelectMarket,
   markPrice,
-  priceChange24h = 0.85,
-  fundingRate8h = 0.01,
+  priceChange24h = null,
+  fundingRate8h = null,
   onOpenMarginHub,
 }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
@@ -94,23 +94,32 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
           <div>
             <div className="text-slate-400 text-[10px]">MARK PRICE</div>
             <div className="text-white font-bold text-sm tabular-nums">
-              ${formatDynamicPrice(markPrice)}
+              {markPrice > 0 ? `$${formatDynamicPrice(markPrice)}` : '--'}
             </div>
           </div>
 
           <div>
             <div className="text-slate-400 text-[10px]">24H CHANGE</div>
             <div
-              className={`font-semibold ${priceChange24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
+              className={`font-semibold ${
+                priceChange24h == null
+                  ? 'text-slate-500'
+                  : priceChange24h >= 0
+                  ? 'text-emerald-400'
+                  : 'text-rose-400'
+              }`}
             >
-              {priceChange24h >= 0 ? '+' : ''}
-              {priceChange24h.toFixed(2)}%
+              {priceChange24h != null
+                ? `${priceChange24h >= 0 ? '+' : ''}${priceChange24h.toFixed(2)}%`
+                : '--'}
             </div>
           </div>
 
           <div>
             <div className="text-slate-400 text-[10px]">FUNDING (8H)</div>
-            <div className="text-amber-400 font-semibold">{(fundingRate8h * 100).toFixed(4)}%</div>
+            <div className="text-amber-400 font-semibold">
+              {fundingRate8h != null ? `${(fundingRate8h * 100).toFixed(4)}%` : '--'}
+            </div>
           </div>
 
           <div>
