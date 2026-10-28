@@ -37,6 +37,16 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
 }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDropdownOpen(false);
+    };
+    if (dropdownOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [dropdownOpen]);
+
   const change24hColor =
     priceChange24h == null
       ? 'text-slate-500'
@@ -131,7 +141,7 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
 
           {/* 1. MARK PRICE — on-chain, 3s refresh */}
           <div className="flex flex-col items-start">
-            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Mark Price</div>
+            <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-0.5">MARK PRICE</div>
             <div className="text-white font-bold text-sm tabular-nums">
               {markPrice > 0 ? `$${formatDynamicPrice(markPrice)}` : '--'}
             </div>
@@ -141,7 +151,7 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
 
           {/* 2. INDEX PRICE (Oracle) — on-chain, 3s refresh */}
           <div className="flex flex-col items-start">
-            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Index (Oracle)</div>
+            <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-0.5">INDEX (ORACLE)</div>
             <div className="text-slate-300 font-semibold tabular-nums">
               {indexPrice != null ? `$${formatDynamicPrice(indexPrice)}` : '--'}
             </div>
@@ -151,7 +161,7 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
 
           {/* 3. 24H CHANGE — dreamDEX indexer 1h candles, 60s refresh */}
           <div className="flex flex-col items-start">
-            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">24H Change</div>
+            <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-0.5">24H CHANGE</div>
             <div className={`font-semibold flex items-center gap-0.5 ${change24hColor}`}>
               <Change24hIcon className="w-3 h-3" />
               {priceChange24h != null
@@ -164,7 +174,7 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
 
           {/* 4. FUNDING RATE (8H) — on-chain getCurrentFundingRate, 5s refresh */}
           <div className="flex flex-col items-start">
-            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Funding 8H</div>
+            <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-0.5">FUNDING (8H)</div>
             <div className={`font-semibold tabular-nums ${funding8hColor}`}>
               {fundingRate8h != null
                 ? `${fundingRate8h >= 0 ? '+' : ''}${(fundingRate8h * 100).toFixed(4)}%`
@@ -176,7 +186,7 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
 
           {/* 5. OPEN INTEREST (USD) — on-chain getOpenInterest × markPrice, 3s refresh */}
           <div className="flex flex-col items-start">
-            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Open Interest</div>
+            <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-0.5">OPEN INTEREST</div>
             <div className="text-violet-400 font-semibold tabular-nums">
               {openInterestUsd != null ? formatOI(openInterestUsd) : '--'}
             </div>
@@ -186,7 +196,7 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
 
           {/* 6. NETWORK STATUS */}
           <div className="flex flex-col items-start">
-            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Network</div>
+            <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-0.5">NETWORK</div>
             <div className="text-cyan-400 font-semibold flex items-center space-x-1">
               <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
               <span>Somnia (50383)</span>
