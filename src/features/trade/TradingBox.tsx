@@ -70,11 +70,13 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
 
   const lotDecimals =
     market.lotSize && market.lotSize.includes('.')
-      ? market.lotSize.split('.')[1].length
-      : 5;
+      ? market.lotSize.split('.')[1].replace(/0+$/, '').length || 0
+      : market.minQuantity && market.minQuantity.includes('.')
+      ? market.minQuantity.split('.')[1].replace(/0+$/, '').length || 0
+      : 0;
 
   const syncQuantityFromMargin = React.useCallback(
-    (targetMargin: number, currentLev: number, price: number) => {
+    (targetMargin: number, currentLev: number, price: number, syncInput = false) => {
       if (price <= 0 || targetMargin <= 0) return;
       const targetNotional = targetMargin * currentLev;
       const rawQty = targetNotional / price;
@@ -82,6 +84,14 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       const lotStep = parseFloat(market.lotSize || '0.00001');
       const snapped = Math.max(Math.round(rawQty / lotStep) * lotStep, minQty);
       setQuantity(snapped.toFixed(lotDecimals));
+
+      // If requested or if the user's target margin is smaller than what minQty requires,
+      // update marginInput so the displayed margin and order size are always coherent
+      const actualNotional = snapped * price;
+      const actualMargin = currentLev > 0 ? actualNotional / currentLev : actualNotional;
+      if (syncInput || targetMargin < actualMargin - 0.01) {
+        setMarginInput(actualMargin.toFixed(2));
+      }
     },
     [market.minQuantity, market.lotSize, lotDecimals]
   );
@@ -219,7 +229,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const handleMarginPreset = (amount: number) => {
     setLastEdited('margin');
     setMarginInput(amount.toString());
-    syncQuantityFromMargin(amount, leverage, executionPrice);
+    syncQuantityFromMargin(amount, leverage, executionPrice, true);
   };
 
   const handlePercentPreset = (percent: number) => {
@@ -231,7 +241,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
     const calc = Math.max((availableMargin * percent) / 100, 0.01);
     const formatted = parseFloat(calc.toFixed(2)).toString();
     setMarginInput(formatted);
-    syncQuantityFromMargin(parseFloat(formatted), leverage, executionPrice);
+    syncQuantityFromMargin(parseFloat(formatted), leverage, executionPrice, true);
   };
 
   // Precision matching market grid and quote decimals
@@ -268,8 +278,8 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const formattedLiqPrice = projectedLiq
     ? executionPrice < 1
       ? parseFloat(formatUnits(projectedLiq, 18)).toFixed(4)
-      : parseFloat(formatUnits(projectedLiq, 18)).toFixed(1)
-    : availableMargin <= 0 ? '--' : 'Safe';
+      : parseFloat(formatUnits(projectedLiq, 18)).toFixed(2)
+    : null;
 
   const handleExecuteOrder = async () => {
     if (!isConnected) {
@@ -535,6 +545,23 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
             </button>
           ))}
         </div>
+        {/* Minimum Order Size Awareness Notice */}
+        {numericQty <= parseFloat(market.minQuantity || '0') && (parseFloat(marginInput) || 0) * leverage < notional - 0.05 && (
+          <div className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-2.5 py-1.5 flex items-center justify-between font-mono">
+            <span>
+              ℹ️ Mínimo protocolo: {market.minQuantity} {market.baseSymbol} (${notional.toFixed(2)} USDso)
+            </span>
+            {leverage === 1 && maxLeverage > 1 && (
+              <button
+                type="button"
+                onClick={() => handleLeverageChange(Math.min(5, maxLeverage))}
+                className="text-cyan-400 hover:text-cyan-300 font-bold underline ml-2 cursor-pointer"
+              >
+                Subir a {Math.min(5, maxLeverage)}x (${(notional / Math.min(5, maxLeverage)).toFixed(2)} margen)
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Order Quantity Input */}
@@ -579,7 +606,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
         />
         {/* Quick Multipliers */}
         <div className="flex items-center justify-between gap-1 font-mono text-[10px]">
-          {[1, 2, 5, 10, Math.min(20, maxLeverage)].map((lev) => (
+          {Array.from(new Set([1, 2, 5, 10, 20].filter((l) => l <= maxLeverage))).map((lev) => (
             <button
               key={lev}
               type="button"
@@ -621,7 +648,19 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
         </div>
         <div className="flex justify-between text-slate-400">
           <span>Est. Liquidation Price:</span>
-          <span className="text-rose-400 font-semibold">~${formattedLiqPrice} USDso</span>
+          <span
+            className={
+              formattedLiqPrice
+                ? 'text-rose-400 font-semibold'
+                : 'text-emerald-400 font-semibold'
+            }
+          >
+            {formattedLiqPrice
+              ? `~$${formattedLiqPrice} USDso`
+              : availableMargin <= 0
+              ? '--'
+              : 'Safe (No Liq at 1x)'}
+          </span>
         </div>
         <div className="flex justify-between text-slate-400">
           <span>Est. Fees (0.05%):</span>
