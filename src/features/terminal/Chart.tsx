@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, type IChartApi, type ISeriesApi, ColorType } from 'lightweight-charts';
-import { fetchMarketCandles } from '@/lib/data/indexer';
+import { fetchMarketCandles, type ChartCandle } from '@/lib/data/indexer';
 
 interface ChartProps {
   poolAddress: string;
@@ -22,6 +22,7 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const lastCandleRef = useRef<ChartCandle | null>(null);
 
   const [activeInterval, setActiveInterval] = useState<number>(3600);
   const [loading, setLoading] = useState<boolean>(true);
@@ -91,7 +92,7 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
     };
   }, []);
 
-  // Fetch real candles on interval or pool change
+  // Fetch real candles from indexer
   useEffect(() => {
     let active = true;
 
@@ -119,11 +120,12 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
 
           candleSeriesRef.current.setData(chartCandles);
           volumeSeriesRef.current.setData(volumes);
+          lastCandleRef.current = candles[candles.length - 1];
           chartRef.current?.timeScale().fitContent();
         } else {
-          // Indexer returned no candles for this timeframe — clear the chart and show message
           candleSeriesRef.current?.setData([]);
           volumeSeriesRef.current?.setData([]);
+          lastCandleRef.current = null;
           setNoData(true);
         }
       } finally {
@@ -132,8 +134,58 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
     }
 
     loadData();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [poolAddress, activeInterval]);
+
+  // Real-time live open candle update via series.update() without React state overhead
+  useEffect(() => {
+    if (currentMarkPrice <= 0 || !candleSeriesRef.current) return;
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const currentBucket = Math.floor(nowSeconds / activeInterval) * activeInterval;
+
+    if (lastCandleRef.current) {
+      if (lastCandleRef.current.time === currentBucket) {
+        // Update existing active bucket
+        const updatedCandle: ChartCandle = {
+          time: currentBucket,
+          open: lastCandleRef.current.open,
+          high: Math.max(lastCandleRef.current.high, currentMarkPrice),
+          low: Math.min(lastCandleRef.current.low, currentMarkPrice),
+          close: currentMarkPrice,
+          volume: lastCandleRef.current.volume,
+        };
+        candleSeriesRef.current.update({
+          time: currentBucket as any,
+          open: updatedCandle.open,
+          high: updatedCandle.high,
+          low: updatedCandle.low,
+          close: updatedCandle.close,
+        });
+        lastCandleRef.current = updatedCandle;
+      } else if (currentBucket > lastCandleRef.current.time) {
+        // New bucket started
+        const newCandle: ChartCandle = {
+          time: currentBucket,
+          open: currentMarkPrice,
+          high: currentMarkPrice,
+          low: currentMarkPrice,
+          close: currentMarkPrice,
+          volume: 0,
+        };
+        candleSeriesRef.current.update({
+          time: currentBucket as any,
+          open: newCandle.open,
+          high: newCandle.high,
+          low: newCandle.low,
+          close: newCandle.close,
+        });
+        lastCandleRef.current = newCandle;
+      }
+    }
+  }, [currentMarkPrice, activeInterval]);
 
   return (
     <div className="bg-[#0d131d] border border-[#1a2536] rounded-xl overflow-hidden flex flex-col">
@@ -142,7 +194,12 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
         <div className="flex items-center space-x-2">
           <span className="font-bold text-white font-mono">{symbol}-PERP</span>
           <span className="text-slate-500">·</span>
-          <span className="text-cyan-400 font-mono">Candles (Indexed)</span>
+          <span
+            className="text-cyan-400 font-mono text-[11px]"
+            title="Base: Ejecuciones reales del indexer. Vela activa actualizada con precio de marca on-chain sin alterar las velas cerradas."
+          >
+            Fills (Indexer) + Mark Live
+          </span>
         </div>
 
         <div className="flex items-center space-x-1">
@@ -151,7 +208,7 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
               key={int.seconds}
               onClick={() => setActiveInterval(int.seconds)}
               aria-label={`Timeframe ${int.label}`}
-              className={`px-2 py-1 rounded text-[11px] font-mono transition-colors ${
+              className={`px-2 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer ${
                 activeInterval === int.seconds
                   ? 'bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -169,16 +226,18 @@ export const Chart: React.FC<ChartProps> = ({ poolAddress, symbol, currentMarkPr
           <div className="absolute inset-0 bg-[#070a0e]/70 backdrop-blur-xs flex items-center justify-center z-10">
             <div className="text-xs font-mono text-cyan-400 flex items-center space-x-2">
               <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping"></span>
-              <span>Loading on-chain candles...</span>
+              <span>Loading on-chain execution candles...</span>
             </div>
           </div>
         )}
         {!loading && noData && (
           <div className="absolute inset-0 flex flex-col items-center justify-center space-y-2 z-10">
             <span className="text-2xl">📊</span>
-            <p className="text-xs font-mono text-slate-400">No candle data from indexer for this timeframe</p>
+            <p className="text-xs font-mono text-slate-400">
+              No fill data on Somnia Tokyo book for this timeframe
+            </p>
             <p className="text-[10px] font-mono text-slate-600">
-              Mark price live: ${currentMarkPrice.toLocaleString('en-US', { minimumFractionDigits: 1 })} USDso
+              Mark price live: ${currentMarkPrice > 0 ? currentMarkPrice.toFixed(2) : '--'} USDso
             </p>
           </div>
         )}

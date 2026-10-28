@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { toast } from 'sonner';
 import { X, ArrowDownRight, ArrowUpRight, ShieldCheck } from 'lucide-react';
@@ -18,8 +18,10 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
   unlockedMargin,
 }) => {
   const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState<string>('2.0');
+  const [depositStep, setDepositStep] = useState<'idle' | 'approving' | 'depositing' | 'withdrawing'>('idle');
 
   // Read wallet USDso balance
   const { data: walletBalanceRaw, refetch: refetchBalance } = useReadContract({
@@ -30,68 +32,95 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
   });
 
   const walletUsdso = walletBalanceRaw ? parseFloat(formatUnits(walletBalanceRaw, 18)) : 0;
-
-  const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
-
-  const notifiedHashRef = React.useRef<string | null>(null);
-
-  React.useEffect(() => {
-    if (isConfirmed && hash && notifiedHashRef.current !== hash) {
-      notifiedHashRef.current = hash;
-      if (address) {
-        saveTradeHistoryItem(address, {
-          id: `margin-${hash}`,
-          hash,
-          type: activeTab,
-          amountUsdso: parseFloat(amount) || 0,
-          timestamp: Date.now(),
-          description: `Margin ${activeTab === 'deposit' ? 'Deposit' : 'Withdrawal'} (${amount} USDso)`,
-        });
-      }
-      toast.success('Margin transaction confirmed on Somnia Tokyo!', {
-        id: `margin-tx-${hash}`,
-        description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
-      });
-      refetchBalance();
-    }
-  }, [isConfirmed, hash, refetchBalance, address, activeTab, amount]);
+  const { writeContractAsync } = useWriteContract();
 
   if (!isOpen) return null;
+
+  const isBusy = depositStep !== 'idle';
 
   const handleDeposit = async () => {
     if (!isConnected || !address) {
       toast.error('Connect your wallet first');
       return;
     }
+    if (!publicClient) {
+      toast.error('Somnia Tokyo RPC not connected');
+      return;
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error('Please enter a valid USDso amount');
+      return;
+    }
+
+    if (numAmount > walletUsdso) {
+      toast.error(`Insufficient wallet balance. You have ${walletUsdso.toFixed(2)} USDso.`);
+      return;
+    }
 
     try {
       const parsedAmount = parseUnits(amount, 18);
-      toast.info('Step 1/2: Approving exact USDso collateral...');
 
-      // Approve exact amount
-      await writeContractAsync({
+      // 1. Check existing allowance on-chain
+      const currentAllowance = await publicClient.readContract({
         address: CONTRACT_ADDRESSES.COLLATERAL_USDSO,
         abi: erc20Abi,
-        functionName: 'approve',
-        args: [CONTRACT_ADDRESSES.MARGIN_BANK, parsedAmount],
+        functionName: 'allowance',
+        args: [address, CONTRACT_ADDRESSES.MARGIN_BANK],
       });
 
-      toast.info('Step 2/2: Depositing USDso into MarginBank...');
-      await writeContractAsync({
+      if (currentAllowance < parsedAmount) {
+        setDepositStep('approving');
+        toast.info('Step 1/2: Submitting exact USDso allowance approval...');
+        const approveHash = await writeContractAsync({
+          chainId: 50383,
+          address: CONTRACT_ADDRESSES.COLLATERAL_USDSO,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [CONTRACT_ADDRESSES.MARGIN_BANK, parsedAmount],
+        });
+
+        toast.info('Step 1/2: Waiting for allowance confirmation on Somnia Tokyo...');
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        toast.success('Step 1/2: Collateral allowance confirmed on-chain!');
+      }
+
+      // 2. Deposit into MarginBank
+      setDepositStep('depositing');
+      toast.info('Step 2/2: Submitting deposit to MarginBank...');
+      const depositHash = await writeContractAsync({
+        chainId: 50383,
         address: CONTRACT_ADDRESSES.MARGIN_BANK,
         abi: marginBankAbi,
         functionName: 'deposit',
         args: [parsedAmount],
       });
 
-      toast.success('Deposit submitted! Confirming...');
-    } catch (err: any) {
+      toast.info('Step 2/2: Waiting for deposit confirmation on Somnia Tokyo...');
+      await publicClient.waitForTransactionReceipt({ hash: depositHash });
+      toast.success(`Deposit of ${amount} USDso confirmed and credited!`, {
+        description: `Tx: ${depositHash.slice(0, 10)}...${depositHash.slice(-8)}`,
+      });
+
+      // Optimistically record into local trade cache
+      saveTradeHistoryItem(address, {
+        id: `margin-${depositHash}`,
+        hash: depositHash,
+        type: 'deposit',
+        amountUsdso: numAmount,
+        timestamp: Date.now(),
+        description: `Margin Deposit (${amount} USDso into MarginBank)`,
+      });
+
+      refetchBalance();
+      setDepositStep('idle');
+    } catch (err: unknown) {
       console.error('Deposit error:', err);
+      setDepositStep('idle');
+      const e = err as { shortMessage?: string; message?: string };
       toast.error('Deposit failed', {
-        description: err?.shortMessage || err?.message || 'Transaction reverted',
+        description: e?.shortMessage || e?.message || 'Transaction reverted or rejected',
       });
     }
   };
@@ -101,23 +130,58 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
       toast.error('Connect your wallet first');
       return;
     }
+    if (!publicClient) {
+      toast.error('Somnia Tokyo RPC not connected');
+      return;
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error('Please enter a valid USDso amount');
+      return;
+    }
+
+    if (numAmount > unlockedMargin) {
+      toast.error(`Insufficient unlocked margin. Available: ${unlockedMargin.toFixed(2)} USDso.`);
+      return;
+    }
 
     try {
       const parsedAmount = parseUnits(amount, 18);
-      toast.info('Withdrawing collateral from MarginBank to wallet...');
+      setDepositStep('withdrawing');
+      toast.info('Submitting collateral withdrawal from MarginBank...');
 
-      await writeContractAsync({
+      const withdrawHash = await writeContractAsync({
+        chainId: 50383,
         address: CONTRACT_ADDRESSES.MARGIN_BANK,
         abi: marginBankAbi,
         functionName: 'withdraw',
         args: [parsedAmount],
       });
 
-      toast.success('Withdraw submitted! Confirming...');
-    } catch (err: any) {
+      toast.info('Waiting for withdrawal confirmation on Somnia Tokyo...');
+      await publicClient.waitForTransactionReceipt({ hash: withdrawHash });
+      toast.success(`Withdrawal of ${amount} USDso confirmed!`, {
+        description: `Tx: ${withdrawHash.slice(0, 10)}...${withdrawHash.slice(-8)}`,
+      });
+
+      saveTradeHistoryItem(address, {
+        id: `margin-${withdrawHash}`,
+        hash: withdrawHash,
+        type: 'withdraw',
+        amountUsdso: numAmount,
+        timestamp: Date.now(),
+        description: `Margin Withdrawal (${amount} USDso from MarginBank)`,
+      });
+
+      refetchBalance();
+      setDepositStep('idle');
+    } catch (err: unknown) {
       console.error('Withdraw error:', err);
+      setDepositStep('idle');
+      const e = err as { shortMessage?: string; message?: string };
       toast.error('Withdraw failed', {
-        description: err?.shortMessage || err?.message || 'Transaction reverted',
+        description: e?.shortMessage || e?.message || 'Transaction reverted or rejected',
       });
     }
   };
@@ -157,7 +221,10 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
         {/* Deposit / Withdraw Tabs */}
         <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-[#070a0e] border border-[#1a2536]">
           <button
-            onClick={() => setActiveTab('deposit')}
+            onClick={() => {
+              if (!isBusy) setActiveTab('deposit');
+            }}
+            disabled={isBusy}
             className={`py-2 rounded-md font-display font-bold text-xs transition-all flex items-center justify-center space-x-1 ${
               activeTab === 'deposit'
                 ? 'bg-cyan-500 text-black shadow-md glow-cyan'
@@ -168,7 +235,10 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
             <span>Deposit Margin</span>
           </button>
           <button
-            onClick={() => setActiveTab('withdraw')}
+            onClick={() => {
+              if (!isBusy) setActiveTab('withdraw');
+            }}
+            disabled={isBusy}
             className={`py-2 rounded-md font-display font-bold text-xs transition-all flex items-center justify-center space-x-1 ${
               activeTab === 'withdraw'
                 ? 'bg-cyan-500 text-black shadow-md glow-cyan'
@@ -196,9 +266,10 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
               type="number"
               step="0.1"
               value={amount}
+              disabled={isBusy}
               onChange={(e) => setAmount(e.target.value)}
               aria-label="Collateral amount in USDso"
-              className="w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border border-[#1a2536] text-white font-mono text-sm focus:outline-hidden focus:border-cyan-500"
+              className="w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border border-[#1a2536] text-white font-mono text-sm focus:outline-hidden focus:border-cyan-500 disabled:opacity-50"
             />
             <span className="absolute right-3 top-2 text-xs font-mono text-slate-400 font-bold">
               USDso
@@ -209,26 +280,39 @@ export const MarginHubModal: React.FC<MarginHubModalProps> = ({
         {/* Security Notice */}
         <div className="p-3 rounded-lg bg-cyan-950/30 border border-cyan-800/40 text-[11px] text-slate-400 font-mono space-y-1">
           <div className="text-cyan-400 font-bold flex items-center space-x-1">
-            <span>🛡️ LucidKeeper Security Policy</span>
+            <span>🛡️ LucidKeeper Sequential Security Gate</span>
           </div>
           <p>
-            Approvals grant exact amounts only. Allowance is verified and reset back to 0
-            immediately after execution to protect your wallet from unauthorized auto-pulls.
+            Approvals grant exact amounts only. The deposit transaction strictly waits for on-chain
+            confirmation of the allowance before submitting to prevent revert errors.
           </p>
         </div>
 
         {/* Action Button */}
         <button
-          disabled={isPending || isConfirming || parseFloat(amount) <= 0}
+          disabled={isBusy || parseFloat(amount) <= 0}
           onClick={activeTab === 'deposit' ? handleDeposit : handleWithdraw}
-          className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-600 to-amber-500 hover:from-cyan-500 hover:to-amber-400 text-black font-display font-extrabold text-sm transition-all shadow-lg glow-amber disabled:opacity-50"
+          className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-600 to-amber-500 hover:from-cyan-500 hover:to-amber-400 text-black font-display font-extrabold text-sm transition-all shadow-lg glow-amber disabled:opacity-50 cursor-pointer"
         >
-          {isPending || isConfirming ? (
+          {depositStep === 'approving' && (
             <span className="flex items-center justify-center space-x-2">
               <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-              <span>Processing On-Chain...</span>
+              <span>Step 1/2: Approving USDso Allowance...</span>
             </span>
-          ) : (
+          )}
+          {depositStep === 'depositing' && (
+            <span className="flex items-center justify-center space-x-2">
+              <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+              <span>Step 2/2: Depositing USDso to MarginBank...</span>
+            </span>
+          )}
+          {depositStep === 'withdrawing' && (
+            <span className="flex items-center justify-center space-x-2">
+              <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+              <span>Withdrawing from MarginBank...</span>
+            </span>
+          )}
+          {depositStep === 'idle' && (
             <span>
               {activeTab === 'deposit' ? `Deposit ${amount} USDso` : `Withdraw ${amount} USDso`}
             </span>

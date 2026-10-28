@@ -14,6 +14,12 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
   const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+  const hasValidHash = Boolean(
+    position?.openTxHash &&
+      position.openTxHash.startsWith('0x') &&
+      position.openTxHash.length === 66
+  );
+
   useEffect(() => {
     if (!isOpen || !position || !canvasRef.current) return;
 
@@ -67,14 +73,24 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
     ctx.fillText('DREAMDEX PERPS ON SOMNIA TOKYO (50383)', 60, 125);
 
     // Verified Badge
-    ctx.fillStyle = '#10b981';
+    const isValid = Boolean(
+      position.openTxHash &&
+        position.openTxHash.startsWith('0x') &&
+        position.openTxHash.length === 66
+    );
+
+    ctx.fillStyle = isValid ? '#10b981' : '#f59e0b';
     ctx.beginPath();
-    ctx.arc(w - 240, 95, 10, 0, Math.PI * 2);
+    ctx.arc(w - 280, 95, 10, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = theme === 'dark' ? '#ffffff' : '#0f172a';
-    ctx.font = 'bold 20px "JetBrains Mono", monospace';
-    ctx.fillText('ON-CHAIN VERIFIED', w - 215, 102);
+    ctx.font = 'bold 18px "JetBrains Mono", monospace';
+    ctx.fillText(
+      isValid ? 'ON-CHAIN VERIFIED' : 'PENDING ON-CHAIN PROOF',
+      w - 255,
+      102
+    );
 
     // Main Box
     ctx.fillStyle = theme === 'dark' ? 'rgba(13, 19, 29, 0.9)' : '#ffffff';
@@ -112,15 +128,15 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
     // On-Chain Tx Hash / Contract Identifier
     ctx.fillStyle = theme === 'dark' ? '#94a3b8' : '#64748b';
     ctx.font = '16px "JetBrains Mono", monospace';
-    const txLabel = position.openTxHash
+    const txLabel = isValid
       ? 'EXECUTION TX HASH (SOMNIA TOKYO TESTNET):'
       : 'PERP POOL CONTRACT (SOMNIA TOKYO 50383):';
     ctx.fillText(txLabel, 100, 430);
 
-    ctx.fillStyle = '#f59e0b';
+    ctx.fillStyle = isValid ? '#06b6d4' : '#f59e0b';
     ctx.font = 'bold 18px "JetBrains Mono", monospace';
     ctx.fillText(
-      position.openTxHash || position.poolAddress,
+      isValid ? position.openTxHash : `${position.poolAddress} (Awaiting settlement proof)`,
       100,
       465
     );
@@ -140,7 +156,7 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
   const handleDownload = () => {
     if (!canvasRef.current) return;
     const link = document.createElement('a');
-    link.download = `DreamSentinel-${position.marketSymbol}-Perp-Trade.png`;
+    link.download = `LucidKeeper-${position.marketSymbol}-Perp-Trade.png`;
     link.href = canvasRef.current.toDataURL('image/png');
     link.click();
     toast.success('Trade card PNG downloaded!');
@@ -162,11 +178,13 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
   };
 
   const tweetText = encodeURIComponent(
-    `⚡ Executed verified on-chain perps on @DreamDEXSomnia on @Somnia_Network Tokyo!\n\n` +
-      `📈 Long ${position.marketSymbol}-PERP @ $${position.entryPrice.toLocaleString('en-US')}\n` +
-      `🛡️ Protected by #DreamSentinel autonomous risk guardian\n` +
-      `🔍 Proof: https://explorer.testnet.somnia.network/tokyo/tx/${position.openTxHash}\n\n` +
-      `#dreamDEX #SomniaTokyo #DeFi`
+    `⚡ Verified on-chain perp trade on @DreamDEXSomnia on @Somnia_Network Tokyo!\n\n` +
+      `📈 ${position.isLong ? 'Long' : 'Short'} ${position.marketSymbol}-PERP @ $${position.entryPrice.toLocaleString('en-US')}\n` +
+      `🛡️ Protected by LucidKeeper Risk Sentinel\n` +
+      (hasValidHash
+        ? `🔍 Proof: https://explorer.testnet.somnia.network/tokyo/tx/${position.openTxHash}\n\n`
+        : `\n`) +
+      `#dreamDEX #SomniaTokyo #LucidKeeper #DeFi`
   );
 
   return (
@@ -180,19 +198,31 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
             <div className="flex items-center space-x-1 p-0.5 rounded-lg bg-[#070a0e] border border-[#1a2536]">
               <button
                 onClick={() => setTheme('dark')}
-                className={`px-2 py-0.5 rounded text-[11px] font-mono ${theme === 'dark' ? 'bg-cyan-500/20 text-cyan-400 font-bold' : 'text-slate-400'}`}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-cyan-500/20 text-cyan-400 font-bold'
+                    : 'text-slate-400'
+                }`}
               >
                 Dark
               </button>
               <button
                 onClick={() => setTheme('light')}
-                className={`px-2 py-0.5 rounded text-[11px] font-mono ${theme === 'light' ? 'bg-cyan-500/20 text-cyan-400 font-bold' : 'text-slate-400'}`}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-cyan-500/20 text-cyan-400 font-bold'
+                    : 'text-slate-400'
+                }`}
               >
                 Light
               </button>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Close Trade Card" className="text-slate-400 hover:text-white">
+          <button
+            onClick={onClose}
+            aria-label="Close Trade Card"
+            className="text-slate-400 hover:text-white cursor-pointer"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -212,7 +242,7 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
           <div className="flex space-x-2">
             <button
               onClick={handleDownload}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs flex items-center space-x-2 border border-slate-700"
+              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs flex items-center space-x-2 border border-slate-700 cursor-pointer"
             >
               <Download className="w-4 h-4 text-cyan-400" />
               <span>Download PNG</span>
@@ -220,7 +250,7 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
 
             <button
               onClick={handleCopyClipboard}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs flex items-center space-x-2 border border-slate-700"
+              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs flex items-center space-x-2 border border-slate-700 cursor-pointer"
             >
               {copied ? (
                 <Check className="w-4 h-4 text-emerald-400" />
@@ -235,12 +265,12 @@ export const TradeCardModal: React.FC<TradeCardModalProps> = ({ isOpen, onClose,
             href={`https://twitter.com/intent/tweet?text=${tweetText}`}
             target="_blank"
             rel="noreferrer"
-            className="px-5 py-2.5 rounded-lg bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-display font-bold text-xs flex items-center space-x-2 shadow-lg"
+            className="px-5 py-2.5 rounded-lg bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-display font-bold text-xs flex items-center space-x-2 shadow-lg cursor-pointer"
           >
             <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            <span>Share with @DreamDEXSomnia</span>
+            <span>Share on X</span>
           </a>
         </div>
       </div>
