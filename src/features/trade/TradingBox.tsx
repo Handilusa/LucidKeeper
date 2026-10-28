@@ -153,6 +153,17 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   const marginRequired = leverage > 0 ? notional / leverage : notional;
   const estFee = notional * takerFeeRate;
 
+  // Netting projections when active position exists in this market
+  const isSameSide =
+    currentPosition &&
+    ((currentPosition.isLong && side === 'buy') || (!currentPosition.isLong && side === 'sell'));
+
+  const projectedNewSize = currentPosition && isSameSide ? currentPosition.size + numericQty : numericQty;
+  const projectedAvgPrice =
+    currentPosition && isSameSide && projectedNewSize > 0 && executionPrice > 0
+      ? (currentPosition.size * currentPosition.entryPrice + numericQty * executionPrice) / projectedNewSize
+      : executionPrice;
+
   const handleLeverageChange = (newLev: number) => {
     setLeverage(newLev);
     if (typeof window !== 'undefined') {
@@ -339,24 +350,35 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
 
       {/* Buy / Sell Direction Tabs */}
       {currentPosition && (
-        <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-xs font-mono flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span
-              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                currentPosition.isLong
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-              }`}
-            >
-              ACTIVE {currentPosition.isLong ? 'LONG' : 'SHORT'}
-            </span>
-            <span className="text-white font-semibold">
-              {currentPosition.size} {market.baseSymbol}
+        <div className="space-y-1.5">
+          <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-xs font-mono flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                  currentPosition.isLong
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                }`}
+              >
+                ACTIVE {currentPosition.isLong ? 'LONG' : 'SHORT'}
+              </span>
+              <span className="text-white font-semibold">
+                {currentPosition.size} {market.baseSymbol}
+              </span>
+            </div>
+            <span className="text-slate-400">
+              Avg: ${formatDynamicPrice(currentPosition.entryPrice)}
             </span>
           </div>
-          <span className="text-slate-400">
-            Avg: ${formatDynamicPrice(currentPosition.entryPrice)}
-          </span>
+          <div className="text-[10px] font-mono text-slate-400 flex items-center justify-between px-1">
+            <span>Market Mode:</span>
+            <span
+              className="text-cyan-400 font-semibold"
+              title="dreamDEX opera en modelo Netting: órdenes en el mismo activo consolidan en una única posición neta con precio promediado"
+            >
+              Netting (One Position per Asset)
+            </span>
+          </div>
         </div>
       )}
 
@@ -551,6 +573,28 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
           <span>Est. Fees (0.05%):</span>
           <span className="text-slate-300">${estFee.toFixed(4)} USDso</span>
         </div>
+
+        {/* Real-time Netting Projections if holding active position */}
+        {currentPosition && isSameSide && numericQty > 0 && executionPrice > 0 && (
+          <div className="pt-2 border-t border-[#1a2536] flex justify-between text-[11px] font-mono text-cyan-300">
+            <span className="text-slate-400">Netting Position Result:</span>
+            <span className="font-bold">
+              {projectedNewSize.toFixed(lotDecimals)} {market.baseSymbol} (Avg ~${formatDynamicPrice(projectedAvgPrice)})
+            </span>
+          </div>
+        )}
+        {currentPosition && !isSameSide && numericQty > 0 && (
+          <div className="pt-2 border-t border-[#1a2536] flex justify-between text-[11px] font-mono text-amber-300">
+            <span className="text-slate-400">Netting Position Result:</span>
+            <span className="font-bold">
+              {numericQty >= currentPosition.size
+                ? numericQty === currentPosition.size
+                  ? 'Closes Position (Flat)'
+                  : `Flips to ${(numericQty - currentPosition.size).toFixed(lotDecimals)} ${market.baseSymbol} ${side === 'buy' ? 'Long' : 'Short'}`
+                : `Leaves ${(currentPosition.size - numericQty).toFixed(lotDecimals)} ${market.baseSymbol} ${currentPosition.isLong ? 'Long' : 'Short'}`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Action Button */}

@@ -154,11 +154,17 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
       <div className="flex items-center space-x-4 px-5 pt-4 border-b border-[#1a2536] bg-[#070a0e]/50">
         <button
           onClick={() => setActiveTab('positions')}
-          className={`pb-3 text-xs font-mono font-bold transition-colors relative ${
+          className={`pb-3 text-xs font-mono font-bold transition-colors relative flex items-center space-x-2 ${
             activeTab === 'positions' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
           }`}
         >
           <span>Open Positions ({positions.length})</span>
+          <span
+            className="px-1.5 py-0.5 rounded text-[9px] bg-[#1a2536] text-cyan-300 font-normal border border-cyan-500/30"
+            title="dreamDEX opera en modelo Netting: una única posición consolidada por mercado con tamaño acumulado y precio ponderado"
+          >
+            Netting
+          </span>
           {activeTab === 'positions' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400"></div>
           )}
