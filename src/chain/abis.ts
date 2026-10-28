@@ -175,6 +175,58 @@ export const perpPoolAbi = [
     ],
     stateMutability: 'view',
   },
+  {
+    type: 'function',
+    name: 'getIndexPrice',
+    inputs: [],
+    outputs: [
+      { name: 'price', type: 'uint256' },
+      { name: 'updatedAt', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getCurrentFundingRate',
+    inputs: [],
+    outputs: [{ name: '', type: 'int256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getOpenInterest',
+    inputs: [],
+    outputs: [{ name: 'openInterest', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getFundingParameters',
+    inputs: [],
+    outputs: [
+      {
+        type: 'tuple',
+        name: 'parameters',
+        components: [
+          { name: 'fundingCalculationWindowSec', type: 'uint256' },
+          { name: 'fundingSettlementIntervalSec', type: 'uint256' },
+          { name: 'interestRatePerWindow', type: 'int256' },
+          { name: 'maxFundingRatePerWindow', type: 'uint256' },
+          { name: 'dampener', type: 'uint256' },
+          { name: 'emaSmoothingAlpha', type: 'uint256' },
+          { name: 'maxOracleStalenessSec', type: 'uint256' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getLastFundingUpdateTimestampNs',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint64' }],
+    stateMutability: 'view',
+  },
 ] as const;
 
 export const erc20Abi = [

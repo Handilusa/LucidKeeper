@@ -155,6 +155,57 @@ export async function fetchMarketCandles(
 }
 
 /**
+ * Fetch real rolling 24h price change percentage from dreamDEX GraphQL Indexer.
+ * Uses 1-hour candles (intervalSeconds: 3600) to find the oldest candle in the 24h window.
+ */
+export async function fetchMarket24hChange(poolAddress: string): Promise<number | null> {
+  const query = `
+    query Market24hStats($pool: String!) {
+      Candle(
+        where: { pool: { _eq: $pool }, intervalSeconds: { _eq: 3600 } }
+        order_by: [{ bucketStart: desc }]
+        limit: 25
+      ) {
+        bucketStart
+        openPrice
+        closePrice
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch(INDEXER_GRAPHQL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        variables: {
+          pool: poolAddress.toLowerCase(),
+        },
+      }),
+    });
+
+    const json = await res.json();
+    const candles = json?.data?.Candle;
+
+    if (!candles || candles.length < 2) {
+      return null;
+    }
+
+    const latest = candles[0];
+    const oldest = candles[candles.length - 1];
+    const latestClose = parseFloat(latest.closePrice) / 1e18;
+    const oldestOpen = parseFloat(oldest.openPrice) / 1e18;
+
+    if (oldestOpen <= 0) return null;
+    return ((latestClose - oldestOpen) / oldestOpen) * 100;
+  } catch (error) {
+    console.warn('[Indexer] Could not fetch 24h change:', error);
+    return null;
+  }
+}
+
+/**
  * Fetch real on-chain trade and margin history for a connected account.
  * Queries GraphQL Fill (with taker/maker _or) and MarginEvent.
  */

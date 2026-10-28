@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Shield, ChevronDown, Activity } from 'lucide-react';
+import { Shield, ChevronDown, Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { MarketInfo } from '@/lib/data/indexer';
 import { formatDynamicPrice } from '@/lib/math/format';
 
@@ -11,7 +11,17 @@ interface MarketHeaderProps {
   markPrice: number;
   priceChange24h?: number | null;
   fundingRate8h?: number | null;
+  indexPrice?: number | null;
+  openInterestUsd?: number | null;
   onOpenMarginHub: () => void;
+}
+
+/** Format OI in USD with K/M/B suffix */
+function formatOI(usd: number): string {
+  if (usd >= 1_000_000_000) return `$${(usd / 1_000_000_000).toFixed(2)}B`;
+  if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(2)}M`;
+  if (usd >= 1_000) return `$${(usd / 1_000).toFixed(1)}K`;
+  return `$${usd.toFixed(0)}`;
 }
 
 export const MarketHeader: React.FC<MarketHeaderProps> = ({
@@ -21,9 +31,36 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
   markPrice,
   priceChange24h = null,
   fundingRate8h = null,
+  indexPrice = null,
+  openInterestUsd = null,
   onOpenMarginHub,
 }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+
+  const change24hColor =
+    priceChange24h == null
+      ? 'text-slate-500'
+      : priceChange24h >= 0
+      ? 'text-emerald-400'
+      : 'text-rose-400';
+
+  const funding8hColor =
+    fundingRate8h == null
+      ? 'text-slate-500'
+      : fundingRate8h > 0
+      ? 'text-amber-400'
+      : fundingRate8h < 0
+      ? 'text-cyan-400'
+      : 'text-slate-400';
+
+  const Change24hIcon =
+    priceChange24h == null
+      ? Minus
+      : priceChange24h > 0
+      ? TrendingUp
+      : priceChange24h < 0
+      ? TrendingDown
+      : Minus;
 
   return (
     <header className="border-b border-[#1a2536] bg-[#0d131d]/90 backdrop-blur-md sticky top-0 z-40">
@@ -89,41 +126,67 @@ export const MarketHeader: React.FC<MarketHeaderProps> = ({
           </div>
         </div>
 
-        {/* Live Market Telemetry */}
-        <div className="hidden lg:flex items-center space-x-6 text-xs font-mono">
-          <div>
-            <div className="text-slate-400 text-[10px]">MARK PRICE</div>
+        {/* Live Market Telemetry — 5 real on-chain / indexer metrics */}
+        <div className="hidden lg:flex items-center space-x-5 text-xs font-mono">
+
+          {/* 1. MARK PRICE — on-chain, 3s refresh */}
+          <div className="flex flex-col items-start">
+            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Mark Price</div>
             <div className="text-white font-bold text-sm tabular-nums">
               {markPrice > 0 ? `$${formatDynamicPrice(markPrice)}` : '--'}
             </div>
           </div>
 
-          <div>
-            <div className="text-slate-400 text-[10px]">24H CHANGE</div>
-            <div
-              className={`font-semibold ${
-                priceChange24h == null
-                  ? 'text-slate-500'
-                  : priceChange24h >= 0
-                  ? 'text-emerald-400'
-                  : 'text-rose-400'
-              }`}
-            >
+          <div className="w-px h-6 bg-[#1a2536]" />
+
+          {/* 2. INDEX PRICE (Oracle) — on-chain, 3s refresh */}
+          <div className="flex flex-col items-start">
+            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Index (Oracle)</div>
+            <div className="text-slate-300 font-semibold tabular-nums">
+              {indexPrice != null ? `$${formatDynamicPrice(indexPrice)}` : '--'}
+            </div>
+          </div>
+
+          <div className="w-px h-6 bg-[#1a2536]" />
+
+          {/* 3. 24H CHANGE — dreamDEX indexer 1h candles, 60s refresh */}
+          <div className="flex flex-col items-start">
+            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">24H Change</div>
+            <div className={`font-semibold flex items-center gap-0.5 ${change24hColor}`}>
+              <Change24hIcon className="w-3 h-3" />
               {priceChange24h != null
                 ? `${priceChange24h >= 0 ? '+' : ''}${priceChange24h.toFixed(2)}%`
                 : '--'}
             </div>
           </div>
 
-          <div>
-            <div className="text-slate-400 text-[10px]">FUNDING (8H)</div>
-            <div className="text-amber-400 font-semibold">
-              {fundingRate8h != null ? `${(fundingRate8h * 100).toFixed(4)}%` : '--'}
+          <div className="w-px h-6 bg-[#1a2536]" />
+
+          {/* 4. FUNDING RATE (8H) — on-chain getCurrentFundingRate, 5s refresh */}
+          <div className="flex flex-col items-start">
+            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Funding 8H</div>
+            <div className={`font-semibold tabular-nums ${funding8hColor}`}>
+              {fundingRate8h != null
+                ? `${fundingRate8h >= 0 ? '+' : ''}${(fundingRate8h * 100).toFixed(4)}%`
+                : '--'}
             </div>
           </div>
 
-          <div>
-            <div className="text-slate-400 text-[10px]">NETWORK</div>
+          <div className="w-px h-6 bg-[#1a2536]" />
+
+          {/* 5. OPEN INTEREST (USD) — on-chain getOpenInterest × markPrice, 3s refresh */}
+          <div className="flex flex-col items-start">
+            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Open Interest</div>
+            <div className="text-violet-400 font-semibold tabular-nums">
+              {openInterestUsd != null ? formatOI(openInterestUsd) : '--'}
+            </div>
+          </div>
+
+          <div className="w-px h-6 bg-[#1a2536]" />
+
+          {/* 6. NETWORK STATUS */}
+          <div className="flex flex-col items-start">
+            <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-0.5">Network</div>
             <div className="text-cyan-400 font-semibold flex items-center space-x-1">
               <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
               <span>Somnia (50383)</span>

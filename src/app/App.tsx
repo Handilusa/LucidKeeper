@@ -9,7 +9,7 @@ import { PositionsTable, type PositionItem } from '@/features/portfolio/Position
 import { RiskGuardian } from '@/features/sentinel/RiskGuardian';
 import { MarginHubModal } from '@/features/margin/MarginHubModal';
 import { TradeCardModal } from '@/features/share/TradeCardModal';
-import { fetchPerpMarkets, type MarketInfo } from '@/lib/data/indexer';
+import { fetchPerpMarkets, fetchMarket24hChange, type MarketInfo } from '@/lib/data/indexer';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 import { getTradeHistory } from '@/lib/data/tradeHistory';
@@ -39,6 +39,7 @@ export const App: React.FC = () => {
   const [marginHubOpen, setMarginHubOpen] = useState<boolean>(false);
   const [cardModalOpen, setCardModalOpen] = useState<boolean>(false);
   const [cardPosition, setCardPosition] = useState<PositionItem | null>(null);
+  const [priceChange24h, setPriceChange24h] = useState<number | null>(null);
 
   // Load 21 markets
   useEffect(() => {
@@ -121,6 +122,65 @@ export const App: React.FC = () => {
     },
   });
 
+  // Read Live On-Chain Index (Oracle) Price
+  const { data: indexPriceRaw } = useReadContract({
+    address: selectedMarket.poolAddress as `0x${string}`,
+    abi: perpPoolAbi,
+    functionName: 'getIndexPrice',
+    query: {
+      refetchInterval: 3000,
+    },
+  });
+
+  // Read Live On-Chain Funding Rate (8h normalized via fundingWindowSec = 28800)
+  const { data: fundingRateRaw } = useReadContract({
+    address: selectedMarket.poolAddress as `0x${string}`,
+    abi: perpPoolAbi,
+    functionName: 'getCurrentFundingRate',
+    query: {
+      refetchInterval: 5000,
+    },
+  });
+
+  // Read Live On-Chain Open Interest (single counter — long side = short side in CLOB)
+  const { data: openInterestRaw } = useReadContract({
+    address: selectedMarket.poolAddress as `0x${string}`,
+    abi: perpPoolAbi,
+    functionName: 'getOpenInterest',
+    query: {
+      refetchInterval: 3000,
+    },
+  });
+
+  // Read oneBase for the selected pool to convert raw OI atoms → human units
+  const { data: oneBaseRaw } = useReadContract({
+    address: selectedMarket.poolAddress as `0x${string}`,
+    abi: perpPoolAbi,
+    functionName: 'getOneBase',
+    query: {
+      refetchInterval: 60000,
+    },
+  });
+
+  // Derive computed header telemetry from on-chain reads
+  const indexPrice: number | null =
+    indexPriceRaw && indexPriceRaw[0] > 0n
+      ? parseFloat(formatUnits(indexPriceRaw[0], selectedMarket.quoteDecimals))
+      : null;
+
+  // Funding rate per 8H as plain fraction (0.001 = 0.1%). SDK formula:
+  // fundingRate8h(rate, windowSec) where windowSec=28800 → rate/1e18
+  const fundingRate8h: number | null =
+    fundingRateRaw !== undefined && fundingRateRaw !== null
+      ? Number(fundingRateRaw) / 1e18
+      : null;
+
+  // Open Interest in USD notional: (oi_atoms / oneBase) * markPrice
+  const openInterestUsd: number | null =
+    openInterestRaw !== undefined && oneBaseRaw !== undefined && oneBaseRaw > 0n && markPrice > 0
+      ? (Number(openInterestRaw) / Number(oneBaseRaw)) * markPrice
+      : null;
+
   // Update markPrice dynamically when pool or markPrice changes
   useEffect(() => {
     if (markPriceRaw && markPriceRaw[0]) {
@@ -130,6 +190,23 @@ export const App: React.FC = () => {
       }
     }
   }, [markPriceRaw, selectedMarket]);
+
+  // Reset 24h change display while new data loads on market switch
+  useEffect(() => {
+    setPriceChange24h(null);
+  }, [selectedMarket.poolAddress]);
+
+  // Fetch real 24h price change from dreamDEX indexer candles (1h buckets) whenever market changes
+  useQuery({
+    queryKey: ['priceChange24h', selectedMarket.poolAddress],
+    queryFn: async () => {
+      const change = await fetchMarket24hChange(selectedMarket.poolAddress);
+      setPriceChange24h(change);
+      return change;
+    },
+    refetchInterval: 60000, // refresh every minute
+    staleTime: 30000,
+  });
 
   // Read ALL Live On-Chain Positions across all active markets from MarginBank
   const { data: onchainPositions, refetch: refetchPositions } = useQuery({
@@ -288,8 +365,10 @@ export const App: React.FC = () => {
         selectedMarket={selectedMarket}
         onSelectMarket={setSelectedMarket}
         markPrice={markPrice}
-        priceChange24h={null}
-        fundingRate8h={null}
+        priceChange24h={priceChange24h}
+        fundingRate8h={fundingRate8h}
+        indexPrice={indexPrice}
+        openInterestUsd={openInterestUsd}
         onOpenMarginHub={() => setMarginHubOpen(true)}
       />
 
