@@ -5,12 +5,14 @@ import { toast } from 'sonner';
 import { perpPoolAbi } from '@/chain/abis';
 import type { MarketInfo } from '@/lib/data/indexer';
 import { computeLiquidationPrice } from '@/lib/math/liquidation';
-import { quantizeToGrid } from '@/lib/math/format';
+import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
+import type { PositionItem } from '@/features/portfolio/PositionsTable';
 
 interface TradingBoxProps {
   market: MarketInfo;
   markPrice: number;
   availableMargin: number;
+  currentPosition?: PositionItem;
   onOrderSuccess?: () => void;
 }
 
@@ -18,6 +20,7 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
   market,
   markPrice,
   availableMargin,
+  currentPosition,
   onOrderSuccess,
 }) => {
   const { isConnected } = useAccount();
@@ -212,6 +215,28 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
       </div>
 
       {/* Buy / Sell Direction Tabs */}
+      {currentPosition && (
+        <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-xs font-mono flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                currentPosition.isLong
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+              }`}
+            >
+              ACTIVE {currentPosition.isLong ? 'LONG' : 'SHORT'}
+            </span>
+            <span className="text-white font-semibold">
+              {currentPosition.size} {market.baseSymbol}
+            </span>
+          </div>
+          <span className="text-slate-400">
+            Avg: ${formatDynamicPrice(currentPosition.entryPrice)}
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-[#070a0e] border border-[#1a2536]">
         <button
           onClick={() => setSide('buy')}
@@ -362,7 +387,15 @@ export const TradingBox: React.FC<TradingBoxProps> = ({
           </span>
         ) : (
           <span>
-            {side === 'buy' ? 'Open Long' : 'Open Short'} {quantity} {market.baseSymbol}
+            {currentPosition
+              ? currentPosition.isLong
+                ? side === 'buy'
+                  ? `Add to Long (+${quantity} ${market.baseSymbol})`
+                  : `Reduce / Close Long (-${quantity} ${market.baseSymbol})`
+                : side === 'sell'
+                ? `Add to Short (+${quantity} ${market.baseSymbol})`
+                : `Reduce / Close Short (-${quantity} ${market.baseSymbol})`
+              : `${side === 'buy' ? 'Open Long' : 'Open Short'} ${quantity} ${market.baseSymbol}`}
           </span>
         )}
       </button>

@@ -64,9 +64,10 @@ export const marginBankAbi = [
         type: 'tuple',
         name: 'position',
         components: [
-          { name: 'size', type: 'int256' },
-          { name: 'avgEntryPrice', type: 'uint256' },
-          { name: 'entryFundingIndex', type: 'uint256' },
+          { name: 'size', type: 'int128' },
+          { name: 'avgEntryPrice', type: 'uint128' },
+          { name: 'entryFundingIndex', type: 'int256' },
+          { name: 'lastUpdatedTimestampNs', type: 'uint64' },
         ],
       },
     ],

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useBalance, useChainId, useSwitchChain } from 'wagmi';
+import { useAccount, useReadContract, useBalance, useChainId, useSwitchChain, usePublicClient } from 'wagmi';
+import { useQuery } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { MarketHeader } from '@/features/terminal/MarketHeader';
 import { Chart } from '@/features/terminal/Chart';
@@ -9,6 +10,7 @@ import { RiskGuardian } from '@/features/sentinel/RiskGuardian';
 import { MarginHubModal } from '@/features/margin/MarginHubModal';
 import { TradeCardModal } from '@/features/share/TradeCardModal';
 import { fetchPerpMarkets, type MarketInfo } from '@/lib/data/indexer';
+import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 
 export const App: React.FC = () => {
@@ -35,9 +37,6 @@ export const App: React.FC = () => {
   const [marginHubOpen, setMarginHubOpen] = useState<boolean>(false);
   const [cardModalOpen, setCardModalOpen] = useState<boolean>(false);
   const [cardPosition, setCardPosition] = useState<PositionItem | null>(null);
-
-  // On-Chain Dynamic Positions State
-  const [positions, setPositions] = useState<PositionItem[]>([]);
 
   // Load 21 markets
   useEffect(() => {
@@ -87,11 +86,16 @@ export const App: React.FC = () => {
     args: [currentAccount],
   });
 
-  const { data: accountState } = useReadContract({
+  const publicClient = usePublicClient();
+
+  const { data: accountState, refetch: refetchAccountState } = useReadContract({
     address: CONTRACT_ADDRESSES.MARGIN_BANK,
     abi: marginBankAbi,
     functionName: 'getAccountState',
     args: [currentAccount],
+    query: {
+      refetchInterval: 3000,
+    },
   });
 
   // Read Live On-Chain Mark Price directly from active PerpPool
@@ -114,45 +118,88 @@ export const App: React.FC = () => {
     }
   }, [markPriceRaw, selectedMarket]);
 
-  // Read Live On-Chain Position from MarginBank
-  const { data: livePositionRaw, refetch: refetchPosition } = useReadContract({
-    address: CONTRACT_ADDRESSES.MARGIN_BANK,
-    abi: marginBankAbi,
-    functionName: 'getPosition',
-    args: [currentAccount, selectedMarket.poolAddress as `0x${string}`],
+  // Read ALL Live On-Chain Positions across all active markets from MarginBank
+  const { data: onchainPositions, refetch: refetchPositions } = useQuery({
+    queryKey: [
+      'userPositions',
+      currentAccount,
+      accountState?.activePerpPools,
+      selectedMarket.poolAddress,
+    ],
+    queryFn: async () => {
+      if (!publicClient) return [];
+      const poolAddresses = Array.from(
+        new Set([
+          ...(accountState?.activePerpPools || []).map((p) => p.toLowerCase()),
+          selectedMarket.poolAddress.toLowerCase(),
+        ])
+      );
+
+      const items: PositionItem[] = [];
+      await Promise.all(
+        poolAddresses.map(async (poolAddress) => {
+          try {
+            const market = ALL_VERIFIED_PERP_MARKETS.find(
+              (m) => m.poolAddress.toLowerCase() === poolAddress
+            );
+            if (!market) return;
+
+            const [pos, mark] = await Promise.all([
+              publicClient.readContract({
+                address: CONTRACT_ADDRESSES.MARGIN_BANK,
+                abi: marginBankAbi,
+                functionName: 'getPosition',
+                args: [currentAccount, market.poolAddress as `0x${string}`],
+              }),
+              publicClient.readContract({
+                address: market.poolAddress as `0x${string}`,
+                abi: perpPoolAbi,
+                functionName: 'tryGetMarkPrice',
+              }),
+            ]);
+
+            if (pos && pos.size !== 0n) {
+              const isLong = pos.size > 0n;
+              const absSizeAtoms = isLong ? pos.size : -pos.size;
+              const sizeFormatted = parseFloat(formatUnits(absSizeAtoms, market.baseDecimals));
+              const entryPriceFormatted = parseFloat(
+                formatUnits(pos.avgEntryPrice, market.quoteDecimals)
+              );
+
+              let poolMark = entryPriceFormatted;
+              if (mark && mark[0]) {
+                const markFormatted = parseFloat(formatUnits(mark[1], market.quoteDecimals));
+                if (markFormatted > 0) poolMark = markFormatted;
+              }
+
+              items.push({
+                id: `live-${market.baseSymbol}-${currentAccount.slice(0, 6)}`,
+                marketSymbol: market.baseSymbol,
+                poolAddress: market.poolAddress,
+                isLong,
+                size: sizeFormatted,
+                entryPrice: entryPriceFormatted > 0 ? entryPriceFormatted : poolMark,
+                markPrice: poolMark,
+                margin: 2.0,
+                openTxHash: '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
+                baseDecimals: market.baseDecimals,
+                quoteDecimals: market.quoteDecimals,
+              });
+            }
+          } catch (err) {
+            console.warn(`Error reading position for pool ${poolAddress}:`, err);
+          }
+        })
+      );
+
+      items.sort((a, b) => a.marketSymbol.localeCompare(b.marketSymbol));
+      return items;
+    },
+    refetchInterval: 3000,
+    enabled: !!publicClient,
   });
 
-  // Sync On-Chain Position with State
-  useEffect(() => {
-    if (livePositionRaw) {
-      const rawSize = livePositionRaw.size;
-      if (rawSize === 0n) {
-        setPositions([]);
-      } else {
-        const isLong = rawSize > 0n;
-        const absSizeAtoms = isLong ? rawSize : -rawSize;
-        const sizeFormatted = parseFloat(formatUnits(absSizeAtoms, selectedMarket.baseDecimals));
-        const entryPriceFormatted = parseFloat(
-          formatUnits(livePositionRaw.avgEntryPrice, selectedMarket.quoteDecimals)
-        );
-        setPositions([
-          {
-            id: `live-${selectedMarket.baseSymbol}-${currentAccount.slice(0, 6)}`,
-            marketSymbol: selectedMarket.baseSymbol,
-            poolAddress: selectedMarket.poolAddress,
-            isLong,
-            size: sizeFormatted,
-            entryPrice: entryPriceFormatted > 0 ? entryPriceFormatted : markPrice,
-            markPrice: markPrice || entryPriceFormatted,
-            margin: 2.0,
-            openTxHash: '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a',
-            baseDecimals: selectedMarket.baseDecimals,
-            quoteDecimals: selectedMarket.quoteDecimals,
-          },
-        ]);
-      }
-    }
-  }, [livePositionRaw, selectedMarket, markPrice, currentAccount]);
+  const positions = onchainPositions || [];
 
   const unlockedMargin = accountState
     ? parseFloat(formatUnits(accountState.unlockedCollateralBalance, 18))
@@ -166,8 +213,13 @@ export const App: React.FC = () => {
   };
 
   const handlePositionClosed = React.useCallback(() => {
-    refetchPosition();
-  }, [refetchPosition]);
+    refetchAccountState();
+    refetchPositions();
+  }, [refetchAccountState, refetchPositions]);
+
+  const activeMarketPosition = positions.find(
+    (p) => p.poolAddress.toLowerCase() === selectedMarket.poolAddress.toLowerCase()
+  );
 
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
@@ -294,12 +346,12 @@ export const App: React.FC = () => {
 
             {/* DreamSentinel Autonomous Risk Guardian */}
             <RiskGuardian
-              entryPrice={positions[0]?.entryPrice || 79946.0}
-              currentMarkPrice={markPrice}
-              positionSize={positions[0]?.size || 0}
+              positions={positions}
+              selectedSymbol={selectedMarket.baseSymbol}
               marginBalance={unlockedMargin}
               onPanicExit={() => {
-                refetchPosition();
+                refetchAccountState();
+                refetchPositions();
               }}
             />
           </div>
@@ -310,8 +362,10 @@ export const App: React.FC = () => {
               market={selectedMarket}
               markPrice={markPrice}
               availableMargin={unlockedMargin}
+              currentPosition={activeMarketPosition}
               onOrderSuccess={() => {
-                refetchPosition();
+                refetchAccountState();
+                refetchPositions();
               }}
             />
           </div>
@@ -323,6 +377,13 @@ export const App: React.FC = () => {
           markPrice={markPrice}
           onOpenCardModal={handleOpenCard}
           onPositionClosed={handlePositionClosed}
+          onSelectMarket={(symbol) => {
+            const match = markets.find((m) => m.baseSymbol.toUpperCase() === symbol.toUpperCase());
+            if (match) {
+              setSelectedMarket(match);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
         />
       </main>
 

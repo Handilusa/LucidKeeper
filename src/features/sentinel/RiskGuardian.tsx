@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, AlertTriangle, Zap, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
+import type { PositionItem } from '@/features/portfolio/PositionsTable';
+import { formatDynamicPrice } from '@/lib/math/format';
 
 interface RiskGuardianProps {
-  entryPrice: number;
-  currentMarkPrice: number;
-  positionSize: number;
+  positions?: PositionItem[];
+  selectedSymbol?: string;
+  entryPrice?: number;
+  currentMarkPrice?: number;
+  positionSize?: number;
   marginBalance: number;
-  onPanicExit?: (percent: number) => void;
+  onPanicExit?: (percent: number, pos?: PositionItem) => void;
 }
 
 export const RiskGuardian: React.FC<RiskGuardianProps> = ({
+  positions = [],
+  selectedSymbol = 'BTC',
   entryPrice,
   currentMarkPrice,
   positionSize,
@@ -18,16 +24,41 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   onPanicExit,
 }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [stopLossPrice, setStopLossPrice] = useState<string>('72000');
-  const [takeProfitPrice, setTakeProfitPrice] = useState<string>('95000');
-  const [stressPrice, setStressPrice] = useState<number>(currentMarkPrice || 80000);
+  const [inspectedSymbol, setInspectedSymbol] = useState<string>('');
+
+  const activePosition =
+    positions.find((p) => p.marketSymbol.toUpperCase() === inspectedSymbol.toUpperCase()) ||
+    positions.find((p) => p.marketSymbol.toUpperCase() === selectedSymbol.toUpperCase()) ||
+    positions[0];
+
+  const effectiveEntry = activePosition?.entryPrice ?? (entryPrice ?? 80000);
+  const effectiveMark = activePosition?.markPrice ?? (currentMarkPrice ?? effectiveEntry);
+  const effectiveSize = activePosition ? activePosition.size : (positionSize ?? 0);
+  const effectiveIsLong = activePosition ? activePosition.isLong : true;
+  const effectiveSymbol = activePosition ? activePosition.marketSymbol : selectedSymbol;
+
+  const [stressPrice, setStressPrice] = useState<number>(effectiveMark || 80000);
+  const [stopLossPrice, setStopLossPrice] = useState<string>(
+    effectiveIsLong ? (effectiveEntry * 0.9).toFixed(2) : (effectiveEntry * 1.1).toFixed(2)
+  );
+  const [takeProfitPrice, setTakeProfitPrice] = useState<string>(
+    effectiveIsLong ? (effectiveEntry * 1.2).toFixed(2) : (effectiveEntry * 0.8).toFixed(2)
+  );
+
+  useEffect(() => {
+    if (effectiveMark > 0) {
+      setStressPrice(effectiveMark);
+    }
+  }, [effectiveMark, effectiveSymbol]);
 
   // Simulated Stress Math
-  const simPnl = (stressPrice - entryPrice) * positionSize;
+  const simPnl = effectiveIsLong
+    ? (stressPrice - effectiveEntry) * effectiveSize
+    : (effectiveEntry - stressPrice) * effectiveSize;
   const simEquity = marginBalance + simPnl;
-  const simNotional = stressPrice * positionSize;
+  const simNotional = stressPrice * effectiveSize;
   const simMmReq = simNotional * 0.05; // 5% maintenance
-  const healthFactor = simMmReq > 0 ? simEquity / simMmReq : 5.0;
+  const healthFactor = simMmReq > 0 ? Math.max(simEquity / simMmReq, 0) : 5.0;
 
   // Status Level
   let status = 'SAFE';
@@ -46,16 +77,20 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   }
 
   const handlePanic = (percent: number) => {
-    toast.warning(`Executing Panic De-Risk (${percent}% exit)...`, {
+    toast.warning(`Executing Panic De-Risk (${percent}% exit for ${effectiveSymbol}-PERP)...`, {
       description: 'Submitting immediate market exit to protect collateral on Somnia Tokyo',
     });
-    onPanicExit?.(percent);
+    onPanicExit?.(percent, activePosition);
   };
+
+  const minStress = effectiveEntry * 0.7;
+  const maxStress = effectiveEntry * 1.3;
+  const stepStress = Math.max((maxStress - minStress) / 100, 0.0001);
 
   return (
     <div className="bg-[#0d131d] border border-[#1a2536] rounded-xl p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#1a2536] pb-3">
+      <div className="flex flex-wrap items-center justify-between border-b border-[#1a2536] pb-3 gap-2">
         <div className="flex items-center space-x-2">
           <ShieldAlert className="w-5 h-5 text-amber-400" />
           <h3 className="font-display font-extrabold text-lg text-white">
@@ -81,12 +116,37 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         </div>
       </div>
 
+      {/* Multi-position selector if more than 1 open position */}
+      {positions.length > 1 && (
+        <div className="p-2.5 rounded-lg bg-[#070a0e] border border-[#1a2536] flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+          <span className="text-slate-400">Inspecting Active Position:</span>
+          <div className="flex items-center space-x-1.5">
+            {positions.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setInspectedSymbol(p.marketSymbol);
+                  setStressPrice(p.markPrice || p.entryPrice);
+                }}
+                className={`px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                  effectiveSymbol === p.marketSymbol
+                    ? 'bg-cyan-500 text-black shadow-xs'
+                    : 'bg-[#1a2536] text-slate-300 hover:text-white'
+                }`}
+              >
+                {p.marketSymbol} ({p.isLong ? 'Long' : 'Short'})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Health Factor Gauge HUD */}
       <div className="bg-[#070a0e] border border-[#1a2536] p-4 rounded-xl space-y-3">
         <div className="flex items-center justify-between font-mono text-xs">
           <span className="text-slate-300 font-semibold flex items-center space-x-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>HEALTH FACTOR:</span>
+            <span>HEALTH FACTOR ({effectiveSymbol}):</span>
           </span>
           <span className={`font-bold text-sm ${statusColor}`}>
             {healthFactor.toFixed(2)}x ({status})
@@ -118,7 +178,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
             </span>
           </div>
           <span className="text-cyan-400 font-bold">
-            ${stressPrice.toLocaleString('en-US')} USDso
+            ${formatDynamicPrice(stressPrice)} USDso
           </span>
         </div>
 
@@ -131,9 +191,9 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
         <input
           type="range"
-          min="55000"
-          max="105000"
-          step="250"
+          min={minStress}
+          max={maxStress}
+          step={stepStress}
           value={stressPrice}
           onChange={(e) => setStressPrice(parseFloat(e.target.value))}
           aria-label="Simulated stress test market price"
@@ -141,9 +201,9 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         />
 
         <div className="flex justify-between text-[10px] font-mono text-slate-500">
-          <span>$55,000 (-30%)</span>
-          <span>Entry: ${entryPrice.toLocaleString('en-US')}</span>
-          <span>$105,000 (+30%)</span>
+          <span>${formatDynamicPrice(minStress)} (-30%)</span>
+          <span>Entry: ${formatDynamicPrice(effectiveEntry)}</span>
+          <span>${formatDynamicPrice(maxStress)} (+30%)</span>
         </div>
 
         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#1a2536]/80 text-xs font-mono">
@@ -164,18 +224,20 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Panic Actions */}
         <div className="space-y-2">
-          <label className="text-xs font-mono text-slate-400">Emergency De-Risk Actions</label>
+          <label className="text-xs font-mono text-slate-400">
+            Emergency De-Risk Actions ({effectiveSymbol})
+          </label>
           <div className="flex space-x-2">
             <button
               onClick={() => handlePanic(50)}
-              className="flex-1 py-2 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500 border border-amber-500/50 text-amber-300 hover:text-black font-display font-bold text-xs transition-all flex items-center justify-center space-x-1"
+              className="flex-1 py-2 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500 border border-amber-500/50 text-amber-300 hover:text-black font-display font-bold text-xs transition-all flex items-center justify-center space-x-1 cursor-pointer"
             >
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>De-Risk 50%</span>
             </button>
             <button
               onClick={() => handlePanic(100)}
-              className="flex-1 py-2 px-3 rounded-lg bg-rose-500/20 hover:bg-rose-500 border border-rose-500 text-rose-300 hover:text-white font-display font-bold text-xs transition-all flex items-center justify-center space-x-1"
+              className="flex-1 py-2 px-3 rounded-lg bg-rose-500/20 hover:bg-rose-500 border border-rose-500 text-rose-300 hover:text-white font-display font-bold text-xs transition-all flex items-center justify-center space-x-1 cursor-pointer"
             >
               <Zap className="w-3.5 h-3.5" />
               <span>Panic Exit 100%</span>

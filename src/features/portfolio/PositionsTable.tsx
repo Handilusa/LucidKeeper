@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { ExternalLink, Share2 } from 'lucide-react';
@@ -26,6 +26,7 @@ interface PositionsTableProps {
   markPrice: number;
   onOpenCardModal: (pos: PositionItem) => void;
   onPositionClosed?: () => void;
+  onSelectMarket?: (marketSymbol: string) => void;
 }
 
 export const PositionsTable: React.FC<PositionsTableProps> = ({
@@ -33,9 +34,9 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
   markPrice,
   onOpenCardModal,
   onPositionClosed,
+  onSelectMarket,
 }) => {
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
-  const { address } = useAccount();
 
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -58,11 +59,11 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
   const handleClosePosition = async (pos: PositionItem) => {
     try {
       const actionName = pos.isLong ? 'Sell IOC' : 'Buy IOC';
-      toast.info(`Submitting Close Position (${actionName}) order to Somnia Tokyo...`);
+      toast.info(`Submitting Close Position (${actionName}) order for ${pos.marketSymbol}-PERP to Somnia Tokyo...`);
 
       // For closing a Long: SELL IOC with 2% floor slippage below mark
       // For closing a Short: BUY IOC with 2% ceiling slippage above mark
-      const effectiveMarkPrice = markPrice > 0 ? markPrice : (pos.markPrice || pos.entryPrice || 1);
+      const effectiveMarkPrice = pos.markPrice > 0 ? pos.markPrice : (markPrice > 0 ? markPrice : (pos.entryPrice || 1));
       const baseMarkPrice = parseUnits(
         effectiveMarkPrice.toFixed(pos.quoteDecimals && pos.quoteDecimals > 6 ? 6 : 2),
         pos.quoteDecimals || 18
@@ -109,10 +110,10 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
         gas: 5_000_000n, // Explicit gas limit: guarantees OKX wallet displays network fee immediately
       });
 
-      toast.success('Close order submitted! Confirming...');
+      toast.success(`Close order for ${pos.marketSymbol} submitted! Confirming...`);
     } catch (err: any) {
       console.error('Close error:', err);
-      toast.error('Failed to close position', {
+      toast.error(`Failed to close ${pos.marketSymbol} position`, {
         description: err?.shortMessage || err?.message || 'Transaction reverted',
       });
     }
@@ -183,7 +184,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
               <tbody className="divide-y divide-[#1a2536]/60">
                 {positions.map((pos) => {
                   const entry = pos.entryPrice > 0 ? pos.entryPrice : 80000;
-                  const current = markPrice > 0 ? markPrice : entry;
+                  const current = pos.markPrice > 0 ? pos.markPrice : (markPrice > 0 ? markPrice : entry);
                   const margin = pos.margin > 0 ? pos.margin : 2.0;
 
                   const pnl = pos.isLong
@@ -204,7 +205,13 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                         >
                           {pos.isLong ? 'LONG 5.2x' : 'SHORT 5.2x'}
                         </span>
-                        <span>{pos.marketSymbol}-PERP</span>
+                        <button
+                          onClick={() => onSelectMarket?.(pos.marketSymbol)}
+                          className="hover:text-cyan-400 hover:underline cursor-pointer flex items-center space-x-1"
+                          title={`Switch terminal to ${pos.marketSymbol}`}
+                        >
+                          <span>{pos.marketSymbol}-PERP</span>
+                        </button>
                       </td>
                       <td className="py-3 text-slate-200">{pos.size} {pos.marketSymbol}</td>
                       <td className="py-3 text-slate-300">
