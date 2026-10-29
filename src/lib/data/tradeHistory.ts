@@ -13,14 +13,14 @@ export function getTradeHistory(account: string): TradeHistoryItem[] {
   if (typeof window === 'undefined' || !account) return [];
   const normalizedAccount = account.toLowerCase();
   const key = `lucidkeeper_cache_trades_${normalizedAccount}`;
-  const stored = localStorage.getItem(key);
-  if (stored) {
-    try {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) return parsed;
-    } catch {
-      // Ignore parse errors
     }
+  } catch {
+    // Storage can be blocked or contain invalid JSON.
   }
   return [];
 }

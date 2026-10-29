@@ -24,8 +24,9 @@ export function formatPrice(
 
 export function formatDynamicPrice(price: number | string | bigint): string {
   const val = typeof price === 'bigint' ? Number(price) : Number(price);
-  if (isNaN(val) || val === 0) return '0.00';
-  if (val < 0.0001) return val.toFixed(6);
+  if (!Number.isFinite(val)) return '—';
+  if (val === 0) return '0.00';
+  if (Math.abs(val) < 0.0001) return val.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: Math.min(18, Math.max(6, Math.ceil(-Math.log10(Math.abs(val))) + 2)) });
   if (val < 1) return val.toFixed(4);
   if (val < 10) return val.toFixed(3);
   return val.toLocaleString('en-US', {

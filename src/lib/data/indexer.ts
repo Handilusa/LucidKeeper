@@ -1,4 +1,6 @@
 import { ALL_VERIFIED_PERP_MARKETS } from './markets';
+import { normalizeCandles, hourly24hChange, type ChartCandle } from './candles';
+export type { ChartCandle } from './candles';
 
 export const INDEXER_GRAPHQL_URL = 'https://hideki-dev.smk.somnia.host/v1/graphql';
 
@@ -13,15 +15,6 @@ export interface MarketInfo {
   minQuantity: string;
   tickSize: string;
   lotSize: string;
-}
-
-export interface ChartCandle {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
 }
 
 export interface TradeHistoryItem {
@@ -55,30 +48,6 @@ export interface ActiveOrderItem {
 }
 
 /**
- * Aggregate fine-grained candles into a coarser interval.
- */
-function aggregateCandles(candles: ChartCandle[], intervalSeconds: number): ChartCandle[] {
-  if (intervalSeconds <= 0 || candles.length === 0) return candles;
-
-  const buckets = new Map<number, ChartCandle>();
-
-  for (const c of candles) {
-    const bucket = Math.floor(c.time / intervalSeconds) * intervalSeconds;
-    const existing = buckets.get(bucket);
-    if (!existing) {
-      buckets.set(bucket, { time: bucket, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume });
-    } else {
-      existing.high = Math.max(existing.high, c.high);
-      existing.low = Math.min(existing.low, c.low);
-      existing.close = c.close;
-      existing.volume += c.volume;
-    }
-  }
-
-  return Array.from(buckets.values()).sort((a, b) => a.time - b.time);
-}
-
-/**
  * Fetch real OHLCV candlestick data directly from dreamDEX GraphQL Indexer.
  */
 export async function fetchMarketCandles(
@@ -86,14 +55,19 @@ export async function fetchMarketCandles(
   intervalSeconds: number = 3600,
   limit: number = 300
 ): Promise<ChartCandle[]> {
+  const market = ALL_VERIFIED_PERP_MARKETS.find(
+    (m) => m.poolAddress.toLowerCase() === poolAddress.toLowerCase()
+  );
+  if (!market) throw new Error('Unknown market decimals');
   const query = `
-    query Candles($pool: String!, $limit: Int) {
+    query Candles($pool: String!, $limit: Int, $interval: Int!) {
       Candle(
-        where: { pool: { _eq: $pool } }
+        where: { pool: { _eq: $pool }, intervalSeconds: { _eq: $interval } }
         order_by: [{ bucketStart: desc }]
         limit: $limit
       ) {
         bucketStart
+        intervalSeconds
         openPrice
         high
         low
@@ -106,69 +80,50 @@ export async function fetchMarketCandles(
     }
   `;
 
-  try {
-    const res = await fetch(INDEXER_GRAPHQL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        variables: {
-          pool: poolAddress.toLowerCase(),
-          limit: 2000,
-        },
-      }),
-    });
+  const res = await fetch(INDEXER_GRAPHQL_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query,
+      variables: {
+        pool: poolAddress.toLowerCase(),
+        limit,
+        interval: intervalSeconds,
+      },
+    }),
+  });
 
-    const json = await res.json();
-    const rawCandles = json?.data?.Candle;
-
-    if (!rawCandles || rawCandles.length === 0) {
-      return [];
-    }
-
-    const sorted = [...rawCandles].sort(
-      (a, b) => parseInt(a.bucketStart, 10) - parseInt(b.bucketStart, 10)
-    );
-
-    const baseCandles = sorted.map((c) => ({
-      time: Math.floor(parseInt(c.bucketStart, 10)),
-      open: parseFloat(c.openPrice) / 1e18,
-      high: parseFloat(c.high) / 1e18,
-      low: parseFloat(c.low) / 1e18,
-      close: parseFloat(c.closePrice) / 1e18,
-      volume: parseFloat(c.baseVolume) / 1e8,
-    }));
-
-    const nativeBucket = baseCandles.length >= 2
-      ? baseCandles[1].time - baseCandles[0].time
-      : 60;
-
-    const aggregated = intervalSeconds > nativeBucket
-      ? aggregateCandles(baseCandles, intervalSeconds)
-      : baseCandles;
-
-    return aggregated.slice(-limit);
-  } catch (error) {
-    console.warn('[Indexer] Could not fetch candles from indexer:', error);
-    return [];
-  }
+  if (!res.ok) throw new Error(`Candle request failed (${res.status})`);
+  const json = await res.json();
+  if (json.errors?.length) throw new Error('Candle indexer returned an error');
+  const rawCandles = json?.data?.Candle;
+  if (!Array.isArray(rawCandles)) throw new Error('Missing candle response');
+  return normalizeCandles(rawCandles, intervalSeconds, market.baseDecimals, market.quoteDecimals);
 }
 
 /**
- * Fetch real rolling 24h price change percentage from dreamDEX GraphQL Indexer.
- * Uses 1-hour candles (intervalSeconds: 3600) to find the oldest candle in the 24h window.
+ * Hourly 24h snapshot, not a rolling ticker. Require the last completed hour
+ * and its close 24 hours earlier; sparse or outdated coverage is unavailable.
  */
 export async function fetchMarket24hChange(poolAddress: string): Promise<number | null> {
+  const market = ALL_VERIFIED_PERP_MARKETS.find(
+    (m) => m.poolAddress.toLowerCase() === poolAddress.toLowerCase()
+  );
+  if (!market) return null;
   const query = `
     query Market24hStats($pool: String!) {
       Candle(
         where: { pool: { _eq: $pool }, intervalSeconds: { _eq: 3600 } }
         order_by: [{ bucketStart: desc }]
-        limit: 25
+        limit: 26
       ) {
         bucketStart
+        intervalSeconds
         openPrice
+        high
+        low
         closePrice
+        baseVolume
       }
     }
   `;
@@ -185,20 +140,16 @@ export async function fetchMarket24hChange(poolAddress: string): Promise<number 
       }),
     });
 
+    if (!res.ok) return null;
     const json = await res.json();
-    const candles = json?.data?.Candle;
-
-    if (!candles || candles.length < 2) {
-      return null;
-    }
-
-    const latest = candles[0];
-    const oldest = candles[candles.length - 1];
-    const latestClose = parseFloat(latest.closePrice) / 1e18;
-    const oldestOpen = parseFloat(oldest.openPrice) / 1e18;
-
-    if (oldestOpen <= 0) return null;
-    return ((latestClose - oldestOpen) / oldestOpen) * 100;
+    if (json.errors?.length || !Array.isArray(json?.data?.Candle)) return null;
+    const candles = normalizeCandles(
+      json.data.Candle,
+      3600,
+      market.baseDecimals,
+      market.quoteDecimals
+    );
+    return hourly24hChange(candles, Date.now() / 1000);
   } catch (error) {
     console.warn('[Indexer] Could not fetch 24h change:', error);
     return null;
@@ -351,7 +302,10 @@ export async function fetchUserTradeHistory(
     // Update transient cache
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(`lucidkeeper_cache_trades_${normalizedAccount}`, JSON.stringify(items));
+        localStorage.setItem(
+          `lucidkeeper_cache_trades_${normalizedAccount}_${limit}_${offset}`,
+          JSON.stringify(items)
+        );
       } catch {
         // Ignore cache storage errors
       }
@@ -363,7 +317,9 @@ export async function fetchUserTradeHistory(
     // Return cached items if available
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem(`lucidkeeper_cache_trades_${normalizedAccount}`);
+        const cached = localStorage.getItem(
+          `lucidkeeper_cache_trades_${normalizedAccount}_${limit}_${offset}`
+        );
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -374,7 +330,7 @@ export async function fetchUserTradeHistory(
         // Ignore
       }
     }
-    return [];
+    throw err;
   }
 }
 
@@ -423,7 +379,9 @@ export async function fetchUserActiveOrders(account: string): Promise<ActiveOrde
 
     if (!res.ok) throw new Error(`Indexer responded with HTTP ${res.status}`);
     const json = await res.json();
-    const rawOrders = json?.data?.Order || [];
+    if (json.errors?.length || !Array.isArray(json?.data?.Order))
+      throw new Error('Active orders response unavailable');
+    const rawOrders = json.data.Order;
 
     const activeOrders: ActiveOrderItem[] = [];
     for (const o of rawOrders) {
@@ -462,7 +420,7 @@ export async function fetchUserActiveOrders(account: string): Promise<ActiveOrde
     return activeOrders;
   } catch (err) {
     console.warn('[Indexer] Could not fetch active orders:', err);
-    return [];
+    throw err;
   }
 }
 
