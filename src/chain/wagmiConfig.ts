@@ -1,9 +1,9 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { somniaTokyo } from './somniaTokyo';
 
-// Fallback WalletConnect project ID for testnet development
+// LucidKeeper's public Reown project; deployment configuration may override it.
 const projectId =
-  import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '3fcc6bba2d1de962d911bb5b5c3dba68';
+  import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '006c638cc6ec95a3982952a1ee86aa05';
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'LucidKeeper DreamSentinel',

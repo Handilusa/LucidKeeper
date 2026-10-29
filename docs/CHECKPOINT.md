@@ -1,6 +1,6 @@
 # Frontend checkpoint
 
-- **Updated:** 29 October 2026 — ordered completion, step 4 finished; deployed QA follow-ups recorded.
+- **Updated:** 29 October 2026 — authorized Reown local fix verified; production still selects old ID.
 - **Repository:** `dream-sentinel/` is the Git root; branch `main`, starting HEAD `968746b`.
 - **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
@@ -57,7 +57,16 @@ Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tok
 
 ## NEXT
 
-Ordered completion finished. Review Reown configuration and accessible-group follow-ups in feedback 005/006. No automatic source fix, cloud login, wallet action or push; any follow-on work needs separate authorization.
+Owner: set Vercel Production `VITE_WALLETCONNECT_PROJECT_ID` to `006c638cc6ec95a3982952a1ee86aa05` and redeploy. Latest fresh production check still selects the old ID. Recheck read-only after correction; no agent cloud login, wallet connection, signatures or push. Accessible-group follow-up 006 remains separate.
+
+## Authorized Reown follow-up — 29 October 2026
+
+- User supplied public Project ID `006c638cc6ec95a3982952a1ee86aa05` and reported the production domain allowlisted and Vercel redeployed. Dashboard/environment settings have not been independently inspected.
+- Replaced the shared development fallback in `src/chain/wagmiConfig.ts` with this public ID; `VITE_WALLETCONNECT_PROJECT_ID` remains an override. No secret/environment files or cloud credentials inspected.
+- Fresh unit tests **65/65**, typecheck, ESLint and build **PASS** (49.01s; dependency/chunk warnings remain). Local built-request verification at **16:33 UTC: 5/5 PASS**, supplied ID observed, config HTTP200 and telemetry202; disconnected account/market reads settle, no page exceptions or write attempts.
+- User reconfirmed redeployment; new fresh production check at **16:33:09–16:33:12 UTC** still observes old ID `3fcc6bba2d1de962d911bb5b5c3dba68` and config/telemetry403. Effective production URL/document200 and disconnected reads pass; **2/5 focused checks pass**, three configuration checks fail. Local fix is not proof of deployed resolution. No Vercel/environment inspection or modification; actual stale selection cause not established.
+- Evidence: `.git/lucidkeeper-audit/reown-local-2026-10-29T16-33-09-033Z/` and `reown-deployed-2026-10-29T16-33-09-008Z/`. Earlier 16:29 report retained, including an audit-only disabled-button assumption corrected after inspecting the Connect wallet to trade affordance. No financial/accessibility source changes or push. Local increment includes config, STATUS, CHECKPOINT, validation and feedback005 only; final hash reported separately.
+- Final exact five-path staging and whitespace checks **PASS**; unchanged supplemental secret scanner **exits 0, zero findings** in tracked worktree/latest 100 commits. Save this reviewed increment locally only; production resolution remains blocked on deployed ID selection.
 
 ## Original step 4 — deployed read-only QA
 
