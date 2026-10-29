@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShieldAlert, Volume2, VolumeX, ShieldCheck, ShieldOff, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, zeroAddress } from 'viem';
 import { perpPoolAbi } from '@/chain/abis';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
+import { TokenLogo } from '@/components/TokenLogo';
 
 interface RiskGuardianProps {
   positions?: PositionItem[];
@@ -16,6 +17,7 @@ interface RiskGuardianProps {
   currentMarkPrice?: number;
   positionSize?: number;
   marginBalance: number;
+  canExecute?: boolean;
   onPanicExit?: (percent: number, pos?: PositionItem) => void;
 }
 
@@ -59,6 +61,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   currentMarkPrice,
   positionSize,
   marginBalance,
+  canExecute = false,
   onPanicExit,
 }) => {
   const { address, isConnected } = useAccount();
@@ -70,40 +73,25 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
     positions.find((p) => p.marketSymbol.toUpperCase() === selectedSymbol.toUpperCase()) ||
     positions[0];
 
-  const effectiveEntry = activePosition?.entryPrice ?? (entryPrice ?? 0);
+  const effectiveEntry = activePosition?.entryPrice ?? entryPrice ?? 0;
   const effectiveMark =
-    activePosition?.markPrice ??
-    (currentMarkPrice ?? (effectiveEntry > 0 ? effectiveEntry : 0));
+    activePosition?.markPrice ?? currentMarkPrice ?? 0;
   const effectiveSize = activePosition ? activePosition.size : (positionSize ?? 0);
   const effectiveIsLong = activePosition ? activePosition.isLong : true;
   const effectiveSymbol = activePosition ? activePosition.marketSymbol : selectedSymbol;
 
-  // Read real pool parameters from on-chain contract for exact maintenance margin requirement
-  const { data: poolParams } = useReadContract({
-    address: activePosition?.poolAddress as `0x${string}`,
-    abi: perpPoolAbi,
-    functionName: 'getPerpPoolParameters',
-    query: {
-      enabled: Boolean(activePosition?.poolAddress),
-    },
-  });
-
-  const maintenanceMarginBps = poolParams?.maintenanceMarginBps
-    ? Number(poolParams.maintenanceMarginBps)
-    : 250; // Canonical 2.50% default on Tokyo BTC pool
+  // Same-block parameters supplied with the position; no maintenance fallback.
+  const maintenanceMarginBps = activePosition?.maintenanceMarginBps;
+  const poolParams = maintenanceMarginBps !== undefined;
 
   const [stressPrice, setStressPrice] = useState<number>(
-    effectiveMark > 0 ? effectiveMark : (effectiveEntry > 0 ? effectiveEntry : 0)
+    effectiveMark > 0 ? effectiveMark : effectiveEntry > 0 ? effectiveEntry : 0
   );
+  const [stressEdited, setStressEdited] = useState(false);
   const [stopLossPrice, setStopLossPrice] = useState<string>('');
   const [takeProfitPrice, setTakeProfitPrice] = useState<string>('');
   const [isArmed, setIsArmed] = useState<boolean>(false);
   const [activePanicPercent, setActivePanicPercent] = useState<number | null>(null);
-  const [remainingAfterDeRisk, setRemainingAfterDeRisk] = useState<{
-    symbol: string;
-    remaining: number;
-    closed: number;
-  } | null>(null);
 
   const triggeredRef = useRef<boolean>(false);
   const notifiedHashRef = useRef<string | null>(null);
@@ -117,33 +105,38 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
   // Wagmi On-Chain Contract Execution
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, data: receipt } = useWaitForTransactionReceipt({
     hash,
   });
+  const isConfirmed = receipt?.status === 'success';
 
-  // Sync stress simulator price on mark price changes
+  // Keep a user's hypothetical price stable while live marks refresh.
+  useEffect(() => setStressEdited(false), [activePosition?.poolAddress]);
   useEffect(() => {
-    if (effectiveMark > 0) {
+    if (!stressEdited && effectiveMark > 0) {
       setStressPrice(effectiveMark);
     }
-  }, [effectiveMark, effectiveSymbol]);
+  }, [effectiveMark, effectiveSymbol, stressEdited]);
+
+  const storageKey = address && activePosition
+    ? `lucidkeeper_sltp_50383_${address.toLowerCase()}_${activePosition.poolAddress.toLowerCase()}`
+    : null;
 
   // Load and sync SL/TP config per active market
   useEffect(() => {
-    if (activePosition && typeof window !== 'undefined') {
-      const saved = localStorage.getItem(
-        `lucidkeeper_sltp_${activePosition.poolAddress.toLowerCase()}`
-      );
-      if (saved) {
-        try {
+    setIsArmed(false);
+    triggeredRef.current = false;
+    if (storageKey) {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed.stopLoss !== undefined) setStopLossPrice(parsed.stopLoss);
-          if (parsed.takeProfit !== undefined) setTakeProfitPrice(parsed.takeProfit);
-          if (parsed.armed !== undefined) setIsArmed(Boolean(parsed.armed));
+          setStopLossPrice(typeof parsed.stopLoss === 'string' ? parsed.stopLoss : '');
+          setTakeProfitPrice(typeof parsed.takeProfit === 'string' ? parsed.takeProfit : '');
           return;
-        } catch {
-          // ignore parse error
         }
+      } catch {
+        // Storage is optional. Reload never restores an armed trigger.
       }
     }
 
@@ -158,14 +151,13 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       setTakeProfitPrice('');
       setIsArmed(false);
     }
-  }, [activePosition?.poolAddress, effectiveEntry, effectiveIsLong]);
+  }, [storageKey, effectiveEntry, effectiveIsLong]);
 
   const saveSlTpState = (sl: string, tp: string, armed: boolean) => {
-    if (activePosition && typeof window !== 'undefined') {
-      localStorage.setItem(
-        `lucidkeeper_sltp_${activePosition.poolAddress.toLowerCase()}`,
-        JSON.stringify({ stopLoss: sl, takeProfit: tp, armed })
-      );
+    if (storageKey) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ stopLoss: sl, takeProfit: tp, armed }));
+      } catch { /* Controls remain usable when storage is unavailable. */ }
     }
   };
 
@@ -183,7 +175,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
     if (!isArmed) return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = 'Client-Side Reactive Guard is currently armed. Leaving or refreshing will disarm active price triggers.';
+      e.returnValue =
+        'Client-Side Reactive Guard is currently armed. Leaving or refreshing will disarm active price triggers.';
       return e.returnValue;
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -197,10 +190,6 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       if (soundEnabled) playAlertTone('success');
       if (lastOrderRef.current && address) {
         const o = lastOrderRef.current;
-        const previousSize = activePosition?.size || o.size;
-        const closedSize = o.size;
-        const remaining = Math.max(0, previousSize - closedSize);
-
         saveTradeHistoryItem(address, {
           id: `derisk-${hash}`,
           hash,
@@ -210,24 +199,14 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
           size: o.size,
           price: o.price,
           timestamp: Date.now(),
-          description: `Emergency De-Risk (${o.percent}% exit for ${o.symbol}-PERP via IOC)`,
+          description: `De-risk order transaction confirmed (${o.percent}% requested for ${o.symbol}-PERP); actual fill not yet verified`,
         });
-
-        if (remaining > 0) {
-          setRemainingAfterDeRisk({
-            symbol: o.symbol,
-            remaining,
-            closed: closedSize,
-          });
-        } else {
-          setRemainingAfterDeRisk(null);
-        }
       }
 
       toast.success(
         lastOrderRef.current?.percent === 100
-          ? `Panic Exit 100% confirmed on Somnia Tokyo for ${lastOrderRef.current?.symbol}!`
-          : `De-Risk 50% confirmed on Somnia Tokyo for ${lastOrderRef.current?.symbol}!`,
+          ? `Full-exit order transaction confirmed for ${lastOrderRef.current?.symbol}`
+          : `Partial-exit order transaction confirmed for ${lastOrderRef.current?.symbol}`,
         {
           id: `derisk-confirmed-${hash}`,
           description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
@@ -246,35 +225,33 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         ? (stressPrice - effectiveEntry) * effectiveSize
         : (effectiveEntry - stressPrice) * effectiveSize
       : 0;
-  const simEquity = Math.max(0, marginBalance + simPnl);
+  const simEquity = marginBalance + simPnl;
   const simNotional = hasActiveRisk
     ? (stressPrice > 0 ? stressPrice : effectiveEntry) * effectiveSize
     : 0;
 
   // Exact maintenance requirement using on-chain market maintenanceMarginBps
-  const simMmReq = simNotional * (maintenanceMarginBps / 10000);
-  const healthFactor = simMmReq > 0 ? Math.max(simEquity / simMmReq, 0) : 5.0;
+  const simMmReq = maintenanceMarginBps === undefined ? 0 : simNotional * (maintenanceMarginBps / 10000);
+  const healthFactor = simMmReq > 0 ? Math.max(simEquity / simMmReq, 0) : 0;
 
   // Status Classification
-  let status = hasActiveRisk ? 'SAFE' : 'STANDBY (NO RISK)';
-  let statusColor = 'text-emerald-400';
-  let barGradient = 'from-emerald-500 to-cyan-400';
+  let status = hasActiveRisk ? 'SIMULATED BUFFER' : 'NO POSITION';
+  let statusColor = 'brand-text';
   const gaugePercent = Math.min(Math.max((healthFactor / 5.0) * 100, 5), 100);
 
   if (hasActiveRisk) {
     if (healthFactor <= 1.05) {
-      status = 'CRITICAL DANGER (LIQUIDATION)';
-      statusColor = 'text-rose-500 animate-pulse';
-      barGradient = 'from-rose-600 to-rose-400';
+      status = 'LOW SIMULATED BUFFER';
+      statusColor = 'caution';
     } else if (healthFactor <= 1.5) {
-      status = 'HIGH RISK (MARGIN CALL)';
-      statusColor = 'text-amber-400';
-      barGradient = 'from-amber-600 to-amber-400';
+      status = 'REDUCED SIMULATED BUFFER';
+      statusColor = 'caution';
     }
   }
 
   // Real On-Chain Emergency Panic Execution (De-Risk 50% or Panic Exit 100%)
   const handlePanic = async (percent: number) => {
+    if (!canExecute || effectiveMark <= 0) return;
     if (!isConnected) {
       toast.error('Please connect your wallet first');
       return;
@@ -317,8 +294,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         return;
       }
 
-      const currentMark =
-        effectiveMark > 0 ? effectiveMark : activePosition.entryPrice || 1;
+      const currentMark = effectiveMark > 0 ? effectiveMark : activePosition.entryPrice || 1;
       const baseMarkPrice = parseUnits(
         currentMark.toFixed(quoteDecimals > 6 ? 6 : 2),
         quoteDecimals
@@ -357,8 +333,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         gas: 5_000_000n,
       });
 
-      toast.success(
-        `Panic De-Risk (${percent}%) order placed! Awaiting Somnia Tokyo confirmation...`
+      toast.info(
+        `De-risk order submitted (${percent}% requested). Awaiting transaction confirmation…`
       );
     } catch (err: unknown) {
       console.error('Panic exit error:', err);
@@ -372,7 +348,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
   // Toggle Arming for Reactive SL/TP
   const handleToggleArm = () => {
-    if (!hasActiveRisk) {
+    if (!isArmed && (!hasActiveRisk || !canExecute || effectiveMark <= 0)) {
       toast.error(`No open position in ${effectiveSymbol} to protect with Reactive SL/TP.`);
       return;
     }
@@ -419,6 +395,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   const evaluateTriggers = useCallback(() => {
     if (
       !isArmed ||
+      !canExecute ||
       !hasActiveRisk ||
       triggeredRef.current ||
       isPending ||
@@ -454,20 +431,26 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
       if (triggeredType === 'SL') {
         toast.error(`🚨 REACTIVE STOP-LOSS TRIGGERED at $${formatDynamicPrice(effectiveMark)}!`, {
-          description: `Executing immediate 100% Panic Exit on Somnia Tokyo to defend collateral!`,
+          description:
+            'Requesting a full-exit order in your wallet. Execution depends on approval and liquidity.',
           duration: 10000,
         });
       } else {
-        toast.success(`🎯 REACTIVE TAKE-PROFIT TRIGGERED at $${formatDynamicPrice(effectiveMark)}!`, {
-          description: `Executing 100% Panic Exit on Somnia Tokyo to lock in gains!`,
-          duration: 10000,
-        });
+        toast.success(
+          `🎯 REACTIVE TAKE-PROFIT TRIGGERED at $${formatDynamicPrice(effectiveMark)}!`,
+          {
+            description:
+              'Requesting a full-exit order in your wallet. Execution depends on approval and liquidity.',
+            duration: 10000,
+          }
+        );
       }
 
       handlePanic(100);
     }
   }, [
     isArmed,
+    canExecute,
     hasActiveRisk,
     effectiveMark,
     effectiveIsLong,
@@ -515,14 +498,15 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   const stepStress = Math.max((maxStress - minStress) / 100, 0.0001);
 
   return (
-    <div className="bg-[#0d131d] border border-[#1a2536] rounded-xl p-6 space-y-5">
+    <div className="guardian-controls">
       {/* Active Tab Notice Banner while Armed */}
       {isArmed && (
-        <div className="p-3 rounded-lg bg-amber-500/15 border border-amber-500/40 text-xs font-mono text-amber-300 flex items-center justify-between animate-pulse">
+        <div className="guardian-notice" role="status">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              <strong>GUARD ARMED (ACTIVE TAB REQUIRED):</strong> Monitoring {effectiveSymbol} mark price triggers locally. Keep this tab open.
+              <strong>GUARD ARMED (ACTIVE TAB REQUIRED):</strong> Monitoring {effectiveSymbol} mark
+              price triggers locally. Keep this tab open.
             </span>
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 font-bold uppercase">
@@ -532,19 +516,21 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between border-b border-[#1a2536] pb-3 gap-2">
+      <div className="guardian-controls-heading">
         <div className="flex items-center space-x-2">
-          <ShieldAlert className="w-5 h-5 text-amber-400" />
+          <ShieldAlert className="w-4 h-4 brand-text" aria-hidden="true" />
           <h3 className="font-display font-extrabold text-lg text-white">
-            Reactive Client-Side Guard (Active Tab Required)
+            Browser-local risk controls
           </h3>
         </div>
 
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 cursor-pointer"
+            className="icon-button"
+            aria-pressed={soundEnabled}
             title={soundEnabled ? 'Mute Alerts' : 'Unmute Alerts'}
+            aria-label={soundEnabled ? 'Mute alerts' : 'Unmute alerts'}
           >
             {soundEnabled ? (
               <Volume2 className="w-4 h-4 text-cyan-400" />
@@ -552,15 +538,15 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
               <VolumeX className="w-4 h-4" />
             )}
           </button>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
-            Client-Side Execution
+          <span className="eyebrow">
+            Wallet approval required
           </span>
         </div>
       </div>
 
       {/* Multi-position selector if more than 1 open position */}
       {positions.length > 1 && (
-        <div className="p-2.5 rounded-lg bg-[#070a0e] border border-[#1a2536] flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+        <div className="guardian-position-picker">
           <span className="text-slate-400">Inspecting Position:</span>
           <div className="flex items-center space-x-1.5">
             {positions.map((p) => (
@@ -570,12 +556,10 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
                   setInspectedSymbol(p.marketSymbol);
                   setStressPrice(p.markPrice || p.entryPrice);
                 }}
-                className={`px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
-                  effectiveSymbol === p.marketSymbol
-                    ? 'bg-cyan-500 text-black shadow-xs'
-                    : 'bg-[#1a2536] text-slate-300 hover:text-white'
-                }`}
+                aria-pressed={effectiveSymbol === p.marketSymbol}
+                className="button guardian-button"
               >
+                <TokenLogo symbol={p.marketSymbol} size={18} />
                 {p.marketSymbol} ({p.isLong ? 'Long' : 'Short'})
               </button>
             ))}
@@ -583,61 +567,64 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         </div>
       )}
 
-      {/* Remaining Position Notice after partial Panic De-Risk */}
-      {remainingAfterDeRisk && (
-        <div className="p-3 rounded-lg bg-cyan-950/40 border border-cyan-800/50 flex items-center justify-between text-xs font-mono">
-          <div className="text-slate-200">
-            <span className="text-emerald-400 font-bold">De-Risk Executed: </span>
-            Closed {remainingAfterDeRisk.closed.toFixed(5)} {remainingAfterDeRisk.symbol}. Remaining position:{' '}
-            <strong className="text-cyan-400">{remainingAfterDeRisk.remaining.toFixed(5)} {remainingAfterDeRisk.symbol}</strong>.
-          </div>
-          <button
-            onClick={() => handlePanic(100)}
-            disabled={isPending || isConfirming}
-            className="px-3 py-1 rounded bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] cursor-pointer"
+      {hash && (
+        <p className="transaction-status" role="status">
+          {receipt?.status === 'reverted'
+            ? 'Transaction reverted'
+            : isConfirmed
+              ? 'Transaction confirmed · check refreshed positions for actual fills'
+              : 'Submitted · awaiting receipt'}{' '}
+          ·{' '}
+          <a
+            href={`https://explorer.testnet.somnia.network/tokyo/tx/${hash}`}
+            target="_blank"
+            rel="noreferrer"
           >
-            Retry Exit Remaining
-          </button>
-        </div>
+            View transaction ↗
+          </a>
+        </p>
       )}
 
-      {/* Health Factor Gauge HUD */}
-      <div className="bg-[#070a0e] border border-[#1a2536] p-4 rounded-xl space-y-3">
+      <div className="guardian-stress">
+      {/* Selected-market scenario, distinct from the overview's portfolio health. */}
+      <div className="guardian-control-section space-y-3">
         <div className="flex items-center justify-between font-mono text-xs">
           <span className="text-slate-300 font-semibold flex items-center space-x-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>HEALTH FACTOR ({effectiveSymbol}):</span>
+            <span>Stress ratio ({effectiveSymbol}):</span>
           </span>
-          <span className={`font-bold text-sm ${statusColor}`}>
-            {healthFactor.toFixed(2)}x ({status})
+          <span className={`font-bold text-sm ${hasActiveRisk && poolParams ? statusColor : 'muted'}`}>
+            {hasActiveRisk && poolParams
+              ? `${healthFactor.toFixed(2)}× (${status})`
+              : 'Unavailable'}
           </span>
         </div>
 
         {/* Progress Bar */}
         <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden flex">
           <div
-            className={`bg-gradient-to-r ${barGradient} h-3 rounded-full transition-all duration-300`}
-            style={{ width: `${gaugePercent}%` }}
+            className="guardian-stress-bar"
+            data-warning={healthFactor <= 1.5}
+            style={{ width: `${hasActiveRisk && poolParams ? gaugePercent : 0}%` }}
           ></div>
         </div>
 
         <div className="flex justify-between text-[11px] font-mono text-slate-400">
-          <span>Close-Out (&lt;1.0x)</span>
-          <span>Margin Call (1.5x)</span>
-          <span>Safe (&gt;2.5x)</span>
+          <span>Low (&lt;1.0×)</span>
+          <span>Reduced (1.5×)</span>
+          <span>Higher (&gt;2.5×)</span>
         </div>
 
         <div className="text-[10px] font-mono text-slate-500 pt-1 border-t border-[#1a2536]">
           * Maintenance Margin Requirement:{' '}
           <span className="text-cyan-400 font-bold">
-            {(maintenanceMarginBps / 100).toFixed(2)}%
+            {maintenanceMarginBps !== undefined ? `${(maintenanceMarginBps / 100).toFixed(2)}%` : 'Unavailable'}
           </span>{' '}
-          (Read directly from on-chain contract parameters)
+          (Selected-market approximation; excludes other positions)
         </div>
       </div>
 
       {/* Price Stress Testing Simulator */}
-      <div className="space-y-3 bg-[#070a0e]/80 border border-[#1a2536] p-4 rounded-xl">
+      <div className="guardian-control-section space-y-3">
         <div className="flex items-center justify-between text-xs font-mono">
           <div className="flex items-center space-x-2">
             <span className="text-slate-300 font-bold">Hypothetical Stress Simulator:</span>
@@ -651,9 +638,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         </div>
 
         <p className="text-[11px] text-slate-400 leading-relaxed font-mono">
-          * This predictive slider models hypothetical margin outcomes under extreme market
-          volatility. It calculates projected equity and margin ratios based on protocol math; it
-          does <span className="text-amber-400 font-semibold">NOT</span> represent live market fills.
+          Unlocked collateral plus this position’s hypothetical PnL. Excludes other positions,
+          funding and exit fees. This is a scenario, not portfolio health or a fill forecast.
         </p>
 
         {hasActiveRisk ? (
@@ -664,7 +650,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
               max={maxStress}
               step={stepStress}
               value={stressPrice}
-              onChange={(e) => setStressPrice(parseFloat(e.target.value))}
+              onChange={(e) => { setStressEdited(true); setStressPrice(parseFloat(e.target.value)); }}
               aria-label="Hypothetical Stress Price Simulator"
               className="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
             />
@@ -676,7 +662,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
             <div className="grid grid-cols-2 gap-2 pt-2 text-xs font-mono border-t border-[#1a2536]">
               <div>
-                <span className="text-slate-400">Projected Equity:</span>
+                <span className="text-slate-400">Scenario equity:</span>
                 <span className="text-white font-bold ml-2">${simEquity.toFixed(2)} USDso</span>
               </div>
               <div className="text-right">
@@ -684,20 +670,22 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
                 <span
                   className={`font-bold ml-2 ${simPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
                 >
-                  {simPnl >= 0 ? '+' : ''}${simPnl.toFixed(4)}
+                  {simPnl >= 0 ? '+' : ''}{simPnl.toFixed(4)} USDso
                 </span>
               </div>
             </div>
           </>
         ) : (
           <div className="py-2 text-center text-xs font-mono text-slate-500">
-            No active position open in {effectiveSymbol}. Open a trade to enable live risk simulations.
+            No active position in {effectiveSymbol}. Stress estimates require a position.
           </div>
         )}
       </div>
+      </div>
 
       {/* Reactive SL/TP Trigger Engine Controls */}
-      <div className="bg-[#070a0e] border border-[#1a2536] p-4 rounded-xl space-y-4">
+      <div className="guardian-triggers">
+      <div className="guardian-control-section space-y-4">
         <div className="flex items-center justify-between border-b border-[#1a2536] pb-2">
           <div className="flex items-center space-x-2">
             <span className="text-xs font-bold font-mono text-white">
@@ -707,7 +695,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
           <span
             className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
               isArmed
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 animate-pulse'
+                 ? 'brand-text border-violet-500'
                 : 'bg-slate-800 text-slate-400 border-slate-700'
             }`}
           >
@@ -725,7 +713,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
                   <button
                     key={pct}
                     onClick={() => applySlPercent(pct)}
-                    disabled={!hasActiveRisk}
+                    disabled={!hasActiveRisk || isArmed}
+                    aria-label={`Stop loss ${pct}% from entry`}
                     className="px-1.5 py-0.5 rounded bg-[#1a2536] text-[10px] text-rose-300 hover:text-white disabled:opacity-40 cursor-pointer"
                   >
                     -{pct}%
@@ -737,6 +726,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
               type="number"
               step="any"
               value={stopLossPrice}
+              aria-label="Stop-loss trigger in USDso"
               onChange={(e) => {
                 setStopLossPrice(e.target.value);
                 saveSlTpState(e.target.value, takeProfitPrice, isArmed);
@@ -756,7 +746,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
                   <button
                     key={pct}
                     onClick={() => applyTpPercent(pct)}
-                    disabled={!hasActiveRisk}
+                    disabled={!hasActiveRisk || isArmed}
+                    aria-label={`Take profit ${pct}% from entry`}
                     className="px-1.5 py-0.5 rounded bg-[#1a2536] text-[10px] text-emerald-300 hover:text-white disabled:opacity-40 cursor-pointer"
                   >
                     +{pct}%
@@ -768,6 +759,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
               type="number"
               step="any"
               value={takeProfitPrice}
+              aria-label="Take-profit trigger in USDso"
               onChange={(e) => {
                 setTakeProfitPrice(e.target.value);
                 saveSlTpState(stopLossPrice, e.target.value, isArmed);
@@ -782,12 +774,9 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         {/* Toggle Arm / Disarm */}
         <button
           onClick={handleToggleArm}
-          disabled={!hasActiveRisk}
-          className={`w-full py-2.5 rounded-lg font-mono text-xs font-extrabold transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 ${
-            isArmed
-              ? 'bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500'
-              : 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white border border-emerald-500'
-          }`}
+          disabled={!isArmed && (!hasActiveRisk || !canExecute)}
+           className="button button-primary guardian-arm"
+           aria-pressed={isArmed}
         >
           {isArmed ? (
             <>
@@ -796,47 +785,54 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
             </>
           ) : (
             <>
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+               <ShieldCheck className="w-4 h-4" />
               <span>ARM CLIENT-SIDE REACTIVE GUARD</span>
             </>
           )}
         </button>
 
         <p className="text-[10px] font-mono text-slate-500 text-center">
-          * Note: Browser power-saving policies may throttle background timer execution. Keep this browser tab open and active for optimal trigger response.
+          Keep this tab active. Background throttling can delay triggers. Reloading, switching
+          accounts or networks disarms the guard; each exit still needs wallet approval.
         </p>
       </div>
 
       {/* Manual Emergency Exit / De-Risk Buttons */}
       <div className="space-y-2">
         <span className="text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
-          Direct On-Chain Emergency Actions
+           Reduce position · IOC orders
         </span>
         <div className="grid grid-cols-2 gap-3">
           <button
-            disabled={!hasActiveRisk || isPending || isConfirming}
+            disabled={
+              !hasActiveRisk || !canExecute || effectiveMark <= 0 || isPending || isConfirming
+            }
             onClick={() => handlePanic(50)}
-            className="py-2.5 px-3 rounded-lg bg-amber-500/15 hover:bg-amber-500 border border-amber-500 text-amber-300 hover:text-black font-display font-bold text-xs transition-all flex items-center justify-center space-x-1 disabled:opacity-40 cursor-pointer"
+             className="button guardian-button"
           >
             <span>
               {activePanicPercent === 50 && (isPending || isConfirming)
-                ? 'Executing...'
+                 ? (isPending ? 'Awaiting wallet…' : 'Confirming…')
                 : 'De-Risk 50%'}
             </span>
           </button>
 
           <button
-            disabled={!hasActiveRisk || isPending || isConfirming}
+            disabled={
+              !hasActiveRisk || !canExecute || effectiveMark <= 0 || isPending || isConfirming
+            }
             onClick={() => handlePanic(100)}
-            className="py-2.5 px-3 rounded-lg bg-rose-500/20 hover:bg-rose-600 border border-rose-500 text-rose-300 hover:text-white font-display font-bold text-xs transition-all flex items-center justify-center space-x-1 disabled:opacity-40 cursor-pointer"
+             className="button guardian-button"
           >
             <span>
               {activePanicPercent === 100 && (isPending || isConfirming)
-                ? 'Executing...'
+                 ? (isPending ? 'Awaiting wallet…' : 'Confirming…')
                 : 'Panic Exit 100%'}
             </span>
           </button>
         </div>
+        <p className="form-note">Percentages request a lot-rounded exit. Confirmation does not guarantee a full fill.</p>
+      </div>
       </div>
     </div>
   );

@@ -1,785 +1,615 @@
 import React, { useState, useRef } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseUnits, formatUnits, zeroAddress } from 'viem';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { perpPoolAbi } from '@/chain/abis';
 import type { MarketInfo } from '@/lib/data/indexer';
-import { computeLiquidationPrice } from '@/lib/math/liquidation';
-import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
+import { quantizeToGrid } from '@/lib/math/format';
+import { positiveDecimal, validateOrderInput } from '@/lib/math/orderInput';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
+import { HelpTip } from '@/components/HelpTip';
+import { AnimatedValue } from '@/components/AnimatedValue';
+import { ReadValue } from '@/components/ReadValue';
+import type { ReadDisplay } from '@/lib/data/readDisplay';
+import { sizingLiquidation } from '@/lib/math/preview';
+import { Check, LoaderCircle, Plus } from 'lucide-react';
 
 interface TradingBoxProps {
   market: MarketInfo;
   markPrice: number;
   availableMargin: number;
+  availableRead: ReadDisplay;
+  marginReady: boolean;
   totalUnlockedMargin?: number;
   currentPosition?: PositionItem;
   onOrderSuccess?: () => void;
+  onOpenMarginHub: () => void;
+}
+function savedLeverage(pool: string) {
+  try {
+    const value = Number(localStorage.getItem(`lucidkeeper_leverage_${pool.toLowerCase()}`));
+    return Number.isInteger(value) && value >= 1 && value <= 100 ? value : 5;
+  } catch {
+    return 5;
+  }
 }
 
-export const TradingBox: React.FC<TradingBoxProps> = ({
+export function TradingBox({
   market,
   markPrice,
   availableMargin,
-  totalUnlockedMargin,
+  availableRead,
+  marginReady,
   currentPosition,
   onOrderSuccess,
-}) => {
-  const { address, isConnected } = useAccount();
-
-  // Read pool parameters dynamically from the contract
-  const { data: poolParams } = useReadContract({
+  onOpenMarginHub,
+}: TradingBoxProps) {
+  const { address, isConnected, chainId } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const publicClient = usePublicClient({ chainId: 50383 });
+  const [simulating, setSimulating] = useState(false);
+  const submissionLock = useRef(false);
+  const [now, setNow] = useState(Date.now);
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(timer);
+  }, []);
+  const paramsQuery = useReadContract({
     address: market.poolAddress as `0x${string}`,
     abi: perpPoolAbi,
     functionName: 'getPerpPoolParameters',
+    chainId: 50383,
+    query: { refetchInterval: 15000 },
   });
-
-  // Read orderbook grid parameters (tickSize, minQuantity, lotSize)
-  const { data: orderBookParams } = useReadContract({
+  const gridQuery = useReadContract({
     address: market.poolAddress as `0x${string}`,
     abi: perpPoolAbi,
     functionName: 'getOrderBookParameters',
+    chainId: 50383,
+    query: { refetchInterval: 15000 },
   });
-
+  const poolParams = paramsQuery.data;
+  const orderBookParams = gridQuery.data;
+  const parametersReady = !!poolParams && !paramsQuery.isError && now - paramsQuery.dataUpdatedAt < 45000;
   const maxLeverage = poolParams?.initialMarginBps
     ? Math.floor(10000 / poolParams.initialMarginBps)
     : 20;
-  const maintenanceMarginBps = poolParams?.maintenanceMarginBps
-    ? BigInt(poolParams.maintenanceMarginBps)
-    : 250n;
-  const takerFeeRate = poolParams?.takerFeeBpsTimes1k
-    ? Number(poolParams.takerFeeBpsTimes1k) / (1000 * 10000)
-    : 0;
-
+  const takerFeeRate = parametersReady ? Number(poolParams!.takerFeeBpsTimes1k) / (1000 * 10000) : null;
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
-  const [limitPrice, setLimitPrice] = useState<string>(markPrice ? markPrice.toString() : '');
-  const [quantity, setQuantity] = useState<string>(market.minQuantity || '0.00013');
-  const [marginInput, setMarginInput] = useState<string>('2.0');
+  const [limitPrice, setLimitPrice] = useState('');
+  const [quantity, setQuantity] = useState(market.minQuantity);
+  const [marginInput, setMarginInput] = useState('5.0');
   const [lastEdited, setLastEdited] = useState<'size' | 'margin'>('margin');
-  const [leverage, setLeverage] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`);
-      if (saved && !isNaN(parseInt(saved, 10))) return parseInt(saved, 10);
-    }
-    return 5;
-  });
-
-  const executionPrice = orderType === 'market' ? markPrice : parseFloat(limitPrice) || markPrice;
-
-  const lotDecimals =
-    market.lotSize && market.lotSize.includes('.')
-      ? market.lotSize.split('.')[1].replace(/0+$/, '').length || 0
-      : market.minQuantity && market.minQuantity.includes('.')
-      ? market.minQuantity.split('.')[1].replace(/0+$/, '').length || 0
-      : 0;
-
+  const [leverage, setLeverage] = useState(() => savedLeverage(market.poolAddress));
+  const [submitError, setSubmitError] = useState('');
+  const executionPrice = orderType === 'market' ? markPrice : positiveDecimal(limitPrice) || 0;
+  const lotDecimals = market.lotSize.includes('.')
+    ? market.lotSize.split('.')[1].replace(/0+$/, '').length
+    : 0;
   const syncQuantityFromMargin = React.useCallback(
     (targetMargin: number, currentLev: number, price: number, syncInput = false) => {
-      if (price <= 0 || targetMargin <= 0) return;
-      // In dreamDEX, market IOC orders lock position margin + 2% adverse slippage buffer on-chain
+      if (!Number.isFinite(targetMargin) || price <= 0 || targetMargin <= 0) {
+        setQuantity('');
+        return;
+      }
       const effectiveMarginRate =
         (currentLev > 0 ? 1 / currentLev : 1) + (orderType === 'market' ? 0.02 : 0);
-      const targetNotional = targetMargin / effectiveMarginRate;
-      const rawQty = targetNotional / price;
-      const minQty = parseFloat(market.minQuantity || '0.00001');
-      const lotStep = parseFloat(market.lotSize || '0.00001');
-      const snapped = Math.max(Math.round(rawQty / lotStep) * lotStep, minQty);
+      const rawQty = targetMargin / effectiveMarginRate / price;
+      const lotStep = Number(market.lotSize);
+      // Floor budget sizing so Max never rounds up beyond available margin. Protocol minimum is explicit below.
+      const snapped = Math.max(
+        Math.floor((rawQty + Number.EPSILON) / lotStep) * lotStep,
+        Number(market.minQuantity)
+      );
       setQuantity(snapped.toFixed(lotDecimals));
-
-      // Calculate the true total margin locked on-chain for this snapped quantity
-      const actualNotional = snapped * price;
-      const actualTotalMargin = actualNotional * effectiveMarginRate;
-      if (syncInput || targetMargin < actualTotalMargin - 0.01) {
-        setMarginInput(actualTotalMargin.toFixed(2));
-      }
+      if (syncInput) setMarginInput((snapped * price * effectiveMarginRate).toFixed(2));
     },
     [market.minQuantity, market.lotSize, lotDecimals, orderType]
   );
 
-  // Sync leverage when market changes
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`);
-      if (saved && !isNaN(parseInt(saved, 10))) {
-        setLeverage(parseInt(saved, 10));
-      }
-    }
-  }, [market.poolAddress]);
-
-  // Sync defaults when market or price changes
+    setLeverage(savedLeverage(market.poolAddress));
+    setQuantity(market.minQuantity);
+    setLimitPrice('');
+    setLastEdited('margin');
+    setSubmitError('');
+  }, [market.poolAddress, market.minQuantity]);
   React.useEffect(() => {
-    if (executionPrice > 0) {
-      if (lastEdited === 'margin') {
-        const numMargin = parseFloat(marginInput) || 0;
-        if (numMargin > 0) {
-          syncQuantityFromMargin(numMargin, leverage, executionPrice);
-        }
-      } else if (market.minQuantity && !quantity) {
-        setQuantity(market.minQuantity);
-      }
-    }
-  }, [market.id, executionPrice, lastEdited, leverage, marginInput, syncQuantityFromMargin]);
-
+    if (poolParams && leverage > maxLeverage) setLeverage(maxLeverage);
+  }, [poolParams, maxLeverage, leverage]);
   React.useEffect(() => {
-    if (markPrice > 0 && orderType === 'market') {
-      setLimitPrice(markPrice < 1 ? markPrice.toFixed(4) : markPrice.toFixed(2));
-    }
-  }, [market.id, markPrice, orderType]);
+    if (lastEdited === 'margin' && executionPrice > 0)
+      syncQuantityFromMargin(positiveDecimal(marginInput) || 0, leverage, executionPrice);
+  }, [executionPrice, lastEdited, leverage, marginInput, syncQuantityFromMargin]);
+  React.useEffect(() => {
+    const size = positiveDecimal(quantity);
+    if (lastEdited === 'size' && size && executionPrice > 0)
+      setMarginInput(
+        (size * executionPrice * (1 / leverage + (orderType === 'market' ? 0.02 : 0))).toFixed(2)
+      );
+  }, [lastEdited, quantity, executionPrice, leverage, orderType]);
 
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
-
-  const notifiedHashRef = React.useRef<string | null>(null);
-  const lastOrderRef = useRef<{ symbol: string; side: 'buy' | 'sell'; size: number; price: number } | null>(null);
-
+  const receipt = useWaitForTransactionReceipt({ hash });
+  const isConfirming = receipt.isLoading;
+  const confirmed = receipt.data?.status === 'success';
+  const notifiedHash = useRef<string | null>(null);
+  const lastOrder = useRef<{
+    account: string;
+    symbol: string;
+    side: 'buy' | 'sell';
+    size: number;
+    price: number;
+  } | null>(null);
   React.useEffect(() => {
-    if (isConfirmed && hash && notifiedHashRef.current !== hash) {
-      notifiedHashRef.current = hash;
-      if (lastOrderRef.current && address) {
-        const o = lastOrderRef.current;
-        saveTradeHistoryItem(address, {
+    if (confirmed && hash && notifiedHash.current !== hash) {
+      notifiedHash.current = hash;
+      const order = lastOrder.current;
+      if (order)
+        saveTradeHistoryItem(order.account, {
           id: `trade-${hash}`,
           hash,
           type: 'order',
-          marketSymbol: o.symbol,
-          side: o.side,
-          size: o.size,
-          price: o.price,
+          marketSymbol: order.symbol,
+          side: order.side,
+          size: order.size,
+          price: order.price,
           timestamp: Date.now(),
-          description: `OrderPlaced & Filled (${o.side === 'buy' ? 'Long' : 'Short'} ${o.size} ${o.symbol} @ $${o.price.toFixed(2)})`,
+          description: `Order transaction confirmed · requested ${order.side} ${order.size} ${order.symbol}; fill not yet verified`,
         });
-      }
-      toast.success('Order confirmed on Somnia Tokyo!', {
-        id: `order-confirmed-${hash}`,
-        description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
+      toast.success('Order transaction confirmed', {
+        description: 'Check positions and indexed fills for the execution result.',
       });
       onOrderSuccess?.();
     }
-  }, [isConfirmed, hash, onOrderSuccess, address]);
+  }, [confirmed, hash, onOrderSuccess]);
 
-  // Dynamic Calculations
-  const numericQty = parseFloat(quantity) || 0;
+  const numericQty = positiveDecimal(quantity) || 0;
   const notional = numericQty * executionPrice;
   const baseMargin = leverage > 0 ? notional / leverage : notional;
-  // DreamDEX reserves an adverse slippage buffer on-chain for market IOC orders (2%)
   const slippageBuffer = orderType === 'market' ? notional * 0.02 : 0;
   const totalOrderMargin = baseMargin + slippageBuffer;
-  const estFee = notional * takerFeeRate;
-
-  // Netting projections when active position exists in this market
   const isSameSide =
     currentPosition &&
     ((currentPosition.isLong && side === 'buy') || (!currentPosition.isLong && side === 'sell'));
-
-  // Calculate actual incremental margin required for this order
-  // If order is purely reducing/closing an active position, on-chain IM check is bypassed
   let effectiveMarginRequired = totalOrderMargin;
   if (currentPosition && !isSameSide) {
-    if (numericQty <= currentPosition.size) {
-      effectiveMarginRequired = 0; // Purely reducing / closing
-    } else {
-      const increasingQty = numericQty - currentPosition.size;
-      const incNotional = increasingQty * executionPrice;
-      const incBaseMargin = leverage > 0 ? incNotional / leverage : incNotional;
-      const incSlippage = orderType === 'market' ? incNotional * 0.02 : 0;
-      effectiveMarginRequired = incBaseMargin + incSlippage;
+    if (numericQty <= currentPosition.size) effectiveMarginRequired = 0;
+    else {
+      const incNotional = (numericQty - currentPosition.size) * executionPrice;
+      effectiveMarginRequired =
+        incNotional / leverage + (orderType === 'market' ? incNotional * 0.02 : 0);
     }
   }
-
-  const hasInsufficientMargin = effectiveMarginRequired > availableMargin;
-  const marginShortfall = hasInsufficientMargin ? effectiveMarginRequired - availableMargin : 0;
-
-  const projectedNewSize = currentPosition && isSameSide ? currentPosition.size + numericQty : numericQty;
-  const projectedAvgPrice =
-    currentPosition && isSameSide && projectedNewSize > 0 && executionPrice > 0
-      ? (currentPosition.size * currentPosition.entryPrice + numericQty * executionPrice) / projectedNewSize
-      : executionPrice;
-
-  const handleLeverageChange = (newLev: number) => {
-    setLeverage(newLev);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`, newLev.toString());
-    }
-    if (lastEdited === 'margin' && executionPrice > 0) {
-      const numMargin = parseFloat(marginInput) || 0;
-      if (numMargin > 0) {
-        syncQuantityFromMargin(numMargin, newLev, executionPrice);
-      }
-    }
+  const inputError = validateOrderInput({
+    quantity,
+    limitPrice,
+    margin: marginInput,
+    orderType,
+    ...market,
+  });
+  const hasInsufficientMargin = marginReady && effectiveMarginRequired > availableMargin;
+  const estimateValid = !inputError && executionPrice > 0 && Number.isFinite(notional);
+  const liquidation = estimateValid && parametersReady && takerFeeRate !== null ? sizingLiquidation({
+    price: executionPrice, quantity: numericQty, leverage, isLong: side === 'buy',
+    maintenanceBps: poolParams!.maintenanceMarginBps, feeRate: takerFeeRate,
+  }) : null;
+  const blocked =
+    inputError?.message ||
+    (markPrice <= 0
+      ? 'A current mark price is required.'
+      : !marginReady
+        ? 'Account margin is unavailable. Waiting for on-chain data.'
+        : !parametersReady || !orderBookParams || gridQuery.isError || now - gridQuery.dataUpdatedAt >= 45000
+          ? 'Waiting for current market parameters.'
+          : hasInsufficientMargin
+            ? `Insufficient margin. Add ${(effectiveMarginRequired - availableMargin).toFixed(2)} USDso or reduce size.`
+            : '');
+  const amount = (value: number, digits = 2) =>
+    estimateValid
+      ? <AnimatedValue value={value} digits={digits} />
+      : '—';
+  const setMargin = (value: string) => {
+    setLastEdited('margin');
+    setMarginInput(value);
+    if (!positiveDecimal(value)) setQuantity('');
   };
-
-  const handleQuantityInput = (newQty: string) => {
+  const setSize = (value: string) => {
     setLastEdited('size');
-    setQuantity(newQty);
-    const num = parseFloat(newQty) || 0;
-    const derivedNotional = num * executionPrice;
-    const effectiveMarginRate =
-      (leverage > 0 ? 1 / leverage : 1) + (orderType === 'market' ? 0.02 : 0);
-    const totalMargin = derivedNotional * effectiveMarginRate;
-    setMarginInput(totalMargin.toFixed(2));
+    setQuantity(value);
+    const num = positiveDecimal(value);
+    setMarginInput(
+      num && executionPrice > 0
+        ? (num * executionPrice * (1 / leverage + (orderType === 'market' ? 0.02 : 0))).toFixed(2)
+        : ''
+    );
   };
-
-  const handleMarginInput = (newMargin: string) => {
-    setLastEdited('margin');
-    setMarginInput(newMargin);
-    const num = parseFloat(newMargin) || 0;
-    syncQuantityFromMargin(num, leverage, executionPrice);
-  };
-
-  const handleMarginPreset = (amount: number) => {
-    setLastEdited('margin');
-    setMarginInput(amount.toString());
-    syncQuantityFromMargin(amount, leverage, executionPrice, true);
-  };
-
-  const handlePercentPreset = (percent: number) => {
-    setLastEdited('margin');
-    if (availableMargin <= 0) {
-      toast.error('No unlocked collateral available in MarginBank');
-      return;
+  const changeLeverage = (value: number) => {
+    setLeverage(value);
+    try {
+      localStorage.setItem(
+        `lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`,
+        String(value)
+      );
+    } catch {
+      /* Optional preference. */
     }
-    const calc = Math.max((availableMargin * percent) / 100, 0.01);
-    const formatted = parseFloat(calc.toFixed(2)).toString();
-    setMarginInput(formatted);
-    syncQuantityFromMargin(parseFloat(formatted), leverage, executionPrice, true);
   };
-
-  // Precision matching market grid and quote decimals
-  const tickDecimals =
-    market.tickSize && market.tickSize.includes('.')
-      ? market.tickSize.split('.')[1].length
-      : executionPrice < 1
-      ? 4
-      : 2;
-
-  // Projected liquidation price calculation using real on-chain parameters
-  const accountEquity = parseUnits(Math.max(0, availableMargin).toString(), 18);
-  const projectedMmReq = parseUnits((notional * (Number(maintenanceMarginBps) / 10000)).toFixed(6), 18);
-  const rawSize = parseUnits(quantity || '0', market.baseDecimals);
-  const rawMark = parseUnits(
-    executionPrice > 0
-      ? executionPrice.toFixed(Math.min(tickDecimals, market.quoteDecimals))
-      : '0',
-    market.quoteDecimals
-  );
-  const oneBase = 10n ** BigInt(market.baseDecimals);
-
-  const projectedLiq = availableMargin > 0 && executionPrice > 0 && notional > 0
-    ? computeLiquidationPrice({
-        equity: accountEquity,
-        mmReq: projectedMmReq,
-        size: side === 'buy' ? rawSize : -rawSize,
-        markPrice: rawMark,
-        maintenanceMarginBps,
-        oneBase,
-      })
-    : null;
-
-  const formattedLiqPrice = projectedLiq
-    ? executionPrice < 1
-      ? parseFloat(formatUnits(projectedLiq, 18)).toFixed(4)
-      : parseFloat(formatUnits(projectedLiq, 18)).toFixed(2)
-    : null;
 
   const handleExecuteOrder = async () => {
-    if (!isConnected) {
-      toast.error('Please connect your wallet first');
+    if (!isConnected || !address) {
+      openConnectModal?.();
       return;
     }
-
-    if (hasInsufficientMargin) {
-      toast.error('Margen Insuficiente', {
-        description: `El trade requiere $${effectiveMarginRequired.toFixed(2)} USDso de margen pero solo dispones de $${availableMargin.toFixed(2)} USDso en MarginBank.`,
-      });
-      return;
-    }
-
+    if (blocked || chainId !== 50383 || isPending || isConfirming || submissionLock.current || !publicClient) return;
+    submissionLock.current = true;
+    setSubmitError('');
+    let stage = 'preparation';
     try {
       const rawTickSize =
-        orderBookParams?.tickSize ??
-        parseUnits(market.tickSize || '0.00001', market.quoteDecimals);
+        orderBookParams?.tickSize ?? parseUnits(market.tickSize, market.quoteDecimals);
       const rawLotSize =
-        orderBookParams?.lotSize ??
-        parseUnits(market.lotSize || '0.00001', market.baseDecimals);
-
+        orderBookParams?.lotSize ?? parseUnits(market.lotSize, market.baseDecimals);
       let rawPrice: bigint;
       if (orderType === 'market') {
-        // 2% IOC slippage: ceiling for buy, floor for sell to cross book
         const basePriceAtoms = parseUnits(
           executionPrice.toFixed(market.quoteDecimals > 6 ? 6 : 2),
           market.quoteDecimals
         );
         const slippagePrice =
-          side === 'buy'
-            ? (basePriceAtoms * 102n) / 100n
-            : (basePriceAtoms * 98n) / 100n;
+          side === 'buy' ? (basePriceAtoms * 102n) / 100n : (basePriceAtoms * 98n) / 100n;
         rawPrice = quantizeToGrid(slippagePrice, rawTickSize, 'floor');
         if (rawPrice === 0n) rawPrice = rawTickSize;
       } else {
-        const baseLimitPrice = parseUnits(
-          limitPrice || executionPrice.toString(),
-          market.quoteDecimals
+        rawPrice = quantizeToGrid(
+          parseUnits(limitPrice, market.quoteDecimals),
+          rawTickSize,
+          'round'
         );
-        rawPrice = quantizeToGrid(baseLimitPrice, rawTickSize, 'round');
         if (rawPrice === 0n) rawPrice = rawTickSize;
       }
-
-      const parsedQty = parseUnits(quantity || '0', market.baseDecimals);
-      const rawQuantity = quantizeToGrid(parsedQty, rawLotSize, 'floor');
-
-      if (orderBookParams?.minQuantity && rawQuantity < orderBookParams.minQuantity) {
-        toast.error(`Order size is below market minimum (${market.minQuantity} ${market.baseSymbol})`);
+      const rawQuantity = quantizeToGrid(
+        parseUnits(quantity, market.baseDecimals),
+        rawLotSize,
+        'floor'
+      );
+      if (
+        rawQuantity <= 0n ||
+        (orderBookParams?.minQuantity && rawQuantity < orderBookParams.minQuantity)
+      ) {
+        setSubmitError(
+          `Order size is below the current market minimum (${market.minQuantity} ${market.baseSymbol}).`
+        );
         return;
       }
-
-      const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n; // 5 mins in ns
-
-      // Type 2 = IOC for Market, Type 0 = Limit
-      const onchainOrderType = orderType === 'market' ? 2 : 0;
-
-      // Save chosen leverage before submitting
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`, leverage.toString());
-      }
-
-      lastOrderRef.current = {
+      const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n;
+      lastOrder.current = {
+        account: address,
         symbol: market.baseSymbol,
         side,
         size: numericQty,
         price: executionPrice,
       };
-
-      toast.info('Simulating and preparing transaction in wallet...');
-
-      await writeContractAsync({
+      const request = {
         chainId: 50383,
         address: market.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
         args: [
           side === 'buy',
-          0n, // userData (uint64)
+          0n,
           rawPrice,
           rawQuantity,
           expiry,
-          onchainOrderType,
-          0, // selfMatchingOption
+          orderType === 'market' ? 2 : 0,
+          0,
           zeroAddress,
-          0n, // builderFeeBpsTimes1k (uint96)
-        ],
+          0n,
+        ] as const,
         gas: 5_000_000n,
-      });
-
-      toast.success('Transaction submitted! Awaiting Tokyo confirmation...');
-    } catch (err: any) {
-      console.error('Order error:', err);
-      toast.error('Order placement rejected or failed', {
-        description: err?.shortMessage || err?.message || 'Transaction reverted',
-      });
+      } as const;
+      setSimulating(true);
+      stage = 'simulation';
+      await publicClient.simulateContract({ ...request, account: address });
+      setSimulating(false);
+      stage = 'wallet';
+      toast.info('Review the order transaction in your wallet');
+      await writeContractAsync(request);
+      toast.info('Transaction submitted · awaiting confirmation');
+    } catch (error) {
+      const detail =
+        (error as { shortMessage?: string; message?: string }).shortMessage ||
+        (error as Error).message ||
+        'Order submission failed';
+      const message = stage === 'simulation'
+        ? `Order simulation failed. Refresh account data or reduce size before retrying. ${detail}`
+        : detail;
+      setSubmitError(message);
+      toast.error('Order rejected or failed', { description: message });
+    } finally {
+      setSimulating(false);
+      submissionLock.current = false;
     }
   };
 
   return (
-    <div className="bg-[#0d131d] border border-[#1a2536] rounded-xl p-5 space-y-4">
-      <div className="flex items-center justify-between border-b border-[#1a2536] pb-3">
-        <h3 className="font-display font-bold text-base text-white">Execution Terminal</h3>
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/40">
-          CLOB Direct
-        </span>
+    <div className="order-entry">
+      <div className="panel-heading">
+        <h2>Place order</h2>
+        <span className="eyebrow">{market.baseSymbol}-PERP</span>
       </div>
-
-      {/* Buy / Sell Direction Tabs */}
-      {currentPosition && (
-        <div className="space-y-1.5">
-          <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-xs font-mono flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                  currentPosition.isLong
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                }`}
-              >
-                ACTIVE {currentPosition.isLong ? 'LONG' : 'SHORT'}
-              </span>
-              <span className="text-white font-semibold">
-                {currentPosition.size} {market.baseSymbol}
-              </span>
-            </div>
-            <span className="text-slate-400">
-              Avg: ${formatDynamicPrice(currentPosition.entryPrice)}
-            </span>
-          </div>
-          <div className="text-[10px] font-mono text-slate-400 flex items-center justify-between px-1">
-            <span>Market Mode:</span>
-            <span
-              className="text-cyan-400 font-semibold"
-              title="dreamDEX opera en modelo Netting: órdenes en el mismo activo consolidan en una única posición neta con precio promediado"
-            >
-              Netting (One Position per Asset)
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-[#070a0e] border border-[#1a2536]">
-        <button
-          onClick={() => setSide('buy')}
-          className={`py-2 rounded-md font-display font-bold text-sm transition-all ${
-            side === 'buy'
-              ? 'bg-emerald-500 text-black shadow-lg glow-emerald'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Long / Buy
-        </button>
-        <button
-          onClick={() => setSide('sell')}
-          className={`py-2 rounded-md font-display font-bold text-sm transition-all ${
-            side === 'sell'
-              ? 'bg-rose-500 text-white shadow-lg glow-rose'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Short / Sell
-        </button>
-      </div>
-
-      {/* Order Type Selector */}
-      <div className="flex items-center space-x-2 text-xs font-mono">
-        <button
-          onClick={() => setOrderType('market')}
-          className={`px-3 py-1 rounded transition-colors ${
-            orderType === 'market'
-              ? 'bg-[#1a2536] text-cyan-400 font-bold'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Market (IOC)
-        </button>
-        <button
-          onClick={() => setOrderType('limit')}
-          className={`px-3 py-1 rounded transition-colors ${
-            orderType === 'limit'
-              ? 'bg-[#1a2536] text-cyan-400 font-bold'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Limit
-        </button>
-      </div>
-
-      {/* Limit Price Input if Limit Order */}
-      {orderType === 'limit' && (
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs font-mono text-slate-400">
-            <span>Limit Price</span>
-            <span>USDso</span>
-          </div>
-          <input
-            type="number"
-            step={market.tickSize}
-            value={limitPrice}
-            onChange={(e) => setLimitPrice(e.target.value)}
-            aria-label="Limit Price in USDso"
-            className="w-full px-3 py-2 rounded-lg bg-[#070a0e] border border-[#1a2536] text-white font-mono text-sm focus:outline-hidden focus:border-cyan-500"
-          />
-        </div>
-      )}
-
-      {/* Margin Collateral Input with Presets */}
-      <div className="space-y-1.5">
-        <div className="flex justify-between text-xs font-mono text-slate-400">
-          <span className="font-semibold text-slate-300">Margin to Risk</span>
-          <span className={hasInsufficientMargin ? 'text-rose-400 font-semibold' : 'text-slate-400'}>
-            Avail: {availableMargin.toFixed(2)} USDso
-            {totalUnlockedMargin !== undefined && totalUnlockedMargin > availableMargin + 0.01 && (
-              <span className="text-slate-500 text-[10px] ml-1" title="Collateral total en MarginBank antes de descontar márgenes activos">
-                (Total: ${totalUnlockedMargin.toFixed(2)})
-              </span>
-            )}
-          </span>
-        </div>
-        <div className="relative">
-          <input
-            type="number"
-            step="0.5"
-            min="0.1"
-            value={marginInput}
-            onChange={(e) => handleMarginInput(e.target.value)}
-            aria-label="Margin amount to risk in USDso"
-            className={`w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border font-mono text-sm font-bold focus:outline-hidden transition-colors ${
-              hasInsufficientMargin
-                ? 'border-rose-500/80 text-rose-400 focus:border-rose-500'
-                : 'border-[#1a2536] text-cyan-400 focus:border-cyan-500'
-            }`}
-          />
-          <span className={`absolute right-3 top-2 text-xs font-mono font-bold ${hasInsufficientMargin ? 'text-rose-400' : 'text-cyan-400'}`}>
-            USDso
-          </span>
-        </div>
-        {/* Quick Margin Presets */}
-        <div className="grid grid-cols-6 gap-1 font-mono text-[10px]">
-          {[2, 5, 10].map((amt) => (
+      <div className="order-controls">
+        <div className="side-control" aria-label="Order side">
+          {(['buy', 'sell'] as const).map((value) => (
             <button
-              key={amt}
-              type="button"
-              onClick={() => handleMarginPreset(amt)}
-              className={`py-1 rounded border text-center font-bold cursor-pointer transition-colors ${
-                marginInput === amt.toString()
-                  ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40'
-                  : 'bg-[#070a0e] hover:bg-slate-800 border-[#1a2536] text-slate-300'
-              }`}
+              key={value}
+              data-side={value}
+              aria-pressed={side === value}
+              onClick={() => setSide(value)}
             >
-              ${amt}
-            </button>
-          ))}
-          {[25, 50, 100].map((pct) => (
-            <button
-              key={pct}
-              type="button"
-              onClick={() => handlePercentPreset(pct)}
-              className="py-1 rounded bg-[#070a0e] hover:bg-slate-800 border border-[#1a2536] text-slate-400 hover:text-white text-center cursor-pointer"
-            >
-              {pct === 100 ? 'Max' : `${pct}%`}
+              {value === 'buy' ? 'Long / Buy' : 'Short / Sell'}
             </button>
           ))}
         </div>
-        {/* Minimum Order Size Awareness Notice */}
-        {numericQty <= parseFloat(market.minQuantity || '0') && (parseFloat(marginInput) || 0) * leverage < notional - 0.05 && (
-          <div className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-2.5 py-1.5 flex items-center justify-between font-mono">
-            <span>
-              ℹ️ Mínimo protocolo: {market.minQuantity} {market.baseSymbol} (${notional.toFixed(2)} USDso)
-            </span>
-            {leverage === 1 && maxLeverage > 1 && (
+        <div className="order-types" aria-label="Order type">
+          <button aria-pressed={orderType === 'market'} onClick={() => setOrderType('market')}>
+            Market
+          </button>
+          <button aria-pressed={orderType === 'limit'} onClick={() => setOrderType('limit')}>
+            Limit
+          </button>
+          <span className="eyebrow ml-auto self-center">
+            {orderType === 'market' ? 'IOC · 2% price buffer' : 'Good until expiry · 5m'}
+          </span>
+        </div>
+        <div className="field leverage-field">
+          <div className="field-label">
+            <label htmlFor="leverage">Sizing leverage</label>
+            <HelpTip label="sizing leverage">Used locally to size orders and estimate margin. This does not set isolated margin or a protocol leverage allocation.</HelpTip>
+            <strong className="numeric brand-text">{leverage}×</strong>
+          </div>
+          <input id="leverage" name="leverage" type="range" min={1} max={maxLeverage} value={leverage} onChange={(event) => changeLeverage(Number(event.target.value))} />
+          <div className="preset-row">
+            {[1, 2, 5, 10, 20].filter(value => value <= maxLeverage).map(value => <button key={value} aria-pressed={leverage === value} onClick={() => changeLeverage(value)}>{value}×</button>)}
+          </div>
+        </div>
+      </div>
+      <div className="order-fields">
+        {orderType === 'limit' && (
+          <div className="field">
+            <label className="field-label" htmlFor="limit-price">
+              Limit price{' '}
               <button
                 type="button"
-                onClick={() => handleLeverageChange(Math.min(5, maxLeverage))}
-                className="text-cyan-400 hover:text-cyan-300 font-bold underline ml-2 cursor-pointer"
+                className="text-cyan-400"
+                disabled={markPrice <= 0}
+                onClick={() =>
+                  setLimitPrice(
+                    (
+                      Math.round(markPrice / Number(market.tickSize)) * Number(market.tickSize)
+                    ).toFixed(market.tickSize.split('.')[1]?.length || 0)
+                  )
+                }
               >
-                Subir a {Math.min(5, maxLeverage)}x (${(notional / Math.min(5, maxLeverage)).toFixed(2)} margen)
+                Use mark
               </button>
-            )}
+            </label>
+            <div className="input-wrap">
+              <input
+                id="limit-price"
+                inputMode="decimal"
+                autoComplete="off"
+                spellCheck={false}
+                value={limitPrice}
+                onChange={(event) => setLimitPrice(event.target.value)}
+                aria-invalid={inputError?.field === 'price'}
+                aria-describedby="order-validation"
+                placeholder="Enter price"
+              />
+              <span>USDso</span>
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Order Quantity Input */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs font-mono text-slate-400">
-          <span>Order Size</span>
-          <span>
-            Min: {market.minQuantity} {market.baseSymbol}
-          </span>
+        <div className="field">
+          <label className="field-label" htmlFor="order-quantity">
+            Quantity <span>Min {market.minQuantity}</span>
+          </label>
+          <div className="input-wrap">
+            <input
+              id="order-quantity"
+              inputMode="decimal"
+              autoComplete="off"
+              spellCheck={false}
+              value={quantity}
+              onChange={(event) => setSize(event.target.value)}
+              aria-invalid={inputError?.field === 'quantity'}
+              aria-describedby="order-validation"
+            />
+            <span>{market.baseSymbol}</span>
+          </div>
         </div>
-        <div className="relative">
-          <input
-            type="number"
-            step={market.lotSize}
-            min={market.minQuantity}
-            value={quantity}
-            onChange={(e) => handleQuantityInput(e.target.value)}
-            aria-label={`Order Quantity in ${market.baseSymbol}`}
-            className="w-full px-3 py-2 pr-16 rounded-lg bg-[#070a0e] border border-[#1a2536] text-white font-mono text-sm focus:outline-hidden focus:border-cyan-500"
-          />
-          <span className="absolute right-3 top-2 text-xs font-mono text-slate-400 font-bold">
-            {market.baseSymbol}
-          </span>
-        </div>
-      </div>
-
-      {/* Leverage Slider & Quick Multipliers */}
-      <div className="space-y-2 pt-1">
-        <div className="flex justify-between text-xs font-mono">
-          <span className="text-slate-400">Leverage (Max {maxLeverage}x)</span>
-          <span className="text-cyan-400 font-bold text-sm">{leverage}x</span>
-        </div>
-        <input
-          type="range"
-          min="1"
-          max={maxLeverage}
-          step="1"
-          value={leverage}
-          onChange={(e) => handleLeverageChange(parseInt(e.target.value, 10))}
-          aria-label="Trading leverage multiplier"
-          className="w-full accent-cyan-400 cursor-pointer"
-        />
-        {/* Quick Multipliers */}
-        <div className="flex items-center justify-between gap-1 font-mono text-[10px]">
-          {Array.from(new Set([1, 2, 5, 10, 20].filter((l) => l <= maxLeverage))).map((lev) => (
-            <button
-              key={lev}
-              type="button"
-              onClick={() => handleLeverageChange(lev)}
-              className={`flex-1 py-1 rounded text-center font-bold transition-all cursor-pointer ${
-                leverage === lev
-                  ? 'bg-cyan-500 text-black shadow-xs'
-                  : 'bg-[#070a0e] hover:bg-slate-800 border border-[#1a2536] text-slate-400 hover:text-white'
-              }`}
-            >
-              {lev}x
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Order Preview Breakdown */}
-      <div className="p-3 rounded-lg bg-[#070a0e]/60 border border-[#1a2536] space-y-2 text-xs font-mono">
-        <div className="flex justify-between text-slate-400">
-          <span>Order Notional:</span>
-          <span className="text-white font-semibold">${notional.toFixed(2)} USDso</span>
-        </div>
-        <div className="flex justify-between text-slate-400">
-          <span>Position Margin ({leverage}x):</span>
-          <span className="text-cyan-400 font-semibold">${baseMargin.toFixed(2)} USDso</span>
-        </div>
-        {orderType === 'market' && slippageBuffer > 0 && (
-          <div className="flex justify-between text-slate-400 text-[11px]">
-            <span className="flex items-center gap-1">
-              <span>IOC Slippage Reserve (2%):</span>
-              <span
-                className="text-slate-500 cursor-help"
-                title="Reserva temporal de dreamDEX para absorber deslizamiento de mercado. El sobrante se reembolsa al confirmar el fill."
+        <div className="field">
+          <div className="field-label">
+            <label htmlFor="margin-budget">Margin budget</label>
+            <HelpTip label="margin budget">
+              A sizing budget, not a maximum possible loss. The estimate includes the existing 2%
+              IOC reserve for market orders. Cross-margin collateral is shared across positions.
+            </HelpTip>
+          </div>
+          <div className="input-wrap">
+            <input
+              id="margin-budget"
+              inputMode="decimal"
+              autoComplete="off"
+              value={marginInput}
+              onChange={(event) => setMargin(event.target.value)}
+              aria-invalid={inputError?.field === 'margin'}
+              aria-describedby="order-validation"
+            />
+            <span>USDso</span>
+          </div>
+          <div className="preset-row">
+            {[2, 5, 10].map((value) => (
+              <button key={value} onClick={() => setMargin(String(value))}>
+                ${value}
+              </button>
+            ))}
+            {[25, 50, 100].map((value) => (
+              <button
+                key={value}
+                disabled={!isConnected || !marginReady || availableMargin <= 0}
+                onClick={() => setMargin(String(Math.floor(availableMargin * value) / 100))}
               >
-                ℹ️
-              </span>
-            </span>
-            <span className="text-slate-300 font-mono">+${slippageBuffer.toFixed(2)} USDso</span>
+                {value === 100 ? 'Max' : `${value}%`}
+              </button>
+            ))}
           </div>
-        )}
-        <div className="flex justify-between text-slate-400 border-t border-[#1a2536] pt-1">
-          <span className="font-semibold text-slate-300">Total Margin Required:</span>
-          <span
-            className={
-              hasInsufficientMargin
-                ? 'text-rose-400 font-bold'
-                : 'text-cyan-400 font-bold'
-            }
-          >
-            ${effectiveMarginRequired.toFixed(2)} USDso
-            {hasInsufficientMargin && (
-              <span className="text-[10px] ml-1 text-rose-400/80">
-                (Faltan ${marginShortfall.toFixed(2)})
-              </span>
+        </div>
+        {currentPosition && (
+          <div className="position-context">
+            Current {currentPosition.isLong ? 'long' : 'short'}:{' '}
+            <span className="numeric">
+              {currentPosition.size} {market.baseSymbol}
+            </span>
+            {numericQty > 0 && (
+              <p className="muted mt-1">
+                If fully filled:{' '}
+                {isSameSide
+                  ? `${(currentPosition.size + numericQty).toFixed(lotDecimals)} ${market.baseSymbol}`
+                  : numericQty === currentPosition.size
+                    ? 'flat position'
+                    : numericQty < currentPosition.size
+                      ? `${(currentPosition.size - numericQty).toFixed(lotDecimals)} remaining`
+                      : `flips to ${side === 'buy' ? 'long' : 'short'} ${(numericQty - currentPosition.size).toFixed(lotDecimals)}`}
+                .
+              </p>
             )}
-          </span>
-        </div>
-        <div className="flex justify-between text-slate-400">
-          <span>Est. Liquidation Price:</span>
-          <span
-            className={
-              formattedLiqPrice
-                ? 'text-rose-400 font-semibold'
-                : 'text-emerald-400 font-semibold'
-            }
-          >
-            {formattedLiqPrice
-              ? `~$${formattedLiqPrice} USDso`
-              : availableMargin <= 0
-              ? '--'
-              : leverage === 1
-              ? 'Safe (No Liq at 1x)'
-              : 'Safe (No Liq)'}
-          </span>
-        </div>
-        <div className="flex justify-between text-slate-400">
-          <span>
-            {takerFeeRate > 0
-              ? `Est. Fees (${(takerFeeRate * 100).toFixed(2)}%):`
-              : 'Est. Fees (0% Testnet Promo):'}
-          </span>
-          <span className="text-slate-300">${estFee.toFixed(4)} USDso</span>
-        </div>
-
-        {/* Real-time Netting Projections if holding active position */}
-        {currentPosition && isSameSide && numericQty > 0 && executionPrice > 0 && (
-          <div className="pt-2 border-t border-[#1a2536] flex justify-between text-[11px] font-mono text-cyan-300">
-            <span className="text-slate-400">Netting Position Result:</span>
-            <span className="font-bold">
-              {projectedNewSize.toFixed(lotDecimals)} {market.baseSymbol} (Avg ~${formatDynamicPrice(projectedAvgPrice)})
-            </span>
-          </div>
-        )}
-        {currentPosition && !isSameSide && numericQty > 0 && (
-          <div className="pt-2 border-t border-[#1a2536] flex justify-between text-[11px] font-mono text-amber-300">
-            <span className="text-slate-400">Netting Position Result:</span>
-            <span className="font-bold">
-              {numericQty >= currentPosition.size
-                ? numericQty === currentPosition.size
-                  ? 'Closes Position (Flat)'
-                  : `Flips to ${(numericQty - currentPosition.size).toFixed(lotDecimals)} ${market.baseSymbol} ${side === 'buy' ? 'Long' : 'Short'}`
-                : `Leaves ${(currentPosition.size - numericQty).toFixed(lotDecimals)} ${market.baseSymbol} ${currentPosition.isLong ? 'Long' : 'Short'}`}
-            </span>
           </div>
         )}
       </div>
-
-      {/* Insufficient Margin Warning Alert */}
-      {hasInsufficientMargin && (
-        <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-xs font-mono space-y-1">
-          <div className="flex items-center space-x-1.5 text-rose-400 font-bold">
-            <span className="text-sm">⚠️</span>
-            <span>Margen Insuficiente / Insufficient Margin</span>
+      <div className="order-footer">
+        <dl className="order-summary">
+          <div className="summary-row">
+            <dt>Est. order value</dt>
+            <dd>
+              {amount(notional)} <span className="muted">USDso</span>
+            </dd>
           </div>
-          <p className="text-slate-200 text-[11px] leading-relaxed">
-            El trade requiere <strong className="text-white">${effectiveMarginRequired.toFixed(2)} USDso</strong> de margen
-            {orderType === 'market' && ' (incluye buffer de slippage 2%)'}, pero solo tienes{' '}
-            <strong className="text-rose-400">${availableMargin.toFixed(2)} USDso</strong> disponibles en MarginBank.
-          </p>
-          <p className="text-slate-400 text-[10px]">
-            Por seguridad, la orden está bloqueada para evitar que la transacción revierta en Somnia Tokyo y la wallet falle al estimar el gas.
-          </p>
+          <div className="summary-row">
+            <dt>
+              Est. taker fee {takerFeeRate != null ? `· ${(takerFeeRate * 100).toFixed(3)}%` : ''}
+              <HelpTip label="protocol fee">Read from this pool’s takerFeeBpsTimes1k ÷ 10,000,000. {takerFeeRate === null ? 'Unavailable until a fresh parameter read succeeds.' : takerFeeRate === 0 ? 'The current on-chain taker fee is zero.' : 'This rate applies to taker executions.'} STT gas is separate.</HelpTip>
+            </dt>
+            <dd>{takerFeeRate == null ? '—' : amount(notional * takerFeeRate, 4)}</dd>
+          </div>
+          <div className="summary-row">
+            <dt>
+              Est. liquidation{' '}
+              <HelpTip label="liquidation estimate">
+                Standalone sizing scenario: this quantity filled at {orderType === 'market' ? 'mark' : 'limit'} with {leverage}× sizing margin, less the taker fee. Uses the pool’s maintenance threshold. Excludes IOC reserve, future funding and other positions. Actual cross-margin liquidation depends on shared account equity.
+              </HelpTip>
+            </dt>
+            <dd data-testid="liquidation-preview">{liquidation == null ? '—' : liquidation === 0 ? '0 · scenario floor' : <>≈<AnimatedValue value={liquidation} digits={Math.max(2, market.tickSize.split('.')[1]?.length || 0)} /></>}</dd>
+          </div>
+          <div className="summary-row total">
+            <dt>Est. margin required</dt>
+            <dd className={hasInsufficientMargin ? 'caution' : ''}>
+              {amount(effectiveMarginRequired)} <span className="muted">USDso</span>
+            </dd>
+          </div>
+        </dl>
+        <p className="estimate-context">Liquidation: standalone {leverage}× scenario · USDso</p>
+        <details className="estimate-details">
+          <summary>Margin breakdown</summary>
+          <dl>
+            <div className="summary-row">
+              <dt>Sizing margin · {leverage}×</dt>
+              <dd>{amount(baseMargin)} USDso</dd>
+            </div>
+            {orderType === 'market' && (
+              <div className="summary-row">
+                <dt>IOC reserve · 2%</dt>
+                <dd>{amount(slippageBuffer)} USDso</dd>
+              </div>
+            )}
+          </dl>
+        </details>
+        <div className="available-margin">
+          <span className="muted">Available to trade</span>
+          <strong>
+            {isConnected ? <><ReadValue read={availableRead} /> USDso</> : '—'}
+          </strong>
+          <button
+            aria-label="Manage margin collateral"
+            className="collateral-action text-cyan-400"
+            onClick={onOpenMarginHub}
+          >
+            <Plus size={16} aria-hidden="true" />
+          </button>
         </div>
-      )}
-
-      {/* Action Button */}
-      <button
-        disabled={
-          isPending ||
-          isConfirming ||
-          numericQty < parseFloat(market.minQuantity) ||
-          hasInsufficientMargin
-        }
-        onClick={handleExecuteOrder}
-        className={`w-full py-3 rounded-lg font-display font-extrabold text-sm transition-all shadow-lg ${
-          hasInsufficientMargin
-            ? 'bg-rose-950/60 border border-rose-800/60 text-rose-300 cursor-not-allowed'
-            : side === 'buy'
-            ? 'bg-emerald-500 hover:bg-emerald-400 text-black glow-emerald'
-            : 'bg-rose-500 hover:bg-rose-400 text-white glow-rose'
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
-      >
-        {isPending || isConfirming ? (
-          <span className="flex items-center justify-center space-x-2">
-            <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            <span>Confirming on Somnia...</span>
-          </span>
-        ) : hasInsufficientMargin ? (
-          <span>
-            Margen Insuficiente (${effectiveMarginRequired.toFixed(2)} &gt; ${availableMargin.toFixed(2)} USDso)
-          </span>
-        ) : numericQty < parseFloat(market.minQuantity) ? (
-          <span>
-            Mínimo: {market.minQuantity} {market.baseSymbol}
-          </span>
-        ) : (
-          <span>
-            {currentPosition
-              ? currentPosition.isLong
-                ? side === 'buy'
-                  ? `Add to Long (+${quantity} ${market.baseSymbol})`
-                  : `Reduce / Close Long (-${quantity} ${market.baseSymbol})`
-                : side === 'sell'
-                ? `Add to Short (+${quantity} ${market.baseSymbol})`
-                : `Reduce / Close Short (-${quantity} ${market.baseSymbol})`
-              : `${side === 'buy' ? 'Open Long' : 'Open Short'} ${quantity} ${market.baseSymbol}`}
-          </span>
+        <div id="order-validation" aria-live="polite">
+          {(inputError || (isConnected && blocked)) && (
+            <p className="form-error">{inputError?.message || blocked}</p>
+          )}
+        </div>
+        {estimateValid && Number(marginInput) + 0.01 < totalOrderMargin && (
+          <p className="form-error">
+            The market minimum exceeds this budget. Estimated sizing margin:{' '}
+            {totalOrderMargin.toFixed(2)} USDso.
+          </p>
         )}
-      </button>
+        <button
+          className="submit-order"
+          data-side={side}
+          disabled={simulating || isPending || isConfirming || (isConnected && (!!blocked || chainId !== 50383))}
+          onClick={handleExecuteOrder}
+        >
+          {(simulating || isPending || isConfirming) && <LoaderCircle size={16} className="state-spinner" aria-hidden="true" />}
+          {confirmed && !simulating && !isPending && !isConfirming && <Check size={16} className="confirmed-check" aria-hidden="true" />}
+          {simulating ? 'Simulating…' : isPending
+            ? 'Waiting for signature…'
+            : isConfirming
+              ? 'Awaiting confirmation…'
+              : !isConnected
+                ? 'Connect wallet to trade'
+                : chainId !== 50383
+                  ? 'Switch to Tokyo to trade'
+                 : `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} ${market.baseSymbol}`}
+        </button>
+        <p className="form-note">
+          {orderType === 'market'
+            ? 'Immediate-or-cancel. Unfilled quantity is cancelled.'
+            : 'Limit orders may rest, partially fill, or expire.'}{' '}
+          Estimates exclude STT gas.{' '}
+          {orderType === 'limit' && 'Actual maker/taker fees depend on execution.'}
+        </p>
+        <div className="transaction-status" aria-live="polite">
+          {submitError && <p className="negative">{submitError}</p>}
+          {hash && (
+            <>
+              <p>
+                {receipt.data?.status === 'reverted'
+                  ? 'Transaction reverted.'
+                  : confirmed
+                    ? 'Confirmed · fill outcome pending verification.'
+                    : receipt.isError
+                      ? 'Confirmation unavailable. Check the explorer.'
+                      : 'Submitted · waiting for receipt.'}
+              </p>
+              <a
+                href={`https://explorer.testnet.somnia.network/tokyo/tx/${hash}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {hash.slice(0, 10)}…{hash.slice(-8)} ↗
+              </a>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
-};
+}
