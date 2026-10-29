@@ -19,6 +19,8 @@ const KNOWN_SAFE_HASHES = new Set([
   '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a'.toLowerCase(),
   // Verified close position transaction hash on Somnia Tokyo
   '0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6'.toLowerCase(),
+  // Public transaction referenced in audit
+  '0x2532174707449130883afd68d0dca5dbd9afca5db380e37116b06e01126fd7b6'.toLowerCase(),
   // Somnia Tokyo genesis hash
   '0x2b2ebef7db781fc01d1fa75ff13dbba2e6cfa3fbc865d4fa394df183bdca36fb'.toLowerCase(),
 ]);
