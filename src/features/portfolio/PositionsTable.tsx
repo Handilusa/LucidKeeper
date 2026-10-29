@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { useQuery } from '@tanstack/react-query';
+import * as Tabs from '@radix-ui/react-tabs';
 import { parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
-import { ExternalLink, Share2, RefreshCw, XCircle } from 'lucide-react';
+import { RefreshCw, ChartNoAxesCombined, ListOrdered, History } from 'lucide-react';
 import { perpPoolAbi } from '@/chain/abis';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
@@ -17,6 +19,9 @@ import {
   saveTradeHistoryItem,
   fetchRpcTradeHistoryFallback,
 } from '@/lib/data/tradeHistory';
+import { Modal } from '@/components/Modal';
+import { TokenLogo } from '@/components/TokenLogo';
+import { LoadingState } from '@/components/LoadingState';
 
 export interface PositionItem {
   id: string;
@@ -26,219 +31,153 @@ export interface PositionItem {
   size: number;
   entryPrice: number;
   markPrice: number;
+  liquidationPrice?: number | null;
+  readBlock?: string;
+  maintenanceMarginBps?: number;
   margin: number;
   leverage?: number;
   openTxHash: string;
   baseDecimals?: number;
   quoteDecimals?: number;
 }
-
 interface PositionsTableProps {
   positions: PositionItem[];
   markPrice: number;
   account?: string;
+  canManage: boolean;
+  loading: boolean;
+  error: boolean;
   onOpenCardModal: (pos: PositionItem) => void;
   onPositionClosed?: () => void;
-  onSelectMarket?: (marketSymbol: string) => void;
+  onSelectMarket?: (symbol: string) => void;
 }
+const explorer = 'https://explorer.testnet.somnia.network/tokyo/tx/';
 
-export const PositionsTable: React.FC<PositionsTableProps> = ({
+export function PositionsTable({
   positions,
-  markPrice,
-  account,
+  account = '',
+  canManage,
+  loading,
+  error,
   onOpenCardModal,
   onPositionClosed,
   onSelectMarket,
-}) => {
-  const publicClient = usePublicClient();
-  const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
-
-  // Trade History State
-  const [historyItems, setHistoryItems] = useState<TradeHistoryItem[]>(() =>
-    getTradeHistory(account || '')
-  );
-  const [historyLoading, setHistoryLoading] = useState<boolean>(false);
-  const [historyPage, setHistoryPage] = useState<number>(0);
-  const PAGE_SIZE = 20;
-
-  // Active Orders State
-  const [activeOrders, setActiveOrders] = useState<ActiveOrderItem[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState<boolean>(false);
-
-  // Partial Close modal state
-  const [partialClosePos, setPartialClosePos] = useState<PositionItem | null>(null);
-  const [partialClosePercent, setPartialClosePercent] = useState<number>(100);
-
-  const activeAccount = account || '';
-
-  // 1. Load Real Trade History from Indexer with Viem Fallback
-  const loadHistory = useCallback(async () => {
-    if (!activeAccount) {
-      setHistoryItems([]);
-      return;
-    }
-    setHistoryLoading(true);
-    try {
-      const items = await fetchUserTradeHistory(activeAccount, PAGE_SIZE, historyPage * PAGE_SIZE);
-      if (items && items.length > 0) {
-        setHistoryItems(items);
-      } else if (publicClient) {
-        // Fallback to on-chain RPC logs if indexer returned empty or is lagging
-        const rpcItems = await fetchRpcTradeHistoryFallback(publicClient, activeAccount);
-        if (rpcItems.length > 0) {
-          setHistoryItems(rpcItems);
-        } else {
-          setHistoryItems(getTradeHistory(activeAccount));
-        }
+}: PositionsTableProps) {
+  const publicClient = usePublicClient({ chainId: 50383 });
+  const [activeTab, setActiveTab] = useState('positions');
+  const [page, setPage] = useState(0);
+  const [closePosition, setClosePosition] = useState<PositionItem | null>(null);
+  const [percent, setPercent] = useState(100);
+  const history = useQuery({
+    queryKey: ['tradeHistory', account, page],
+    enabled: activeTab === 'history' && !!account,
+    queryFn: async () => {
+      let failed = false;
+      let items: TradeHistoryItem[] | undefined;
+      try {
+        items = await fetchUserTradeHistory(account, 20, page * 20);
+      } catch {
+        failed = true;
       }
-    } catch (err) {
-      console.warn('[TradeHistory] Error loading history:', err);
-      if (publicClient) {
-        const rpcItems = await fetchRpcTradeHistoryFallback(publicClient, activeAccount);
-        setHistoryItems(rpcItems.length > 0 ? rpcItems : getTradeHistory(activeAccount));
+      if (items?.length) return { items, limited: items.some((item) => item.source === 'cache') };
+      if (page > 0) {
+        if (failed) throw new Error('History unavailable');
+        return { items: [], limited: false };
       }
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, [activeAccount, historyPage, publicClient]);
-
-  useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
-
-  // 2. Load Real Active Orders from Indexer
-  const loadActiveOrders = useCallback(async () => {
-    if (!activeAccount) {
-      setActiveOrders([]);
-      return;
-    }
-    setOrdersLoading(true);
-    try {
-      const orders = await fetchUserActiveOrders(activeAccount);
-      setActiveOrders(orders);
-    } catch (err) {
-      console.warn('[ActiveOrders] Error loading orders:', err);
-    } finally {
-      setOrdersLoading(false);
-    }
-  }, [activeAccount]);
-
-  useEffect(() => {
-    if (activeTab === 'orders') {
-      loadActiveOrders();
-    }
-  }, [activeTab, loadActiveOrders]);
-
-  const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
+      const rpc = publicClient ? await fetchRpcTradeHistoryFallback(publicClient, account) : [];
+      const cached = getTradeHistory(account).map((item) => ({
+        ...item,
+        source: 'cache' as const,
+      }));
+      const fallback = rpc.length ? rpc : cached;
+      if (!fallback.length && failed) throw new Error('History unavailable');
+      return { items: fallback, limited: fallback.length > 0 };
+    },
   });
-
-  const notifiedHashRef = useRef<string | null>(null);
-  const lastClosedPosRef = useRef<{ pos: PositionItem; percent: number } | null>(null);
-
+  const orders = useQuery({
+    queryKey: ['activeOrders', account],
+    queryFn: () => fetchUserActiveOrders(account),
+    enabled: activeTab === 'orders' && !!account,
+    refetchInterval: 15000,
+  });
+  const { data: hash, isPending, writeContractAsync } = useWriteContract();
+  const receipt = useWaitForTransactionReceipt({ hash });
+  const busy = isPending || receipt.isLoading;
+  const notified = useRef<string | null>(null);
+  const lastClose = useRef<{ pos: PositionItem; percent: number } | null>(null);
   useEffect(() => {
-    if (isConfirmed && hash && notifiedHashRef.current !== hash) {
-      notifiedHashRef.current = hash;
-      if (lastClosedPosRef.current && activeAccount) {
-        const { pos, percent } = lastClosedPosRef.current;
-        const closedSize = (pos.size * percent) / 100;
-        saveTradeHistoryItem(activeAccount, {
-          id: `close-${hash}`,
-          hash,
-          type: 'close',
-          marketSymbol: pos.marketSymbol,
-          side: pos.isLong ? 'sell' : 'buy',
-          size: closedSize,
-          timestamp: Date.now(),
-          description: `Closed ${percent}% of ${pos.marketSymbol}-PERP position (${closedSize} ${pos.marketSymbol}) via IOC`,
-        });
-        loadHistory();
-      }
-      toast.success('Transaction confirmed and settled on Somnia Tokyo!', {
-        id: `tx-settled-${hash}`,
-        description: `Tx: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
+    if (receipt.data?.status !== 'success' || !hash || notified.current === hash) return;
+    notified.current = hash;
+    if (lastClose.current) {
+      const { pos, percent: value } = lastClose.current;
+      saveTradeHistoryItem(account, {
+        id: `close-${hash}`,
+        hash,
+        type: 'close',
+        marketSymbol: pos.marketSymbol,
+        side: pos.isLong ? 'sell' : 'buy',
+        size: (pos.size * value) / 100,
+        timestamp: Date.now(),
+        description: `Close order transaction confirmed · requested ${value}% of ${pos.marketSymbol}; actual fill pending verification`,
       });
-      onPositionClosed?.();
-      setPartialClosePos(null);
     }
-  }, [isConfirmed, hash, onPositionClosed, activeAccount, loadHistory]);
+    toast.success('Transaction confirmed', {
+      description: 'Refreshing positions and indexed orders to verify the outcome.',
+    });
+    void history.refetch();
+    void orders.refetch();
+    onPositionClosed?.();
+    setClosePosition(null);
+  }, [receipt.data, hash, account, onPositionClosed, history.refetch, orders.refetch]);
 
-  // Partial or Full Close Position Execution
-  const executeClosePosition = async (pos: PositionItem, percent: number = 100) => {
+  async function executeClose(pos: PositionItem, value: number) {
+    if (!canManage || busy || pos.markPrice <= 0) return;
     try {
-      lastClosedPosRef.current = { pos, percent };
-      const actionName = pos.isLong ? 'Sell IOC' : 'Buy IOC';
-      toast.info(
-        `Submitting Close (${percent}% exit via ${actionName}) for ${pos.marketSymbol}-PERP...`
-      );
-
-      const effectiveMarkPrice =
-        pos.markPrice > 0 ? pos.markPrice : markPrice > 0 ? markPrice : pos.entryPrice || 1;
-      const baseMarkPrice = parseUnits(
-        effectiveMarkPrice.toFixed(pos.quoteDecimals && pos.quoteDecimals > 6 ? 6 : 2),
+      lastClose.current = { pos, percent: value };
+      const baseMark = parseUnits(
+        pos.markPrice.toFixed(pos.quoteDecimals && pos.quoteDecimals > 6 ? 6 : 2),
         pos.quoteDecimals || 18
       );
-      const slippagePrice = pos.isLong
-        ? (baseMarkPrice * 98n) / 100n
-        : (baseMarkPrice * 102n) / 100n;
-
-      const marketMeta = ALL_VERIFIED_PERP_MARKETS.find(
+      const price = pos.isLong ? (baseMark * 98n) / 100n : (baseMark * 102n) / 100n;
+      const market = ALL_VERIFIED_PERP_MARKETS.find(
         (m) => m.poolAddress.toLowerCase() === pos.poolAddress.toLowerCase()
       );
-      const tickSize = marketMeta?.tickSize
-        ? parseUnits(marketMeta.tickSize, pos.quoteDecimals || 18)
-        : parseUnits('0.00001', pos.quoteDecimals || 18);
-      const lotSize = marketMeta?.lotSize
-        ? parseUnits(marketMeta.lotSize, pos.baseDecimals || 8)
-        : parseUnits('0.00001', pos.baseDecimals || 8);
-
-      const rawPrice = quantizeToGrid(slippagePrice, tickSize, 'floor');
-      const rawFullQuantity = parseUnits(pos.size.toString(), pos.baseDecimals || 8);
-      let targetExitQuantity =
-        percent === 100 ? rawFullQuantity : (rawFullQuantity * BigInt(percent)) / 100n;
-      targetExitQuantity = quantizeToGrid(targetExitQuantity, lotSize, 'floor');
-
-      if (targetExitQuantity <= 0n) {
-        toast.error(`Position size is too small to split ${percent}%. Close 100% instead.`);
+      if (!market) throw new Error('Market parameters unavailable');
+      const rawPrice = quantizeToGrid(
+        price,
+        parseUnits(market.tickSize, pos.quoteDecimals || 18),
+        'floor'
+      );
+      const fullQuantity = parseUnits(pos.size.toString(), pos.baseDecimals || 8);
+      const rawQuantity = quantizeToGrid(
+        value === 100 ? fullQuantity : (fullQuantity * BigInt(value)) / 100n,
+        parseUnits(market.lotSize, pos.baseDecimals || 8),
+        'floor'
+      );
+      if (rawQuantity <= 0n) {
+        toast.error('Position is too small to split. Choose a larger percentage.');
         return;
       }
-
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
-
       await writeContractAsync({
         chainId: 50383,
         address: pos.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
-        args: [
-          !pos.isLong,
-          0n,
-          rawPrice,
-          targetExitQuantity,
-          expiry,
-          2, // IOC
-          0, // CANCEL_NEWEST
-          zeroAddress,
-          0n,
-        ],
+        args: [!pos.isLong, 0n, rawPrice, rawQuantity, expiry, 2, 0, zeroAddress, 0n],
         gas: 5_000_000n,
       });
-
-      toast.success(`Close order (${percent}%) submitted! Awaiting Tokyo confirmation...`);
-    } catch (err: unknown) {
-      console.error('Close error:', err);
-      const e = err as { shortMessage?: string; message?: string };
-      toast.error(`Failed to close ${pos.marketSymbol} position`, {
-        description: e?.shortMessage || e?.message || 'Transaction reverted',
+      toast.info('Close order submitted · awaiting confirmation');
+    } catch (e) {
+      toast.error('Close order rejected or failed', {
+        description: (e as { shortMessage?: string }).shortMessage || (e as Error).message,
       });
     }
-  };
-
-  // Cancel Limit Order Execution
-  const handleCancelOrder = async (order: ActiveOrderItem) => {
+  }
+  async function cancelOrder(order: ActiveOrderItem) {
+    if (!canManage || busy) return;
+    lastClose.current = null;
     try {
-      toast.info(`Cancelling resting order #${order.orderId.slice(0, 10)}... on Somnia Tokyo...`);
       await writeContractAsync({
         chainId: 50383,
         address: order.poolAddress as `0x${string}`,
@@ -247,402 +186,340 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
         args: [BigInt(order.orderId)],
         gas: 3_000_000n,
       });
-      toast.success(`Cancellation transaction submitted for order #${order.orderId}!`);
-      setTimeout(loadActiveOrders, 3000);
-    } catch (err: unknown) {
-      console.error('Cancel order error:', err);
-      const e = err as { shortMessage?: string; message?: string };
-      toast.error('Failed to cancel resting order', {
-        description: e?.shortMessage || e?.message || 'Transaction reverted',
+      toast.info('Cancellation submitted · awaiting confirmation');
+    } catch (e) {
+      toast.error('Cancellation rejected or failed', {
+        description: (e as { shortMessage?: string }).shortMessage || (e as Error).message,
       });
     }
+  }
+  const refresh = () => {
+    if (activeTab === 'positions') onPositionClosed?.();
+    else if (activeTab === 'orders') void orders.refetch();
+    else void history.refetch();
   };
 
   return (
-    <div className="bg-[#0d131d] border border-[#1a2536] rounded-xl overflow-hidden">
-      {/* Tabs */}
-      <div className="flex items-center justify-between px-5 pt-4 border-b border-[#1a2536] bg-[#070a0e]/50">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setActiveTab('positions')}
-            className={`pb-3 text-xs font-mono font-bold transition-colors relative flex items-center space-x-2 ${
-              activeTab === 'positions' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>Open Positions ({positions.length})</span>
-            <span
-              className="px-1.5 py-0.5 rounded text-[9px] bg-[#1a2536] text-cyan-300 font-normal border border-cyan-500/30"
-              title="dreamDEX opera en modelo Netting: una única posición consolidada por mercado con tamaño acumulado y precio ponderado"
-            >
-              Netting
-            </span>
-            {activeTab === 'positions' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400"></div>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`pb-3 text-xs font-mono font-bold transition-colors relative flex items-center space-x-1.5 ${
-              activeTab === 'orders' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>Active Orders ({activeOrders.length})</span>
-            {activeTab === 'orders' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400"></div>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`pb-3 text-xs font-mono font-bold transition-colors relative flex items-center space-x-1.5 ${
-              activeTab === 'history' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>Trade History ({historyItems.length})</span>
-            {activeTab === 'history' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400"></div>
-            )}
-          </button>
-        </div>
-
-        {/* Refresh button */}
-        <button
-          onClick={() => {
-            if (activeTab === 'history') loadHistory();
-            if (activeTab === 'orders') loadActiveOrders();
-          }}
-          title="Refresh table data"
-          className="pb-3 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${historyLoading || ordersLoading ? 'animate-spin text-cyan-400' : ''}`} />
+    <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+      <div className="activity-tabs">
+        <Tabs.List className="tab-list" aria-label="Account activity">
+          <Tabs.Trigger value="positions">
+            Positions {!loading && !error ? `(${positions.length})` : ''}
+          </Tabs.Trigger>
+          <Tabs.Trigger value="orders">Open orders</Tabs.Trigger>
+          <Tabs.Trigger value="history">Trade history</Tabs.Trigger>
+        </Tabs.List>
+        <button className="icon-button" aria-label="Refresh activity" onClick={refresh}>
+          <RefreshCw size={14} aria-hidden="true" />
         </button>
       </div>
-
-      {/* Tab Contents */}
-      <div className="p-4 overflow-x-auto">
-        {/* Open Positions Tab */}
-        {activeTab === 'positions' &&
-          (positions.length === 0 ? (
-            <div className="py-8 text-center text-xs font-mono text-slate-500">
-              No open positions. Use the terminal above to execute an on-chain trade on Somnia Tokyo.
-            </div>
-          ) : (
-            <table className="w-full text-left font-mono text-xs">
+      <Tabs.Content value="positions">
+        {error ? (
+          <div className="empty-state" role="status">
+            <strong>Positions unavailable</strong>
+            <span>Account reads failed or became stale. Refresh to try again.</span>
+          </div>
+        ) : loading ? (
+          <div className="empty-state" role="status">
+            <LoadingState label="Reading on-chain positions…" onRetry={refresh} />
+          </div>
+        ) : !positions.length ? (
+          <div className="empty-state">
+            <ChartNoAxesCombined size={26} className="brand-text" aria-hidden="true" />
+            <strong>No open positions</strong>
+            <span>Size an order to preview margin and liquidation. Filled positions appear here.</span>
+          </div>
+        ) : (
+          <div
+            className="table-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="Open positions, scroll horizontally for actions"
+          >
+            <table className="trading-table">
               <thead>
-                <tr className="text-slate-400 border-b border-[#1a2536] text-[10px] pb-2">
-                  <th scope="col" className="pb-2">MARKET / SIDE</th>
-                  <th scope="col" className="pb-2">SIZE</th>
-                  <th scope="col" className="pb-2">ENTRY PRICE</th>
-                  <th scope="col" className="pb-2">MARK PRICE</th>
-                  <th scope="col" className="pb-2">EST. LIQ PRICE</th>
-                  <th scope="col" className="pb-2">MARGIN</th>
-                  <th scope="col" className="pb-2">UNREALIZED PNL</th>
-                  <th scope="col" className="pb-2 text-right">ACTIONS</th>
+                <tr>
+                  <th scope="col">Market / side</th>
+                  <th scope="col">Quantity</th>
+                  <th scope="col">Entry / mark</th>
+                  <th scope="col">Unrealized PnL</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1a2536]/60">
+              <tbody>
                 {positions.map((pos) => {
-                  const entry = pos.entryPrice > 0 ? pos.entryPrice : pos.markPrice;
-                  const current =
-                    pos.markPrice > 0 ? pos.markPrice : markPrice > 0 ? markPrice : entry;
-                  const margin =
-                    pos.margin > 0
-                      ? pos.margin
-                      : pos.leverage && pos.leverage > 0
-                      ? (pos.size * (entry || current)) / pos.leverage
-                      : pos.size * (entry || current);
-
                   const pnl =
-                    entry > 0 && current > 0
-                      ? pos.isLong
-                        ? (current - entry) * pos.size
-                        : (entry - current) * pos.size
-                      : 0;
-                  const pnlPercent = margin > 0 ? (pnl / margin) * 100 : 0;
-                  const isProfit = pnl >= 0;
-                  const estLiq = entry > 0 ? (pos.isLong ? entry * 0.82 : entry * 1.18) : 0;
-
+                    pos.markPrice > 0
+                      ? (pos.markPrice - pos.entryPrice) * pos.size * (pos.isLong ? 1 : -1)
+                      : null;
                   return (
-                    <tr key={pos.id} className="hover:bg-slate-900/50 transition-colors">
-                      <td className="py-3 font-bold text-white flex items-center space-x-2">
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] border ${
-                            pos.isLong
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                              : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                          }`}
-                        >
-                          {pos.isLong ? 'LONG' : 'SHORT'} {pos.leverage ? `${pos.leverage}x` : '5x'}
-                        </span>
+                    <tr key={pos.id}>
+                      <td>
                         <button
+                          className="market-cell font-semibold"
                           onClick={() => onSelectMarket?.(pos.marketSymbol)}
-                          className="hover:text-cyan-400 hover:underline cursor-pointer flex items-center space-x-1"
-                          title={`Switch terminal to ${pos.marketSymbol}`}
                         >
-                          <span>{pos.marketSymbol}-PERP</span>
+                          <TokenLogo symbol={pos.marketSymbol} />{pos.marketSymbol}-PERP
                         </button>
+                        <div className={`mt-1 ${pos.isLong ? 'positive' : 'negative'}`}>
+                          {pos.isLong ? 'Long' : 'Short'} <span className="muted">· Cross</span>
+                        </div>
                       </td>
-                      <td className="py-3 text-slate-200">
-                        {pos.size} {pos.marketSymbol}
+                      <td>
+                        {pos.size}
+                        <div className="muted mt-1">{pos.marketSymbol}</div>
                       </td>
-                      <td className="py-3 text-slate-300">
-                        {entry > 0 ? `$${formatDynamicPrice(entry)}` : '--'}
+                      <td>
+                        {formatDynamicPrice(pos.entryPrice)}
+                        <div className="muted mt-1">
+                          {pos.markPrice > 0 ? formatDynamicPrice(pos.markPrice) : 'Unavailable'}
+                        </div>
                       </td>
-                      <td className="py-3 text-slate-300 font-bold tabular-nums">
-                        {current > 0 ? `$${formatDynamicPrice(current)}` : '--'}
+                      <td className={pnl == null ? 'muted' : pnl >= 0 ? 'positive' : 'negative'}>
+                        {pnl == null ? '—' : `${pnl >= 0 ? '+' : '−'}${Math.abs(pnl).toFixed(4)}`}
+                        <div className="muted mt-1">USDso</div>
                       </td>
-                      <td className="py-3 text-rose-400">
-                        {estLiq > 0 ? `~$${formatDynamicPrice(estLiq)}` : '--'}
-                      </td>
-                      <td className="py-3 text-cyan-400">
-                        {margin > 0 ? `$${margin.toFixed(2)} USDso` : '--'}
-                      </td>
-                      <td
-                        className={`py-3 font-bold tabular-nums ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}
-                      >
-                        {margin > 0
-                          ? `${isProfit ? '+' : ''}$${pnl.toFixed(4)} (${isProfit ? '+' : ''}${pnlPercent.toFixed(2)}%)`
-                          : '--'}
-                      </td>
-                      <td className="py-3 text-right space-x-2">
-                        <button
-                          onClick={() => onOpenCardModal(pos)}
-                          className="px-2 py-1 rounded bg-[#1a2536] hover:bg-slate-700 text-cyan-400 text-[11px] inline-flex items-center space-x-1"
-                          title="Generate Viral PnL Card for X"
-                        >
-                          <Share2 className="w-3 h-3" />
-                          <span>Card</span>
-                        </button>
-
-                        {/* Partial Close Selector */}
-                        <button
-                          onClick={() => setPartialClosePos(pos)}
-                          className="px-2 py-1 rounded bg-[#1a2536] hover:bg-slate-700 text-amber-300 text-[11px] font-semibold border border-amber-500/30"
-                          title="Choose partial close percentage (25%, 50%, 75%, 100%)"
-                        >
-                          Partial
-                        </button>
-
-                        <button
-                          disabled={isPending || isConfirming}
-                          onClick={() => executeClosePosition(pos, 100)}
-                          className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500 border border-rose-500 text-rose-300 hover:text-white text-[11px] font-bold transition-all disabled:opacity-50"
-                        >
-                          {isPending || isConfirming ? 'Closing...' : 'Close (100%)'}
-                        </button>
+                      <td>
+                        <div className="flex justify-end gap-1">
+                          <button
+                            className="button"
+                            onClick={() => onOpenCardModal(pos)}
+                            aria-label={`Share ${pos.marketSymbol} position`}
+                          >
+                            Share
+                          </button>
+                          <button
+                            className="button"
+                            disabled={!canManage || busy || pos.markPrice <= 0}
+                            onClick={() => {
+                              setPercent(50);
+                              setClosePosition(pos);
+                            }}
+                          >
+                            Partial
+                          </button>
+                          <button
+                            className="button text-rose-400"
+                            disabled={!canManage || busy || pos.markPrice <= 0}
+                            onClick={() => void executeClose(pos, 100)}
+                          >
+                            Close
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-          ))}
-
-        {/* Active Orders Tab */}
-        {activeTab === 'orders' &&
-          (ordersLoading ? (
-            <div className="py-8 text-center text-xs font-mono text-cyan-400 flex items-center justify-center space-x-2">
-              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping"></span>
-              <span>Loading resting orders from Somnia Tokyo orderbook...</span>
-            </div>
-          ) : activeOrders.length === 0 ? (
-            <div className="py-8 text-center text-xs font-mono text-slate-500">
-              No resting limit orders on Somnia Tokyo book. Limit orders placed away from mark price will appear here.
-            </div>
-          ) : (
-            <table className="w-full text-left font-mono text-xs">
+            <p className="form-note mb-3">
+              Cross-margin account · entry and portfolio liquidation estimates appear on the selected market’s chart. Other markets are held constant; collateral is shared.
+            </p>
+          </div>
+        )}
+      </Tabs.Content>
+      <Tabs.Content value="orders">
+        {orders.isPending ? (
+          <div className="empty-state" role="status">
+            <LoadingState label="Loading indexed orders…" onRetry={refresh} />
+          </div>
+        ) : orders.isError ? (
+          <div className="empty-state" role="status">
+            <strong>Open orders unavailable</strong>
+            <span>The indexer could not be reached. Refresh to retry.</span>
+          </div>
+        ) : !orders.data?.length ? (
+          <div className="empty-state">
+            <ListOrdered size={26} className="brand-text" aria-hidden="true" />
+            <strong>No resting orders</strong>
+            <span>Unfilled limit orders appear here while active.</span>
+          </div>
+        ) : (
+          <div
+            className="table-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="Open orders, horizontally scrollable"
+          >
+            <table className="trading-table">
               <thead>
-                <tr className="text-slate-400 border-b border-[#1a2536] text-[10px] pb-2">
-                  <th scope="col" className="pb-2">ORDER ID</th>
-                  <th scope="col" className="pb-2">MARKET</th>
-                  <th scope="col" className="pb-2">SIDE</th>
-                  <th scope="col" className="pb-2">LIMIT PRICE</th>
-                  <th scope="col" className="pb-2">REMAINING / FULL</th>
-                  <th scope="col" className="pb-2">PLACED</th>
-                  <th scope="col" className="pb-2 text-right">ACTION</th>
+                <tr>
+                  <th scope="col">Market / side</th>
+                  <th scope="col">Limit price</th>
+                  <th scope="col">Remaining / full</th>
+                  <th scope="col">Order</th>
+                  <th scope="col">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1a2536]/60">
-                {activeOrders.map((ord) => (
-                  <tr key={ord.id} className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-3 text-slate-300 font-bold">
-                      #{ord.orderId.slice(0, 8)}...
+              <tbody>
+                {orders.data.map((order) => (
+                  <tr key={order.id}>
+                    <td>
+                      <span className="market-cell"><TokenLogo symbol={order.marketSymbol} />{order.marketSymbol}-PERP</span>
+                      <div className={order.isBid ? 'positive' : 'negative'}>
+                        {order.isBid ? 'Buy' : 'Sell'}
+                      </div>
                     </td>
-                    <td className="py-3 text-white font-bold">{ord.marketSymbol}-PERP</td>
-                    <td className="py-3">
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                          ord.isBid
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                        }`}
+                    <td>{formatDynamicPrice(order.price)}</td>
+                    <td>
+                      {order.quantityRemaining} / {order.fullQuantity}
+                    </td>
+                    <td>
+                      <a
+                        className="text-cyan-400"
+                        href={`${explorer}${order.placedTxHash}`}
+                        target="_blank"
+                        rel="noreferrer"
                       >
-                        {ord.side.toUpperCase()}
-                      </span>
+                        #{order.orderId.slice(0, 8)}… ↗
+                      </a>
                     </td>
-                    <td className="py-3 text-slate-200 tabular-nums">
-                      ${formatDynamicPrice(ord.price)}
-                    </td>
-                    <td className="py-3 text-slate-300 tabular-nums">
-                      {ord.quantityRemaining} / {ord.fullQuantity} {ord.marketSymbol}
-                    </td>
-                    <td className="py-3 text-slate-400 text-[11px]">
-                      {new Date(ord.placedAtTimestamp).toLocaleTimeString()}
-                    </td>
-                    <td className="py-3 text-right">
+                    <td>
                       <button
-                        disabled={isPending || isConfirming}
-                        onClick={() => handleCancelOrder(ord)}
-                        className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-600 border border-rose-500 text-rose-300 hover:text-white text-[11px] font-bold transition-all disabled:opacity-50 inline-flex items-center space-x-1"
+                        className="button text-rose-400"
+                        disabled={!canManage || busy}
+                        onClick={() => void cancelOrder(order)}
                       >
-                        <XCircle className="w-3 h-3" />
-                        <span>Cancel</span>
+                        Cancel
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          ))}
-
-        {/* Trade History Tab (GraphQL Indexer + RPC Fallback) */}
-        {activeTab === 'history' && (
-          <div className="space-y-3 font-mono text-xs">
-            {historyLoading ? (
-              <div className="py-8 text-center text-xs font-mono text-cyan-400 flex items-center justify-center space-x-2">
-                <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping"></span>
-                <span>Querying on-chain history from dreamDEX Indexer...</span>
-              </div>
-            ) : historyItems.length === 0 ? (
-              <div className="py-8 text-center text-xs font-mono text-slate-500">
-                No recorded transactions on Somnia Tokyo for this account yet. Executed trades, fills, and margin operations will appear here.
-              </div>
-            ) : (
-              <>
-                {historyItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3 rounded-lg bg-[#070a0e] border border-[#1a2536] flex items-center justify-between hover:border-slate-700 transition-colors"
-                  >
-                    <div>
-                      <div className="font-bold text-white flex items-center space-x-2">
-                        <span className="text-emerald-400">✓</span>
-                        <span>{item.description}</span>
-                        {item.source === 'rpc_fallback' && (
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                            RPC Direct
-                          </span>
-                        )}
-                        {item.source === 'indexer' && (
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                            Indexed
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        {item.blockNumber ? `Block ${item.blockNumber} · ` : ''}
-                        {new Date(item.timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                    <a
-                      href={`https://explorer.testnet.somnia.network/tokyo/tx/${item.hash}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-cyan-400 hover:underline flex items-center space-x-1 shrink-0 ml-4 font-mono text-xs"
-                      title="Inspect transaction on Somnia Tokyo Explorer"
-                    >
-                      <span>{`${item.hash.slice(0, 8)}...${item.hash.slice(-6)}`}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                ))}
-
-                {/* Pagination Controls */}
-                <div className="flex items-center justify-between pt-3 border-t border-[#1a2536] text-[11px] text-slate-400">
-                  <button
-                    disabled={historyPage === 0 || historyLoading}
-                    onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
-                    className="px-3 py-1 rounded bg-[#070a0e] border border-[#1a2536] hover:border-cyan-500 disabled:opacity-40"
-                  >
-                    ← Previous Page
-                  </button>
-                  <span>Page {historyPage + 1}</span>
-                  <button
-                    disabled={historyItems.length < PAGE_SIZE || historyLoading}
-                    onClick={() => setHistoryPage((p) => p + 1)}
-                    className="px-3 py-1 rounded bg-[#070a0e] border border-[#1a2536] hover:border-cyan-500 disabled:opacity-40"
-                  >
-                    Next Page →
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         )}
-      </div>
-
-      {/* Partial Close Modal */}
-      {partialClosePos && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0d131d] border border-[#1a2536] rounded-2xl max-w-sm w-full p-5 space-y-4 glow-cyan shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#1a2536] pb-2">
-              <h4 className="font-display font-bold text-white text-sm">
-                Partial Close: {partialClosePos.marketSymbol}-PERP
-              </h4>
-              <button
-                onClick={() => setPartialClosePos(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="text-xs font-mono text-slate-300 space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Total Position Size:</span>
-                <span className="text-white font-bold">
-                  {partialClosePos.size} {partialClosePos.marketSymbol}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Exit Size ({partialClosePercent}%):</span>
-                <span className="text-cyan-400 font-bold">
-                  {((partialClosePos.size * partialClosePercent) / 100).toFixed(5)}{' '}
-                  {partialClosePos.marketSymbol}
-                </span>
-              </div>
-            </div>
-
-            {/* Quick Percentage Presets */}
-            <div className="grid grid-cols-4 gap-2">
-              {[25, 50, 75, 100].map((pct) => (
-                <button
-                  key={pct}
-                  onClick={() => setPartialClosePercent(pct)}
-                  className={`py-1.5 rounded text-xs font-mono font-bold transition-all ${
-                    partialClosePercent === pct
-                      ? 'bg-cyan-500 text-black shadow-md glow-cyan'
-                      : 'bg-[#070a0e] border border-[#1a2536] text-slate-300 hover:border-cyan-500'
-                  }`}
+      </Tabs.Content>
+      <Tabs.Content value="history">
+        {history.isPending ? (
+          <div className="empty-state" role="status">
+            <LoadingState label="Loading execution history…" onRetry={refresh} />
+          </div>
+        ) : history.isError ? (
+          <div className="empty-state" role="status">
+            <strong>History unavailable</strong>
+            <span>Refresh to retry the indexer and RPC.</span>
+          </div>
+        ) : !history.data?.items.length ? (
+          <div className="empty-state">
+            <History size={26} className="brand-text" aria-hidden="true" />
+            <strong>No history in this query window</strong>
+            <span>Indexed fills and collateral transactions appear here.</span>
+          </div>
+        ) : (
+          <div className="px-4 pb-3">
+            {history.data.limited && (
+              <p className="form-note caution">
+                Limited RPC / cached history. Records may be incomplete or stale.
+              </p>
+            )}
+            {history.data.items.map((item) => (
+              <div className="history-row" key={item.id}>
+                <div>
+                  <p className="market-cell">
+                    {item.marketSymbol && <TokenLogo symbol={item.marketSymbol} size={18} />}
+                    {item.source === 'cache'
+                      ? `Cached ${item.type} record · ${item.marketSymbol || 'USDso'}`
+                      : item.description}
+                  </p>
+                  <span className="muted">
+                    {item.source === 'indexer'
+                      ? 'Indexed'
+                      : item.source === 'rpc_fallback'
+                        ? 'RPC log · observed'
+                        : 'Cached · observed'}{' '}
+                    · {new Date(item.timestamp).toLocaleString()}{' '}
+                    {item.blockNumber ? `· Block ${item.blockNumber}` : ''}
+                  </span>
+                </div>
+                <a
+                  href={`${explorer}${item.hash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="numeric"
                 >
-                  {pct}%
+                  {item.hash.slice(0, 8)}…{item.hash.slice(-4)} ↗
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-between px-4 py-3" aria-label="History pages">
+          <button className="button" disabled={!page} onClick={() => setPage((value) => value - 1)}>
+            Previous
+          </button>
+          <span className="eyebrow">Page {page + 1}</span>
+          <button
+            className="button"
+            disabled={
+              history.isFetching ||
+              history.isError ||
+              !history.data ||
+              history.data.limited ||
+              history.data.items.length < 20
+            }
+            onClick={() => setPage((value) => value + 1)}
+          >
+            Next
+          </button>
+        </div>
+      </Tabs.Content>
+      {hash && (
+        <div className="transaction-status px-4 pb-3" role="status">
+          {receipt.data?.status === 'reverted'
+            ? 'Transaction reverted'
+            : receipt.data?.status === 'success'
+              ? 'Confirmed · check updated execution outcome'
+              : receipt.isError
+                ? 'Receipt unavailable'
+                : 'Submitted · awaiting confirmation'}{' '}
+          ·{' '}
+          <a href={`${explorer}${hash}`} target="_blank" rel="noreferrer">
+            View transaction ↗
+          </a>
+        </div>
+      )}
+      <Modal
+        open={!!closePosition}
+        onClose={() => setClosePosition(null)}
+        title={`Partial close · ${closePosition?.marketSymbol || ''}-PERP`}
+        description="An opposite-side IOC order requests this reduction. Actual execution depends on liquidity; unfilled quantity is cancelled."
+      >
+        {closePosition && (
+          <>
+            <dl>
+              <div className="summary-row">
+                <dt>Position quantity</dt>
+                <dd>
+                  {closePosition.size} {closePosition.marketSymbol}
+                </dd>
+              </div>
+              <div className="summary-row">
+                <dt>Requested reduction</dt>
+                <dd>{percent}%</dd>
+              </div>
+            </dl>
+            <div className="preset-row mb-5">
+              {[25, 50, 75, 100].map((value) => (
+                <button
+                  key={value}
+                  aria-pressed={percent === value}
+                  onClick={() => setPercent(value)}
+                >
+                  {value}%
                 </button>
               ))}
             </div>
-
             <button
-              disabled={isPending || isConfirming}
-              onClick={() => executeClosePosition(partialClosePos, partialClosePercent)}
-              className="w-full py-2.5 rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-display font-bold text-xs transition-all shadow-md disabled:opacity-50"
+              className="button button-primary w-full"
+              disabled={!canManage || busy}
+              onClick={() => void executeClose(closePosition, percent)}
             >
-              {isPending || isConfirming
-                ? 'Submitting Close...'
-                : `Confirm ${partialClosePercent}% Close (${partialClosePos.isLong ? 'Sell' : 'Buy'} IOC)`}
+              {busy ? 'Awaiting wallet / receipt…' : `Submit ${percent}% close order`}
             </button>
-          </div>
-        </div>
-      )}
-    </div>
+          </>
+        )}
+      </Modal>
+    </Tabs.Root>
   );
-};
+}
