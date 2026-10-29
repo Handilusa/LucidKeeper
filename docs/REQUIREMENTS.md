@@ -111,3 +111,8 @@ Supporting records: [DESIGN](DESIGN.md), [CHECKPOINT](CHECKPOINT.md), [current s
 - **REQ-DOC-01 / REQ-DOC-05:** documentation validator passed; 51 source/test/config/prompt hashes preserved, three histories append-only, 15 exported colors consistent, source paths/breakpoints/local links checked. Existing lint report reviewed; no new browser or contrast audit claimed.
 - **REQ-DOC-06:** explicit staging and commit readback are the remaining documentation acceptance steps.
 - **REQ-DOC-07:** remains pending; start with `npm run typecheck` after the documentation commit.
+
+### Commit acceptance — 29 October 2026, 14:22 CET
+
+- **REQ-DOC-06 PASS:** `7266e4b` has exactly the seven reviewed documentation paths; `--staged` validation passed, commit/worktree were read back, and post-commit preservation validation passed. Remaining dirty/untracked paths belong to inherited work; no push performed.
+- **REQ-DOC-03 / REQ-DOC-04:** completion checkpoint now resumes at `npm run typecheck`, with no application function currently in progress. **REQ-DOC-07 remains pending.**

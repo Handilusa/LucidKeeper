@@ -11,7 +11,7 @@ Updated: **29 October 2026**. Update this file whenever the state changes.
 - Observed starting branch `main`, HEAD `dc49658`; inherited frontend changes remain uncommitted and are excluded from this documentation increment. Resolve the current commit with `git rev-parse HEAD`.
 - Source-backed inventory describes the existing chart/execution layout, account grouping, responsive behavior and incomplete styling adoption. It is not a new deployment or completed frontend validation.
 - DESIGN lint: 0 errors, 3 documented orphan-token warnings; no contrast warnings for modeled component pairs. Full browser accessibility has not been certified.
-- Documentation resumption check (29 October, 14:19 CET): validator passed, preserving 51 source/test/config/prompt files and three append-only histories; export colors, source paths, breakpoints and local links checked. Explicit staging/commit verification is next.
+- Documentation committed locally as `7266e4b`; exact seven-file scope and post-commit status verified on 29 October, 14:22 CET. Validator passed before staging, on staged content and after the commit: 51 source/test/config/prompt files preserved, three histories append-only, export colors/source paths/breakpoints/local links checked. Completion checkpoint is recorded in the following documentation commit. No push.
 
 ## Pending / limitations
 

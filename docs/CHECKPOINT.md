@@ -1,8 +1,8 @@
 # Frontend checkpoint
 
-- **Timestamp:** 2026-10-29T14:19:57+01:00
-- **Current task:** Finish the interrupted design/checkpoint documentation commit.
-- **Repository:** This app folder is the Git root; branch `main`, starting HEAD `dc49658`.
+- **Timestamp:** 2026-10-29T14:22:10+01:00
+- **Current task:** Documentation bootstrap complete; inherited frontend validation is next.
+- **Repository:** This app folder is the Git root; branch `main`. Documentation baseline: `7266e4b`; this follow-up records its verification. Use `git rev-parse HEAD` for the latest commit.
 - **Source of truth:** Read all of `../prompt_frontend.txt` first; never edit or copy it into the repository.
 - **Files touched:** `STATUS.md`, `docs/DESIGN.md`, `docs/CHECKPOINT.md`, `docs/design.tokens.json`, `docs/STATE.md`, `docs/DECISIONS.md`, `docs/REQUIREMENTS.md`; local ignored `docs/CODEX_MEMORY.md`.
 
@@ -10,29 +10,30 @@
 
 - Resumed existing DESIGN/CHECKPOINT; read the complete brief and required state/instructions, gave the five-line status, confirmed Git state, inspected CSS and the existing plan. Previous component/audit work must not restart from zero.
 - DESIGN records built tokens, layout, component paths, motion, breakpoints and adoption gaps; histories/status include the checkpoint protocol and current evidence.
-- Documentation validator **PASS** at the timestamp above: 51 source/test/config/prompt files preserved, three append-only histories, 15 export colors, 19 source paths, seven breakpoint values and seven local links checked; no configured sensitive-pattern matches in documentation payloads. Scoped whitespace check passed.
+- Documentation validator **PASS** before staging, on staged content and after commit at the timestamp above: 51 source/test/config/prompt files preserved, three append-only histories, 15 export colors, 19 source paths, seven breakpoint values and seven local links checked; no configured sensitive-pattern matches in documentation payloads. Scoped/staged whitespace checks passed.
 - Existing DESIGN lint report reviewed: 0 errors, 3 documented orphan-token warnings. Full frontend gates have not run in this step.
+- `7266e4b` committed exactly the seven public documentation files. Commit/worktree readback verified; no push. Completion and the next action are persisted in this follow-up.
 
 ## IN PROGRESS
 
-`docs/CHECKPOINT.md` — record validation, stage the seven reviewed public documentation paths and commit (no application function being edited).
+None. No application file/function is being edited. The existing redesign awaits current validation.
 
 ## Numbered plan
 
 1. [x] Read brief/checkpoint/design/state and verify the app/Git root.
 2. [x] Preserve inherited implementation; complete the built design inventory and append histories.
 3. [x] Run documentation integrity/preservation checks and record results.
-4. [ ] Stage exactly the seven public files under Files touched; run the validator with `--staged`; commit conventionally.
-5. [ ] Verify the commit and remaining worktree; persist the finished checkpoint; report the hash and first frontend task.
+4. [x] Stage exactly the seven public documentation files; run the validator with `--staged`; commit conventionally (`7266e4b`).
+5. [x] Verify that commit and remaining worktree; record completion and the first frontend task in this follow-up.
 
 ## NEXT — exact first step
 
-Stage `STATUS.md docs/CHECKPOINT.md docs/DESIGN.md docs/design.tokens.json docs/STATE.md docs/DECISIONS.md docs/REQUIREMENTS.md`, then run `python .git/lucidkeeper-audit/validate-frontend-docs.py --staged`. If interrupted after the commit, check `git log -2 --oneline` before trying to commit again.
+Run **`npm run typecheck`** from this app/Git root. Record its actual result here before any source edit. Then inspect/run the unit, lint, build and E2E gates; fix the first reproduced failure in its exact file/function. Existing audit/plan: `docs/LUCIDKEEPER_UX_AUDIT.md` and `docs/LUCIDKEEPER_REDESIGN_PLAN.md`.
 
 ## Commands to run/test
 
 Run here. `rtk` is unavailable; use native commands without installing it.
-- Documentation: the validator above, `git diff --cached --check`, `git show --stat HEAD`, `git status --short --branch`.
+- Documentation checks completed: `python .git/lucidkeeper-audit/validate-frontend-docs.py` (also `--staged` for the seven-file baseline commit), `git diff --cached --check`, `git show --stat HEAD`, `git status --short --branch`.
 - First frontend task after this commit: `npm run typecheck`, then `npm test`, `npm run lint`, `npm run build`, and inspected Playwright tests via `npm run test:e2e`. Reproduce failures before application edits; record actual results and commit working increments.
 
 ## Open problems
