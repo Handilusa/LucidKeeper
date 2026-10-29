@@ -10,6 +10,8 @@
 /docs/CODEX_MEMORY.md
 .opencode/
 .codex/
+.agents/
+/skills-lock.json
 notes/
 personal/
 inspiration/

@@ -21,11 +21,11 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           theme={darkTheme({
-            accentColor: '#06b6d4',
-            accentColorForeground: '#070a0e',
+            accentColor: '#771be8',
+            accentColorForeground: '#f5f5f5',
             borderRadius: 'medium',
             fontStack: 'system',
-            overlayBlur: 'small',
+            overlayBlur: 'none',
           })}
         >
           {children}
@@ -35,9 +35,9 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
             richColors
             toastOptions={{
               style: {
-                background: '#0d131d',
-                border: '1px solid #1a2536',
-                color: '#e2e8f0',
+                background: '#111111',
+                border: '1px solid #4c4c4c',
+                color: '#e6e6e6',
                 fontFamily: 'var(--font-mono)',
               },
             }}
