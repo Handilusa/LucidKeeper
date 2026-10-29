@@ -1,49 +1,47 @@
 # Frontend checkpoint
 
-- **Timestamp:** 2026-10-29T14:42:41+01:00
-- **Current task:** Implement the user's screenshot corrections and Guardian-first Somnia styling.
-- **Repository:** This app folder is the Git root; branch `main`, starting HEAD `968746b`.
-- **Source of truth:** Read all of `../prompt_frontend.txt` first; never edit or copy it into the repository.
-- **Files touched in this step:** `STATUS.md`, `docs/CHECKPOINT.md`, `docs/STATE.md`, `docs/DECISIONS.md`, `docs/REQUIREMENTS.md`; local ignored `docs/CODEX_MEMORY.md`. Application edits not started yet.
+- **Updated:** 29 October 2026 — ordered completion, step 1.
+- **Repository:** `dream-sentinel/` is the Git root; branch `main`, starting HEAD `968746b`.
+- **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
+- **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
 
-## DONE
+## Ordered steps
 
-- Documentation baseline complete (`7266e4b`, `968746b`); read the full immutable brief and current checkpoint/state again. Existing DESIGN remains the built inventory.
-- **Current `npm run typecheck` PASS.** Inspected App, TradingBox, Chart, AccountSummary, MarketHeader, AppHeader, RiskGuardian, ABIs and existing terminal tests. Refetched Web Interface Guidelines and official dreamDEX testnet developer documentation.
-- Reproduced in code: balances are deliberately nulled on errors/age, liquidation preview is static Unavailable, execution axis lacks Last title, leverage lies low inside the scroll region, Guardian is collapsed. User screenshots are reported evidence; actual browser reproduction is next.
+1. [x] Commit the existing work with explicit staging, preserving inherited staged docs. Final documentation/checkpoint commit and clean-status readback complete this step.
+2. [ ] Regenerate `docs/design.tokens.json` from the built violet palette; lint `docs/DESIGN.md`.
+3. [ ] Create `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md`; update `STATUS.md`.
+4. [ ] **BLOCKED:** deployed-site settled-data QA, only after the user confirms the new build is deployed.
 
-## IN PROGRESS
+## Step 1 — local commit record
 
-`src/features/trade/TradingBox.tsx` preview / `src/app/App.tsx` query-derived display state: dependency and protocol research before implementation. No function edited yet.
+| Commit | Scope |
+| --- | --- |
+| `7c0b103` | Inherited staged requirements, decisions, state, status and checkpoint, committed without replacing the index |
+| `00ebc74` | Native candle validation, retained read display, sizing/funding/chart math and unit regressions |
+| `59acbb0` | Violet CSS foundation, providers, local licensed assets and accessible shared primitives |
+| `5151454` | Market/account/header/chart and always-visible Guardian overview |
+| `efbf92d` | Activity, collateral and share dialogs |
+| `0e7550e` | Current-read gates, order preview and Guardian-first app integration |
+| `0513d6f` | Production-preview fixture browser tests |
 
-## Numbered plan
+The final step-1 documentation commit includes the existing audit, plan, built DESIGN and this checkpoint. Resolve its hash with `git rev-parse HEAD`; check `git status --porcelain=v1 --untracked-files=all` immediately afterward. No inherited paths were discarded or unstaged. No push.
 
-1. [x] Resume and typecheck inherited redesign; record this correction checklist.
-2. [ ] Verify official liquidation/funding/fee units, Somnia brand assets and local token-logo licensing; run remaining inherited baseline gates and preserve a working source commit.
-3. [ ] Implement input-driven liquidation estimates, visible leverage, retained stale account values and explicit parameter freshness; test financial calculations and stale/account switching.
-4. [ ] Implement reversible robust chart scale, exact outlier disclosure, Last/Mark labels, position overlays, cursor tooltip and timestamped feed state; test unchanged OHLC.
-5. [ ] Apply verified Somnia accent, three surface levels, local token logos and always-visible custom Guardian gauge; update DESIGN/export with actual values.
-6. [ ] Add state-driven price/estimate/transaction motion, purposeful empty states and bounded loading feedback; honor reduced motion.
-7. [ ] Run unit/type/lint/build/E2E and rendered desktop/mobile QA, inspect production build and deployed site read-only, document differences and commit each working increment. No push.
+## Checks actually run in this completion session
 
-## NEXT — exact first step
+- `npm test`: **65/65 PASS**; `npm run typecheck`: **PASS**; `npm run lint`: **PASS**.
+- Production build in `npm run test:e2e`: **PASS**, 39.89s; dependency annotation and large-chunk warnings remain.
+- That combined command hit the 120s harness timeout after browser tests 1–21 passed. It is **not** a complete E2E result; rerun the local browser suite with a longer timeout before final validation.
+- `node scripts/scan-secrets.mjs`: initial tracked worktree/history run had **zero findings**. Final staged-file run exited 1 for the explicitly labeled public indexed-fill transaction hash `0x25321747…26fd7b6` in UX audit line 27; the scanner treats unallowlisted 32-byte hashes as potential keys. This is not a clean scanner result or a discovered private key.
+- Worktree and each staged commit's whitespace checks: **PASS**.
+- `rtk` unavailable; native commands used, nothing installed to replace it.
 
-Read `test/e2e/terminal-fixture.ts`, `playwright.config.ts`, the pure risk math and official margin/funding docs; run `npm test`, `npm run lint` and `npm run test:e2e` as the inherited baseline. Research brand kit in parallel. Do not reuse the old documentation preservation validator after intentional source edits.
+## NEXT
 
-## Commands to run/test
+After the clean-status/hash readback, execute **step 2 only**: export the current DESIGN frontmatter to DTCG and lint it. Then refresh this checkpoint and commit the exact generated/documentation paths. Step 3 records current local results, not old deployment claims.
 
-Run here. `rtk` is unavailable; use native commands without installing it.
-- `npm run typecheck` passed in this task. Next baseline: `npm test`, `npm run lint`, `npm run test:e2e` (build included).
-- `git diff --check`, `git diff --cached --check`; explicit paths per commit. Browser screenshots/research artifacts stay under `.git/lucidkeeper-audit/`.
+## Boundaries / remaining evidence
 
-## Open problems
-
-- Inherited uncommitted redesign: 16 modified source/config/test files and 11 untracked files. Review and validate before committing this source baseline; preserve it rather than starting over.
-- Historical STATE claims `00d1852` shipped; local starting HEAD is `dc49658`. Earlier deployment/test claims are not current verification. Shared-token adoption, tiny labels/touch targets, formatting, motion and browser QA remain in DESIGN.
-- Liquidation in cross margin is portfolio-dependent. Show a clearly labeled sizing scenario driven by typed size/leverage plus verified maintenance/fees, and distinguish any actual portfolio estimate. An outlier candle count cannot be represented as an exact fill count without execution-level data.
-- Official Somnia kit, actual funding window, fee reads, production parity and browser results are not yet verified. Production cannot receive these local changes without the user's push/deploy.
-- No keys, secrets, personal notes, unrelated project material or fake market data in the repo. No on-chain actions without explicit approval. No push.
-
-## Restart protocol
-
-Read the complete brief, CHECKPOINT, DESIGN and STATE; summarize in five lines, then execute NEXT. Refresh CHECKPOINT after every meaningful file/component/fix and at least roughly every ten minutes; write a numbered plan before long tasks. Update DESIGN with built design changes; append STATE/DECISIONS/REQUIREMENTS. Commit each working step with its docs using explicit paths.
+- Standalone liquidation is a sizing scenario, not the actual cross-margin boundary. Portfolio overlays/health use a same-block snapshot; stale retained balances are display-only.
+- Robust scale changes only the viewport. Disclosure counts candles beyond bounds, never fills; original OHLC and full range remain available.
+- Historical screenshots/parity/protocol artifacts in `.git/lucidkeeper-audit/` predate this completion. Do not treat them as current deployed settled-data QA or rerun the mixed local/deployed parity script now.
+- No live signing, wallet writes, on-chain operations, deployment or push in this completion. Local memory/audit files stay ignored.
