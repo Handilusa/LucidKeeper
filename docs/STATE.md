@@ -138,3 +138,9 @@ This appended entry is the current local resume state. Earlier shipped/deployed/
 - Commit **`7266e4b`** (`docs(frontend): record built design and checkpoint protocol`) contains exactly the seven reviewed documentation files. Staged validation and post-commit preservation checks **PASS**; staging is empty after that commit.
 - Remaining worktree: 16 inherited modified files and 11 inherited untracked files. No application/prompt changes were made during this documentation step; no push or on-chain operations occurred.
 - This follow-up records completion and advances CHECKPOINT's NEXT to **`npm run typecheck` from the app/Git root**. Application validation remains pending; resume the existing redesign rather than replacing it.
+
+## Screenshot-correction implementation started — 29 October 2026, 14:42 CET
+
+- User requested liquidation previews, cached stale balances, robust/reversible price scaling, explicit Last/Mark labels, verified funding/fees, visible leverage, Guardian-first hierarchy, official Somnia accent, local logos and state-driven motion. Requirements are appended in REQUIREMENTS and DEC-014.
+- Resumed at `968746b`; `npm run typecheck` **PASS** on the inherited source. Inspected affected components/ABIs/tests and refreshed official developer docs and interface guidelines. No source edits yet.
+- Current task checklist and exact NEXT are in CHECKPOINT. Source baseline validation, protocol/brand verification and production comparison remain pending.

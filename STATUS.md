@@ -7,6 +7,8 @@ Updated: **29 October 2026**. Update this file whenever the state changes.
 
 ## Current local step
 
+- **29 October, 14:42 CET:** screenshot-correction implementation started; inherited source typecheck passed. Liquidation, stale data, chart readability, Somnia styling and visible Guardian are the active checklist in CHECKPOINT. Remaining baseline/browser gates pending.
+
 - Documentation-only frontend checkpoint: [design inventory](docs/DESIGN.md), [resume record](docs/CHECKPOINT.md), and appended state/decision/requirement history.
 - Observed starting branch `main`, HEAD `dc49658`; inherited frontend changes remain uncommitted and are excluded from this documentation increment. Resolve the current commit with `git rev-parse HEAD`.
 - Source-backed inventory describes the existing chart/execution layout, account grouping, responsive behavior and incomplete styling adoption. It is not a new deployment or completed frontend validation.

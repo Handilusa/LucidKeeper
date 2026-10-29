@@ -108,3 +108,9 @@
 ### DEC-013 resumption evidence — 29 October 2026
 
 - Retain the existing DESIGN and generated token export: current validation confirms their color/source/breakpoint mappings and preservation baseline. Finish the interrupted documentation commit before the inherited redesign's typecheck; no new visual direction or runtime token was chosen during resumption.
+
+### DEC-014: Screenshot correction direction
+- **Date:** 29 October 2026
+- **User decision:** Prioritize visible pre-trade liquidation and leverage, resilient stale displays, reversible robust chart scaling, and an always-visible Guardian. Adopt verified Somnia brand violet instead of the previous cyan brand accent; keep directional and warning colors semantic. Use local licensed token logos and state-driven motion.
+- **Implementation constraints:** Do not alter raw candles, invent exact execution counts from aggregate candles, or present an isolated sizing estimate as an exact cross-margin liquidation boundary. Verify parameters and label assumptions. Cached values are display-only whenever current reads fail.
+- **Status:** Requested direction, not yet built; DESIGN will change alongside implementation. The immutable frontend brief remains intact; this dated decision records the user's subsequent refinements.

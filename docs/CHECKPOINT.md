@@ -1,45 +1,47 @@
 # Frontend checkpoint
 
-- **Timestamp:** 2026-10-29T14:22:10+01:00
-- **Current task:** Documentation bootstrap complete; inherited frontend validation is next.
-- **Repository:** This app folder is the Git root; branch `main`. Documentation baseline: `7266e4b`; this follow-up records its verification. Use `git rev-parse HEAD` for the latest commit.
+- **Timestamp:** 2026-10-29T14:42:41+01:00
+- **Current task:** Implement the user's screenshot corrections and Guardian-first Somnia styling.
+- **Repository:** This app folder is the Git root; branch `main`, starting HEAD `968746b`.
 - **Source of truth:** Read all of `../prompt_frontend.txt` first; never edit or copy it into the repository.
-- **Files touched:** `STATUS.md`, `docs/DESIGN.md`, `docs/CHECKPOINT.md`, `docs/design.tokens.json`, `docs/STATE.md`, `docs/DECISIONS.md`, `docs/REQUIREMENTS.md`; local ignored `docs/CODEX_MEMORY.md`.
+- **Files touched in this step:** `STATUS.md`, `docs/CHECKPOINT.md`, `docs/STATE.md`, `docs/DECISIONS.md`, `docs/REQUIREMENTS.md`; local ignored `docs/CODEX_MEMORY.md`. Application edits not started yet.
 
 ## DONE
 
-- Resumed existing DESIGN/CHECKPOINT; read the complete brief and required state/instructions, gave the five-line status, confirmed Git state, inspected CSS and the existing plan. Previous component/audit work must not restart from zero.
-- DESIGN records built tokens, layout, component paths, motion, breakpoints and adoption gaps; histories/status include the checkpoint protocol and current evidence.
-- Documentation validator **PASS** before staging, on staged content and after commit at the timestamp above: 51 source/test/config/prompt files preserved, three append-only histories, 15 export colors, 19 source paths, seven breakpoint values and seven local links checked; no configured sensitive-pattern matches in documentation payloads. Scoped/staged whitespace checks passed.
-- Existing DESIGN lint report reviewed: 0 errors, 3 documented orphan-token warnings. Full frontend gates have not run in this step.
-- `7266e4b` committed exactly the seven public documentation files. Commit/worktree readback verified; no push. Completion and the next action are persisted in this follow-up.
+- Documentation baseline complete (`7266e4b`, `968746b`); read the full immutable brief and current checkpoint/state again. Existing DESIGN remains the built inventory.
+- **Current `npm run typecheck` PASS.** Inspected App, TradingBox, Chart, AccountSummary, MarketHeader, AppHeader, RiskGuardian, ABIs and existing terminal tests. Refetched Web Interface Guidelines and official dreamDEX testnet developer documentation.
+- Reproduced in code: balances are deliberately nulled on errors/age, liquidation preview is static Unavailable, execution axis lacks Last title, leverage lies low inside the scroll region, Guardian is collapsed. User screenshots are reported evidence; actual browser reproduction is next.
 
 ## IN PROGRESS
 
-None. No application file/function is being edited. The existing redesign awaits current validation.
+`src/features/trade/TradingBox.tsx` preview / `src/app/App.tsx` query-derived display state: dependency and protocol research before implementation. No function edited yet.
 
 ## Numbered plan
 
-1. [x] Read brief/checkpoint/design/state and verify the app/Git root.
-2. [x] Preserve inherited implementation; complete the built design inventory and append histories.
-3. [x] Run documentation integrity/preservation checks and record results.
-4. [x] Stage exactly the seven public documentation files; run the validator with `--staged`; commit conventionally (`7266e4b`).
-5. [x] Verify that commit and remaining worktree; record completion and the first frontend task in this follow-up.
+1. [x] Resume and typecheck inherited redesign; record this correction checklist.
+2. [ ] Verify official liquidation/funding/fee units, Somnia brand assets and local token-logo licensing; run remaining inherited baseline gates and preserve a working source commit.
+3. [ ] Implement input-driven liquidation estimates, visible leverage, retained stale account values and explicit parameter freshness; test financial calculations and stale/account switching.
+4. [ ] Implement reversible robust chart scale, exact outlier disclosure, Last/Mark labels, position overlays, cursor tooltip and timestamped feed state; test unchanged OHLC.
+5. [ ] Apply verified Somnia accent, three surface levels, local token logos and always-visible custom Guardian gauge; update DESIGN/export with actual values.
+6. [ ] Add state-driven price/estimate/transaction motion, purposeful empty states and bounded loading feedback; honor reduced motion.
+7. [ ] Run unit/type/lint/build/E2E and rendered desktop/mobile QA, inspect production build and deployed site read-only, document differences and commit each working increment. No push.
 
 ## NEXT — exact first step
 
-Run **`npm run typecheck`** from this app/Git root. Record its actual result here before any source edit. Then inspect/run the unit, lint, build and E2E gates; fix the first reproduced failure in its exact file/function. Existing audit/plan: `docs/LUCIDKEEPER_UX_AUDIT.md` and `docs/LUCIDKEEPER_REDESIGN_PLAN.md`.
+Read `test/e2e/terminal-fixture.ts`, `playwright.config.ts`, the pure risk math and official margin/funding docs; run `npm test`, `npm run lint` and `npm run test:e2e` as the inherited baseline. Research brand kit in parallel. Do not reuse the old documentation preservation validator after intentional source edits.
 
 ## Commands to run/test
 
 Run here. `rtk` is unavailable; use native commands without installing it.
-- Documentation checks completed: `python .git/lucidkeeper-audit/validate-frontend-docs.py` (also `--staged` for the seven-file baseline commit), `git diff --cached --check`, `git show --stat HEAD`, `git status --short --branch`.
-- First frontend task after this commit: `npm run typecheck`, then `npm test`, `npm run lint`, `npm run build`, and inspected Playwright tests via `npm run test:e2e`. Reproduce failures before application edits; record actual results and commit working increments.
+- `npm run typecheck` passed in this task. Next baseline: `npm test`, `npm run lint`, `npm run test:e2e` (build included).
+- `git diff --check`, `git diff --cached --check`; explicit paths per commit. Browser screenshots/research artifacts stay under `.git/lucidkeeper-audit/`.
 
 ## Open problems
 
-- Inherited uncommitted redesign: 16 modified source/config/test files; 11 untracked audit/plan/feedback/component/helper/test files. Full list: `git status --short`; source preservation baseline: `.git/lucidkeeper-audit/frontend-docs-baseline.json`. Do not stage them in the documentation commit or discard them.
+- Inherited uncommitted redesign: 16 modified source/config/test files and 11 untracked files. Review and validate before committing this source baseline; preserve it rather than starting over.
 - Historical STATE claims `00d1852` shipped; local starting HEAD is `dc49658`. Earlier deployment/test claims are not current verification. Shared-token adoption, tiny labels/touch targets, formatting, motion and browser QA remain in DESIGN.
+- Liquidation in cross margin is portfolio-dependent. Show a clearly labeled sizing scenario driven by typed size/leverage plus verified maintenance/fees, and distinguish any actual portfolio estimate. An outlier candle count cannot be represented as an exact fill count without execution-level data.
+- Official Somnia kit, actual funding window, fee reads, production parity and browser results are not yet verified. Production cannot receive these local changes without the user's push/deploy.
 - No keys, secrets, personal notes, unrelated project material or fake market data in the repo. No on-chain actions without explicit approval. No push.
 
 ## Restart protocol

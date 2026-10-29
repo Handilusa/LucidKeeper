@@ -116,3 +116,22 @@ Supporting records: [DESIGN](DESIGN.md), [CHECKPOINT](CHECKPOINT.md), [current s
 
 - **REQ-DOC-06 PASS:** `7266e4b` has exactly the seven reviewed documentation paths; `--staged` validation passed, commit/worktree were read back, and post-commit preservation validation passed. Remaining dirty/untracked paths belong to inherited work; no push performed.
 - **REQ-DOC-03 / REQ-DOC-04:** completion checkpoint now resumes at `npm run typecheck`, with no application function currently in progress. **REQ-DOC-07 remains pending.**
+
+## Screenshot corrections requested — 29 October 2026
+
+All below are pending implementation/verification unless dated evidence says otherwise.
+
+1. Input-driven estimated liquidation before an open position, using typed side/size/leverage and verified protocol maintenance/fees; disclose cross-margin assumptions and unsupported inputs.
+2. Retain last successful balances through read failures with Stale and observation time; isolate accounts/networks and never authorize execution from stale funds.
+3. Robust `autoscaleInfoProvider` viewport without altering OHLC, visible outlier disclosure and a full-range control. Count candles honestly unless exact execution counts are available.
+4. Explicit Last and Mark price labels; entry/liquidation position lines when their values are supportable, cursor tooltip and timestamped Live/Stale feed state.
+5. Verify funding normalization/window against protocol sources and live read-only contract results; verify zero fees rather than defaulting unloaded values to zero.
+6. Make leverage directly visible and the Guardian an always-visible custom SVG shield/semicircular gauge, including No exposure and unavailable/stale states.
+7. Use exact verified Somnia brand-kit violet for brand/network/connect/focus/active tabs/Guardian; green/red for direction and PnL, amber for warnings. Respect logo rules.
+8. Bundle licensed token SVGs locally with an initial fallback; BTC logo in selector/header/tables; USDso quote labels.
+9. Three dark surface levels, 1px borders and subtle inner highlights.
+10. NumberFlow mark updates with 300ms directional flash and SVG 24h arrows. Animate changed estimates, transaction states and risk; no invented progress or fill success.
+11. Empty-position SVG plus add collateral → open position → arm Guardian guidance. One-time bounded loading entrances/shimmer, reduced-motion alternatives; no perpetual decorative animation.
+12. Validate production build and compare deployed production with localhost; record actual deployment differences without pushing or signing.
+
+Baseline check: `npm run typecheck` PASS on inherited source, 29 October 2026. Remaining gates are pending.
