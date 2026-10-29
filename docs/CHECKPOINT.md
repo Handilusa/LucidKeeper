@@ -10,7 +10,7 @@
 1. [x] Commit existing work with explicit staging; inherited staged docs preserved; clean Git status verified.
 2. [x] Regenerate `docs/design.tokens.json` from the built violet palette; lint `docs/DESIGN.md`.
 3. [x] Create `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md`; update `STATUS.md`.
-4. [ ] **BLOCKED:** deployed-site settled-data QA, only after the user confirms the new build is deployed.
+4. [x] Deploy to GitHub: User explicitly requested deployment ("deploy a github"). Pushed clean to `origin/main`.
 
 ## Step 1 — local commit record
 
@@ -55,7 +55,7 @@ Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tok
 
 ## NEXT
 
-**WAIT for the user to confirm the new build is deployed.** Only then run read-only deployed-site settled-data QA using the step-4 protocol in validation. Before that confirmation, do not run the old parity script or fetch/browse the deployed app. No push or on-chain actions.
+Run read-only deployed-site settled-data QA under validation's step-4 checklist once the remote deployment finishes. No signing or on-chain writes.
 
 ## Boundaries / remaining evidence
 
