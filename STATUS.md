@@ -22,7 +22,7 @@ Updated: **29 October 2026**. Update this file whenever the state changes.
 
 ## Pending / limitations
 
-- **Reown local fix verified, 16:33 UTC:** supplied public Project ID configured with environment override retained; 65/65 unit tests, typecheck, lint, build and 5/5 focused local read-only checks pass. Local config HTTP 200, telemetry 202. **Latest production check still sends the old ID and receives HTTP 403**, despite user-reported redeployment; [feedback 005](feedback/005-production-reown-origin-allowlist.md). Wallet connection untested.
+- **Reown production configuration verified, 20:34 UTC: 5/5 focused read-only checks PASS.** Live requests use the supplied public Project ID; config HTTP200, telemetry202, no console/page errors. [Feedback 005](feedback/005-production-reown-origin-allowlist.md) resolved for configuration only; actual wallet connection/signing remains untested. Earlier 16:33 old-ID/403 observations are historical.
 - Generic-container group labels need semantic review ([feedback 006](feedback/006-generic-container-accessible-labels.md)). Limited axe checks report zero automatic violations but incomplete naming/contrast/focus checks; not full accessibility certification.
 - Build dependency/large-chunk warnings, dense labels/small targets and full manual accessibility/performance audit remain open. Live error/stale recovery and nonempty portfolio paths were not exercised; prior fixtures cover them.
 - Fixture results are not real wallet/fill evidence. Historical balances/deployment claims are not current observations; prior receipt evidence remains in README. No signing-policy changes or on-chain authorization.
@@ -33,4 +33,4 @@ Whitelist, Discord, X posts, DoraHacks submission, wallet and signer setup.
 
 ## Next
 
-Owner: ensure Vercel Production `VITE_WALLETCONNECT_PROJECT_ID` selects the supplied ID and redeploy; then repeat read-only verification. Local source fix does not publish itself. Accessibility follow-up 006 remains separate. No agent cloud login, wallet actions or push.
+No further Reown configuration change needed for the verified production origin. Accessibility follow-up 006 and actual wallet-connection validation remain separate authorized tasks. No agent cloud login, wallet actions or push.

@@ -1,5 +1,7 @@
 # Production origin rejected by Reown configuration
 
+**Status:** Resolved for production configuration, **29 October 2026, 20:34 UTC**. Actual wallet connection/signing remains untested; prior observations below are retained as history.
+
 - **Severity:** Medium — wallet integration configuration; connection impact not tested.
 - **Area:** Deployment / RainbowKit–WalletConnect / Reown; not a reproduced dreamDEX protocol defect.
 - **Observed:** 29 October 2026, 15:53–15:55 UTC; repeated in five fresh browser contexts after user deployment confirmation.
@@ -17,3 +19,9 @@
 - Latest fresh production observation at **16:33:09–16:33:12 UTC** still sends **`3fcc6bba2d1de962d911bb5b5c3dba68`** to config and telemetry; both return **403**, with the production-origin allowlist error. Document200 and disconnected data reads succeed; **2/5 checks pass**. **Issue remains open on production.** No wallet connection/signing test.
 - Evidence: local `.git/lucidkeeper-audit/reown-local-2026-10-29T16-33-09-033Z/report.json` and deployed `reown-deployed-2026-10-29T16-33-09-008Z/report.json`. The earlier 16:29 report is preserved; its disabled-Connect-button assertion was an audit mistake, not a source defect.
 - Owner action: select the supplied ID in Vercel **Production** `VITE_WALLETCONNECT_PROJECT_ID`, then redeploy. A local source change alone is not published; existing environment overrides can supersede the default. No cloud/environment files inspected, no agent push or settings change; exact cause of old-ID selection is not established.
+
+## Production resolution verified — 29 October 2026, 20:34 UTC
+
+- Fresh browser at effective `https://lucid-keeper.vercel.app/`: **5/5 focused read-only checks PASS**. Live config request now uses `006c638cc6ec95a3982952a1ee86aa05` and returns **200**; telemetry uses the same ID and returns **202**. No Reown allowlist/config errors, other console warnings/errors, page exceptions or write attempts observed. Document200 and disconnected market/account reads settle.
+- Evidence: `.git/lucidkeeper-audit/reown-deployed-2026-10-29T20-34-19-332Z/report.json`, 20:34:19–20:34:25 UTC. Earlier old-ID/403 observations are historical, not the current outcome. The exact timing/cause of deployment availability was not established; do not claim a confirmed cache or propagation defect.
+- No further configuration change needed for the observed production origin. Actual wallet connection/relay/signing behavior was not exercised. No cloud login, app source changes, signatures, transactions or push during this confirmation.

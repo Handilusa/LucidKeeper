@@ -1,6 +1,6 @@
 # Frontend checkpoint
 
-- **Updated:** 29 October 2026 — authorized Reown local fix verified; production still selects old ID.
+- **Updated:** 29 October 2026 — Reown production configuration verified at 20:34 UTC.
 - **Repository:** `dream-sentinel/` is the Git root; branch `main`, starting HEAD `968746b`.
 - **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
@@ -57,7 +57,7 @@ Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tok
 
 ## NEXT
 
-Owner: set Vercel Production `VITE_WALLETCONNECT_PROJECT_ID` to `006c638cc6ec95a3982952a1ee86aa05` and redeploy. Latest fresh production check still selects the old ID. Recheck read-only after correction; no agent cloud login, wallet connection, signatures or push. Accessible-group follow-up 006 remains separate.
+Reown production configuration now passes; no further ID/allowlist change needed for the observed origin. Accessible-group follow-up 006 and actual wallet-connection validation remain separate tasks requiring authorization. No agent cloud login, signatures or push.
 
 ## Authorized Reown follow-up — 29 October 2026
 
@@ -69,6 +69,8 @@ Owner: set Vercel Production `VITE_WALLETCONNECT_PROJECT_ID` to `006c638cc6ec95a
 - Final exact five-path staging and whitespace checks **PASS**; unchanged supplemental secret scanner **exits 0, zero findings** in tracked worktree/latest 100 commits. Save this reviewed increment locally only; production resolution remains blocked on deployed ID selection.
 
 ## Original step 4 — deployed read-only QA
+
+**Later Reown confirmation — 20:34:19–20:34:25 UTC:** fresh Chromium production audit **5/5 PASS**; supplied Project ID observed in live config200/telemetry202, no console/page errors or write attempts. Effective URL/document200 and disconnected market/account reads pass. Evidence: `.git/lucidkeeper-audit/reown-deployed-2026-10-29T20-34-19-332Z/report.json`. Feedback005 resolved for configuration only; no actual wallet connection/signing, full five-size rerun or new content-parity claim. The earlier 16:33 old-ID observation remains historical; deployment/cache/propagation cause was not established. Documentation-only update; no app/cloud changes or push.
 
 - User confirmed “done its already deployed”; gate released. Starting QA HEAD `e755984`, clean `main...origin/main`. Inherited `abce76c` allowlists the public audit hash; `e755984` records publication. Neither was pushed by this QA session.
 - **29 October 2026, 15:53:19–15:55:07 UTC:** fresh Chromium at all five specified sizes, effective production URL `https://lucid-keeper.vercel.app/`, HTTP 200. HTML and all 15 observed JS/CSS assets are SHA-256-identical to current `dist/`; deployment commit ID not independently exposed.
