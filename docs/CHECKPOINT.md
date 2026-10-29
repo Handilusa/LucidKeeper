@@ -1,6 +1,6 @@
 # Frontend checkpoint
 
-- **Updated:** 29 October 2026 — ordered completion, step 2.
+- **Updated:** 29 October 2026 — ordered completion, step 3; waiting for deployment confirmation.
 - **Repository:** `dream-sentinel/` is the Git root; branch `main`, starting HEAD `968746b`.
 - **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
@@ -9,7 +9,7 @@
 
 1. [x] Commit existing work with explicit staging; inherited staged docs preserved; clean Git status verified.
 2. [x] Regenerate `docs/design.tokens.json` from the built violet palette; lint `docs/DESIGN.md`.
-3. [ ] Create `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md`; update `STATUS.md`.
+3. [x] Create `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md`; update `STATUS.md`.
 4. [ ] **BLOCKED:** deployed-site settled-data QA, only after the user confirms the new build is deployed.
 
 ## Step 1 — local commit record
@@ -34,18 +34,28 @@ After `da2301e`, `git status --porcelain=v1 --untracked-files=all` returned no o
 - `npx -y -p @google/design.md designmd lint docs/DESIGN.md`: **0 errors, 9 orphan-token warnings**, no modeled-component contrast warnings. DESIGN now distinguishes this from the previous three-warning/15-color baseline.
 - Worktree whitespace check: **PASS**. This step changes DESIGN prose, generated JSON and CHECKPOINT only; no runtime source or deployed-site checks.
 
+Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tokens and CHECKPOINT.
+
+## Step 3 — validation and STATUS
+
+- Created `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md`; STATUS now reflects committed local work, actual current checks, scanner exception and deployment gate.
+- Reran `npx playwright test --project=chromium` against the already-built local production preview with a 240s harness allowance: **27/27 PASS (2.1m)**. This supersedes the earlier incomplete timed-out browser run.
+- All five responsive sizes passed; inspected newly generated 1440/1280 desktop and 390px Trade screenshots. External fonts/RPC/wallets are isolated fixtures, not deployed or financial evidence.
+- Final staged whitespace and CLI/export equality checks: **PASS**. Supplemental scanner exits 1 on **two occurrences of the same audit transaction hash** (worktree and `da2301e` history), not two distinct secrets. The exception remains documented, not suppressed.
+- No new deployed-site QA, signing, on-chain writes, push or deployment. Historical parity files remain historical.
+
 ## Checks actually run in this completion session
 
 - `npm test`: **65/65 PASS**; `npm run typecheck`: **PASS**; `npm run lint`: **PASS**.
 - Production build in `npm run test:e2e`: **PASS**, 39.89s; dependency annotation and large-chunk warnings remain.
-- That combined command hit the 120s harness timeout after browser tests 1–21 passed. It is **not** a complete E2E result; rerun the local browser suite with a longer timeout before final validation.
+- The combined command hit the 120s harness timeout after browser tests 1–21 passed. The subsequent standalone local browser run completed **27/27 PASS**, as recorded in step 3.
 - `node scripts/scan-secrets.mjs`: initial tracked worktree/history run had **zero findings**. Final staged-file run exited 1 for the explicitly labeled public indexed-fill transaction hash `0x25321747…26fd7b6` in UX audit line 27; the scanner treats unallowlisted 32-byte hashes as potential keys. This is not a clean scanner result or a discovered private key.
 - Worktree and each staged commit's whitespace checks: **PASS**.
 - `rtk` unavailable; native commands used, nothing installed to replace it.
 
 ## NEXT
 
-Execute **step 3**: create `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md` and refresh `STATUS.md`. Complete the local browser suite with a longer timeout and record actual local results and limitations. Refresh CHECKPOINT and commit exact docs paths. **Stop before deployed-site QA until the user confirms the new build is deployed.**
+**WAIT for the user to confirm the new build is deployed.** Only then run read-only deployed-site settled-data QA using the step-4 protocol in validation. Before that confirmation, do not run the old parity script or fetch/browse the deployed app. No push or on-chain actions.
 
 ## Boundaries / remaining evidence
 
