@@ -100,3 +100,35 @@ Open Vercel dashboard → check latest deployment shows commit `00d1852` or "fea
 - Demo video recording
 - 2–3 X posts with real tx hashes
 - DoraHacks submission
+
+---
+
+## 6. Frontend documentation checkpoint — 29 October 2026
+
+This appended entry is the current local resume state. Earlier shipped/deployed/test claims above are historical and were not reverified for this worktree.
+
+1. The app folder is the Git root; observed branch `main`, starting HEAD `dc49658`, with inherited frontend changes and an empty staging area.
+2. `docs/DESIGN.md` now inventories actual working-tree colors, typography, layout, components, breakpoints, motion and incomplete token adoption. It does not certify the redesign or deployment.
+3. `docs/CHECKPOINT.md` is the resume record. The frontend brief `../prompt_frontend.txt` remains unchanged and outside this repository.
+4. This step changes documentation only. Application/source/test/config preservation is checked against a local SHA-256 baseline; inherited implementation and audit/plan files are not included in this step's commit.
+5. Next frontend action: run `npm run typecheck` from the app root, then unit tests, lint, build and fixture-based E2E. Reproduce any failure before changing code; perform live read-only browser QA separately. No signing, transactions, push or deployment in this step.
+
+### Durable resume protocol
+
+- At restart, read the complete frontend brief, CHECKPOINT, DESIGN and this latest state entry; summarize the state in five lines, then execute CHECKPOINT's exact NEXT action.
+- Refresh CHECKPOINT after each meaningful file/component/fix and at least roughly every ten minutes. Record what is done, the current file/function, commands/results, blockers and the exact next action.
+- Update DESIGN when implemented design choices change. Append dated evidence to STATE, DECISIONS and REQUIREMENTS; do not overwrite their history or promote proposed/historical work to verified completion.
+- Commit each validated working increment with its related documentation, using explicit reviewed paths. Preserve unrelated/inherited dirty files. Never use a blanket add, never push in this workflow, and keep local audit/memory files out of commits.
+
+### Documentation checks
+
+- DESIGN CLI lint ran successfully: **0 errors**, **3 orphan-token warnings**, no contrast warnings for the modeled component pairs. The unused-in-schema entries are the documented border, highlighted border and warning colors, not evidence that these colors are unused in CSS.
+- Full frontend tests, production build, browser QA and live account/transaction checks have **not** run in this documentation step. Earlier test totals must not be reused as current results.
+- Final documentation validation and preservation results are recorded in CHECKPOINT; local detailed reports stay under `.git/lucidkeeper-audit/`.
+
+### Resumed validation — 29 October 2026, 14:19 CET
+
+- Independently confirmed `main` at `dc49658`, an empty staging area, and the inherited worktree listed in CHECKPOINT. DESIGN and CHECKPOINT already existed from the interrupted step; resumed their validation rather than recreating the design.
+- `python .git/lucidkeeper-audit/validate-frontend-docs.py` **PASS**: 51 preserved files, three append-only histories, 15 source-backed export colors, 19 source paths, seven breakpoint values and seven local links. Configured sensitive-pattern checks found no matches in the documentation payloads; this was not a repository/history-wide scan.
+- `git diff --check` for the seven documentation paths **PASS**. Existing DESIGN lint report inspected: zero errors, three documented orphan-token warnings. No application gates run in this step.
+- Next: validate explicit staging, commit the documentation, and verify the resulting commit. First frontend action remains `npm run typecheck`.

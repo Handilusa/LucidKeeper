@@ -87,3 +87,27 @@ Audit conducted against the deployed production terminal (`https://lucid-keeper.
 | **REQ-BOUNTY-04** | 2-3 Public Posts on X | In Preparation | LucidKeeper templates ready for final deployment |
 | **REQ-BOUNTY-05** | 2-3 Minute Video Demo | Scheduled | Scheduled for 1 November after final features |
 | **REQ-BOUNTY-06** | Public Deployed Application URL | **LIVE** | `https://lucid-keeper.vercel.app/` |
+
+---
+
+## 6. Frontend resume and documentation acceptance — 29 October 2026
+
+Earlier PASS/DONE entries describe prior work, not verification of the inherited uncommitted redesign. This step is documentation-only.
+
+| ID | Requirement | Current evidence / status |
+| --- | --- | --- |
+| **REQ-DOC-01** | Preserve the frontend brief and existing implementation | Read the complete `../prompt_frontend.txt`; preserve it outside the repo. Compare source/test/config/prompt hashes against the local baseline before committing. |
+| **REQ-DOC-02** | Record implemented design, not a proposal | `docs/DESIGN.md`: source-backed palette, fonts/numeric formatting, layout, component paths, breakpoints, radii, focus, motion and explicit exceptions. |
+| **REQ-DOC-03** | Maintain an actionable checkpoint | `docs/CHECKPOINT.md`: timestamp, DONE/IN PROGRESS/NEXT, numbered plan, exact commands, blockers and inherited-file scope. Refresh after meaningful changes and roughly every ten minutes. |
+| **REQ-DOC-04** | Resume consistently | Read brief/CHECKPOINT/DESIGN/latest STATE, give a five-line status and execute NEXT. Update DESIGN for actual design changes; append history to STATE/DECISIONS/REQUIREMENTS. |
+| **REQ-DOC-05** | Validate the design inventory | CLI lint executed: 0 errors, 3 documented orphan-token warnings, no modeled-pair contrast warnings. Token export and final document integrity checks must pass before the docs-only commit. This is not a full accessibility audit. |
+| **REQ-DOC-06** | Commit only the validated increment | Explicit documentation paths only; no inherited application/test/config changes, local memory/audit artifacts, prompt copy, secrets, push or on-chain actions. Read back the actual commit and remaining worktree. |
+| **REQ-DOC-07** | Revalidate the inherited frontend separately | **PENDING**: typecheck → unit/lint/build/E2E, responsive/keyboard/console checks and live read-only browser QA. Do not mark this complete using historical results or fixture values as live data. |
+
+Supporting records: [DESIGN](DESIGN.md), [CHECKPOINT](CHECKPOINT.md), [current state](STATE.md), [DEC-013](DECISIONS.md). Detailed preservation and documentation validation reports remain local under `.git/lucidkeeper-audit/`; final check results belong in CHECKPOINT.
+
+### Resumption evidence — 29 October 2026, 14:19 CET
+
+- **REQ-DOC-01 / REQ-DOC-05:** documentation validator passed; 51 source/test/config/prompt hashes preserved, three histories append-only, 15 exported colors consistent, source paths/breakpoints/local links checked. Existing lint report reviewed; no new browser or contrast audit claimed.
+- **REQ-DOC-06:** explicit staging and commit readback are the remaining documentation acceptance steps.
+- **REQ-DOC-07:** remains pending; start with `npm run typecheck` after the documentation commit.

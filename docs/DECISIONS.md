@@ -94,3 +94,17 @@
 - **Decision:** Eliminate every hardcoded mock, placeholder number, simulated PnL, fake tx hash, and synthetic balance across the entire codebase. When on-chain data is loading or absent, explicitly show `"--"` or empty states. All trade history, positions, mark prices, leverage, and margin are derived directly on-chain from Somnia Tokyo testnet.
 - **Reason:** Absolute mandate for accuracy and compliance with dreamDEX Perps Builder Bounty rules. Deceiving users with fake prices or simulated PnL is strictly prohibited. Detailed in `docs/DATA_INTEGRITY_POLICY.md`.
 
+---
+
+### DEC-013: Source-backed design inventory and durable frontend checkpoints
+- **Date:** 29 October 2026
+- **Decision:** Maintain `docs/DESIGN.md` as an inventory of implemented working-tree tokens, layout, component boundaries and exceptions; maintain `docs/CHECKPOINT.md` as the exact resumption record. The complete `../prompt_frontend.txt` remains the unchanged frontend brief and is not copied into the repository.
+- **Evidence:** Inspected `src/styles/globals.css`, app composition, rendered component presentation, chart/canvas options, providers, entry/fonts, numeric formatting and test configuration. Source inspection is not browser validation or proof of deployed behavior.
+- **Reason:** Interrupted work must resume from its actual state, without discarding existing implementation, repeating historical claims or treating a proposed design as shipped.
+- **Protocol:** Read brief/CHECKPOINT/DESIGN/latest STATE on restart; summarize in five lines; execute NEXT. Refresh CHECKPOINT after every meaningful change and roughly every ten minutes. Append dated history to STATE/DECISIONS/REQUIREMENTS. Commit each validated increment with its docs using explicit file paths; no push.
+- **Scope:** Initial commit is documentation-only; inherited source/tests/config and the existing audit/plan remain outside it. No financial policy, signing authorization, dependencies or application behavior are changed. Machine-readable token export is a documentation artifact, not imported into the application.
+- **Built-versus-proposed distinction:** Current compact navigation begins below 1024px, not the earlier plan's 768px. Shared color adoption and 150ms motion are incomplete in providers/risk/recovery UI; record these exceptions rather than silently changing code in a docs task.
+
+### DEC-013 resumption evidence — 29 October 2026
+
+- Retain the existing DESIGN and generated token export: current validation confirms their color/source/breakpoint mappings and preservation baseline. Finish the interrupted documentation commit before the inherited redesign's typecheck; no new visual direction or runtime token was chosen during resumption.

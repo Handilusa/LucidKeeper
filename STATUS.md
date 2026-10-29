@@ -1,34 +1,29 @@
 # Project status
 
-Updated: **26 October 2026**. Update this file whenever the state changes.
+Updated: **29 October 2026**. Update this file whenever the state changes.
 
 **Project:** `dream-sentinel` (Lucidkeeper), **dreamDEX Perps Builder Bounty**, Somnia Tokyo testnet, **chain 50383**. Not Perps Arena.
 **Submission deadline:** **1 November 2026, 23:59 UTC** (user-provided).
 
-## Done
+## Current local step
 
-- Official docs and SDK **0.32.1** verified; EOA-only rules documented.
-- Offline-signing model and [handoff specification](docs/OFFLINE_SIGNING.md) documented: OpenCode prepares unsigned transactions; the user reviews and relays them; the offline AI signs; OpenCode validates the returned raw transaction and broadcasts.
-- Complete unsigned envelope, exact signed-raw validation and HOLD-gated broadcast library implemented offline.
-- Offline tests (**26 October 2026**): **38/38 passing** using synthetic data and mocks; no signing or network sends.
-- README with **X posts** section; **3 feedback reports** in `feedback/`.
-- `.gitignore` hardened; publication-file scan (**26 October, 22:17 UTC**, 28 files): **zero secret findings**. Prior history scan was clean.
-- Baseline commit: `e10d6774b72ee5eb4559118cc5ded842b5092c02`; this implementation and status are committed together (current hash: `git rev-parse HEAD`).
-- EOA balances recorded **26 October, 17:05 UTC**, block **33821736**: **90 STT, 200 USDso, 0 margin** ([public evidence](evidence/public/connectivity-2026-10-26.json)).
+- Documentation-only frontend checkpoint: [design inventory](docs/DESIGN.md), [resume record](docs/CHECKPOINT.md), and appended state/decision/requirement history.
+- Observed starting branch `main`, HEAD `dc49658`; inherited frontend changes remain uncommitted and are excluded from this documentation increment. Resolve the current commit with `git rev-parse HEAD`.
+- Source-backed inventory describes the existing chart/execution layout, account grouping, responsive behavior and incomplete styling adoption. It is not a new deployment or completed frontend validation.
+- DESIGN lint: 0 errors, 3 documented orphan-token warnings; no contrast warnings for modeled component pairs. Full browser accessibility has not been certified.
+- Documentation resumption check (29 October, 14:19 CET): validator passed, preserving 51 source/test/config/prompt files and three append-only histories; export colors, source paths, breakpoints and local links checked. Explicit staging/commit verification is next.
 
-## Blocked
+## Pending / limitations
 
-- **Margin HOLD:** do not prepare or broadcast approvals/deposits to MarginBank `0x478769E1177C0773c43A593DCCc4Ad15F15F1394` until the user confirms **in writing** that dreamDEX permits these funds as margin. No order auto-pull bypass.
-- Live preparation-to-envelope integration and real end-to-end execution remain pending.
-- **0.00013 BTC test order:** needs permitted margin, fresh market checks and offline signing. No order submitted or project order hash recorded.
+- Revalidate inherited application changes with typecheck, unit tests, lint, production build and fixture-based E2E, then live read-only browser QA.
+- Historical deployment, test totals, account balances and position claims are not current observations. Prior execution evidence remains linked from README; no new financial state was checked here.
+- Older signing-policy documents and current implementation contain conflicting historical descriptions. This step changes no policy and grants no permission to prepare, sign or transmit transactions.
+- Incomplete token adoption, small supporting labels/touch targets, tick-aware formatting and residual dimensional motion are recorded in DESIGN.
 
 ## Human-only — agent must not attempt
 
 Whitelist, Discord, GitHub push, X posts, DoraHacks submission, wallet and signer setup.
 
-## Next — after written margin confirmation
+## Next
 
-1. Connect live preparation to the tested envelope library and save each reviewed handoff.
-2. Prepare an exact **2 USDso unsigned approval**; review, offline-sign, validate and broadcast. After confirmation and fresh checks, repeat separately for the **2 USDso deposit**.
-3. Regenerate and execute the reviewed test order; record hashes, receipts and actual fills/position. Confirmation alone is not a fill.
-4. Build the MVP and add reproducible reports with evidence in `feedback/`.
+Run `npm run typecheck` in this app folder before changing application code, then the remaining validation gates. Follow CHECKPOINT for the exact current action. No push, deployment, signing or on-chain write in the documentation step.
