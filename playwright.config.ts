@@ -8,8 +8,9 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
+    baseURL: 'http://127.0.0.1:4174',
+    trace: 'retain-on-failure',
+    viewport: { width: 1440, height: 900 },
   },
   projects: [
     {
@@ -18,9 +19,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'node scripts/ui-server.mjs',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    command: 'npm run preview -- --host 127.0.0.1 --port 4174 --strictPort',
+    url: 'http://127.0.0.1:4174',
+    reuseExistingServer: false,
     timeout: 15_000,
   },
 });

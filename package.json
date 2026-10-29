@@ -15,6 +15,7 @@
     "order:prepare": "node scripts/prepare-order.mjs",
     "order:verify": "node scripts/verify-order.mjs",
     "test": "node --experimental-strip-types --experimental-test-module-mocks --test test/*.test.mjs",
+    "test:e2e": "npm run build && playwright test",
     "test:coverage": "node --experimental-strip-types --test --experimental-test-coverage test/math.test.mjs test/dreamdex-unit.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
