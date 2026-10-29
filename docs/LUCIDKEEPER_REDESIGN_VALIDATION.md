@@ -1,8 +1,8 @@
 # LucidKeeper redesign validation
 
-**Observed:** 29 October 2026. **Scope:** committed local React/Vite source and production preview, not the deployed site. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `dream-sentinel/`, branch `main`.
+**Observed:** 29 October 2026. **Scope:** local React/Vite source and production preview, plus the separately dated deployed read-only QA below. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `dream-sentinel/`, branch `main`.
 
-**Outcome:** local unit/type/lint/build and all 27 fixture browser scenarios pass. **Deployed-site settled-data QA has not run in this completion and is blocked until the user confirms the new build is deployed.** No push, deployment, real wallet signatures or on-chain writes.
+**Outcome:** local unit/type/lint/build and all 27 fixture scenarios pass. After the user's deployment confirmation, **40/40 deployed read-only protocol assertions pass**, with current Reown configuration and accessible-group naming follow-ups recorded below. No wallet connection, guard arming, signatures, on-chain writes or push by this QA session. Publication recorded in inherited `e755984` is separate.
 
 ## Commit evidence
 
@@ -11,6 +11,8 @@
 - Violet DTCG export and current DESIGN lint recorded in `aa3a24b`. Current documentation commit is obtained with `git rev-parse HEAD`; no self-referential hash is embedded here.
 
 ## Commands actually run
+
+Application/design results below were recorded earlier on 29 October; they were not rerun for the final documentation-only increment.
 
 | Check | Current result |
 | --- | --- |
@@ -24,9 +26,12 @@
 | Local `verify-violet-export.mjs` | **PASS**, stored JSON equals CLI JSON; all 17 colors match DESIGN and CSS |
 | `designmd lint docs/DESIGN.md` via the same package | **0 errors, 9 orphan-token warnings**; no modeled-component contrast warnings |
 | `git diff --check` / `git diff --cached --check` | **PASS** for completion changes and each staged increment |
-| `node scripts/scan-secrets.mjs` | Initial scan passed before the audit was tracked. Final scan **exits 1** for an unallowlisted public indexed-fill transaction hash in inherited UX audit line 27, also now in history; not a green final scanner result |
+| Step-3 `node scripts/scan-secrets.mjs` | Initially passed; then **exited 1** for the unallowlisted public indexed-fill hash in UX audit line 27/worktree/history. This historical result was not green |
+| Final `node .git/lucidkeeper-audit/verify-settled-docs-2026-10-29.mjs` | **PASS**, 29 October 16:12 UTC: 40 passing recorded assertions, 15 matching assets, 11 valid local links, exactly five documentation/feedback paths staged, zero runtime changes |
+| Final `git diff --cached --check` | **PASS**, exit 0, no whitespace findings |
+| Final `node scripts/scan-secrets.mjs` | **PASS**, exit 0, zero findings in tracked worktree files and added lines from the latest 100 commits; ignored memory/audit/secret files excluded; existing patterns/allowlist unchanged |
 
-The scanner's generic 32-byte pattern does not distinguish transaction hashes from keys. The audit explicitly labels `0x25321747…26fd7b6` as an indexed-fill transaction; that historical public observation was not independently reverified in this completion. No scanner allowlist or signing policy was changed to suppress the finding.
+The scanner's generic 32-byte pattern does not distinguish transaction hashes from keys. The audit labels `0x25321747…26fd7b6` as an indexed-fill transaction; that historical observation was not independently reverified here. Subsequent inherited commit `abce76c` added that hash to the scanner allowlist; inherited release `e755984` records a zero-findings rerun. This QA session did not change the scanner or signing policy.
 
 ## Browser coverage and rendered inspection
 
@@ -52,17 +57,47 @@ Inspected newly generated local fixture screenshots at 1440, 1280 and the 390px 
 - Standalone liquidation is a labeled sizing assumption, not an actual cross-margin liquidation guarantee. Portfolio estimates hold other markets constant; stale cached balances never authorize execution.
 - Robust bounds affect the view only. Disclosure counts candles beyond bounds, not executions or exact clipped pixels; original OHLC/full range remain available. Distant entry/liquidation lines can be outside the robust viewport.
 - No new live financial lifecycle, fill decoding, wallet signing or allowance/deposit/close/cancel correctness was certified. Mock receipts are not on-chain evidence.
-- No current full accessibility audit, Lighthouse score, real-font delivery or production performance certification. DESIGN lint checks only its modeled pairs; dense labels/small targets and incomplete shared-token adoption remain documented in [DESIGN](DESIGN.md).
+- Current real-font delivery and limited axe/keyboard checks are recorded below; no full accessibility certification, Lighthouse score or production performance certification. DESIGN lint checks only its modeled pairs; dense labels/small targets and incomplete shared-token adoption remain documented in [DESIGN](DESIGN.md).
 - Older local/public parity artifacts record Reown localhost-origin errors and differing build assets. They are historical diagnostics, not current deployed QA. Do not rerun the existing mixed local/deployed parity script before confirmation.
 
-## Step 4 — deployment-confirmation gate
+## Step 4 — deployed settled-data QA completed
 
-**Pending user confirmation.** Do not browse, fetch or test the deployed app as part of settled-data QA until the user confirms the new build is deployed.
+**Gate released by the user:** “done its already deployed”. Observed **29 October 2026, 15:53:19–15:55:07 UTC**, Chromium **156.0.8078.4**, fresh contexts at **1440×900, 1280×800, 390×844, 768×1024 and 1024×800**. Requested/effective URL in every context: `https://lucid-keeper.vercel.app/`; HTTP **200**.
 
-After confirmation, perform read-only QA at `https://lucid-keeper.vercel.app/`:
+### Deployment content and evidence
 
-1. Record effective URL, confirmed deployment revision and served JS/CSS assets; compare with the local build (`index-WhQt3hfy.js`, `index-CO7lO2oJ.css`). If assets differ, record the difference instead of claiming parity.
-2. Wait for each relevant query to succeed or explicitly fail and for loading/NumberFlow transitions to settle. Use displayed accessible numeric values and observation timestamps; do not infer missing data from an initial screenshot or `networkidle` on a polling app.
-3. Inspect BTC plus ETH/DOGE switches, current mark/index/funding/fees, account funds, Guardian health and native candles; distinguish zero, unavailable and stale. Capture at least two successful refresh observations when available, or record the actual read error.
-4. Repeat desktop/phone hierarchy, overflow, modal/keyboard, console/network and font checks after data settles. Do not connect a real wallet, arm the guard, claim funds or submit transactions.
-5. Append dated results and evidence references here; refresh STATUS and CHECKPOINT. No push.
+- Audited local HEAD: `e755984ff205fa5b226b1bfc5c8f79dd55fbb6d9`. Served HTML and **all 15 observed JS/CSS assets match local `dist/` byte-for-byte by SHA-256**, not just by filename. The app exposes no independently verified deployment commit ID; content parity does not establish Vercel commit provenance.
+- Main `index-WhQt3hfy.js`: **1,366,707 bytes**, SHA-256 `28da89683e5d67d99dc2cc9ffd25ed03b3ff04c2fe85e756fe6ab22cd4e0d52c`.
+- CSS `index-CO7lO2oJ.css`: **83,030 bytes**, SHA-256 `b88cf981f567dcb51a60d7f2a835e00fc2cfa4fe8b494a27ecacfb2b2ae69d3a`.
+- New local evidence: `.git/lucidkeeper-audit/settled-deployed-2026-10-29T15-53-19-687Z/{report,summary}.json` and its screenshots. Script: `.git/lucidkeeper-audit/settled-deployed-2026-10-29.mjs`. Audit files remain Git metadata, not publication files.
+- First run at 15:50–15:52 is preserved separately: seven false failures from asserting text on a correctly absent loading overlay, plus an OHLC whitespace-comparison failure. Corrected only the audit assertions, then reran fresh contexts: **40 passed, zero failed**. No app source was changed.
+- Focused chart/focus supplement: `.git/lucidkeeper-audit/settled-focused-2026-10-29T16-01-44-071Z/`; its screenshots certify chart scaling only, not settled account health. It preserved original BTC OHLC across full/robust views with eight disclosed outlier candles and passed 24 consecutive forward/backward modal Tab checks plus Escape/return focus.
+
+### Actual settled values and refreshes
+
+Waited for individual RPC/GraphQL results and disappearance of loading states, then stable `.animated-value` **accessible labels**; polling `networkidle` and NumberFlow's shadow digit text were not used as numeric evidence. Each selected market had at least two successful mark/index/funding/funding-parameter/pool-parameter/OI reads and candle refreshes. `getOneBase` was read once per market (cached); the 60s 24h query completed once per short market observation window, not twice.
+
+| Market | First / second observation UTC | Mark: first → second | Second index | 24h snapshot | Funding / 8h | Second OI |
+| --- | --- | --- | --- | --- | --- | --- |
+| BTC | 15:53:23.526 / 15:53:37.872 | 81,625.3 → 81,637.9 | 81,670.37 | +0.78% | +0.0901% | 28.26M |
+| ETH | 15:53:41.717 / 15:54:09.220 | 2,364.26 → 2,363.74 | 2,364.69 | +0.50% | +0.0100% | 2.69M |
+| DOGE | 15:54:11.199 / 15:54:40.649 | 0.08037 → 0.08036 | 0.0804 | +0.96% | +0.0100% | 160.33K |
+
+Prices/notional use USDso. Displayed marks, funding and OI agree with captured decoded contract responses; index formatting and 24h values agree with their RPC/hourly-candle evidence. Funding calculation windows were **28,800 seconds**; all three pools returned **takerFeeBpsTimes1k = 0**, matching the **0.000% / 0.0000** fee display. Zero is a successful read, not an unavailable-value fallback.
+
+- Public read-only bounty EOA `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`: **187.00 USDso wallet assets, 12.43 USDso bank collateral, 12.43 USDso available margin, 89.8329 STT gas**. Captured raw collateral/equity was 12.428353319904202 USDso. Gas/wallet/account refreshes succeeded; these are dated balances, not funding authorization.
+- **Zero active positions, zero maintenance**: Guardian truthfully shows “No maintenance exposure” with an absent ratio, not an invented infinite safety factor. Pinned account/state/position/pool reads were observed; no live position overlay or position-management lifecycle could be exercised with this empty account.
+- Open orders query returned **0**; history returned **13 Fill / 16 MarginEvent** rows and displayed indexed activity. History is indexer-read evidence, not a new independent receipt audit.
+- All three 1h charts returned **300 valid native candles**, last bucket **15:00 UTC**, with Last distinct from Mark. BTC Last changed **81,869.5 → 81,757.6** on refresh; this is execution close, not an oracle substitution. DOGE 5m requested interval **300** and keyboard Home/End exposed original OHLC/UTC. BTC's robust view disclosed **8** outlier candles; full range visibly restored the high wick near 90,000 without modifying OHLC.
+- No decoded RPC/GraphQL errors or invalid candle responses in the settled run. Initial-error/stale recovery paths were **not naturally observed or artificially injected on deployment**; earlier isolated fixture coverage remains the evidence for those states.
+
+### Rendering, accessibility and follow-ups
+
+- Five sizes: document width equals viewport width; Guardian remains visible. Desktop leverage/fee/total/submit footer is in view. Phone Trade/Activity switching preserves local input state and scrolls vertically; layout/modal/risk screenshots were inspected, including new BTC/ETH/DOGE desktop, 1280 desktop and phone Trade/Activity/risk views.
+- Keyboard market selector exposes **21** options; activity tabs work; chart Home/End and scale toggles work; collateral modal closes with Escape and restores its trigger. Disconnected collateral submission and guard arming are disabled. No wallet connector, arming button or transaction action was clicked.
+- **Real Google Fonts pass:** stylesheet and WOFF2 responses HTTP 200; browser platform-font inspection confirms **Plus Jakarta Sans**, **Syne** and **JetBrains Mono** on rendered instrument/Guardian/numeric text in all five contexts. This is separate from fixture-font evidence.
+- WCAG 2/2.1/2.2 A/AA-tagged axe on desktop chart/modal/risk and phone chart/trade/modal/risk: **zero automatic violations**. **Incomplete** checks remain: unsupported labels on generic containers, NumberFlow/SVG contrast, and hidden-background focus during a modal. The focused supplement confirms actual Tab containment; this does not resolve every manual accessibility check or certify compliance.
+- **Current reproduced integration issue:** Reown config and WalletConnect telemetry return **403** in all five contexts; console explicitly says the production origin is not on its allowlist. Read-only data still succeeds; wallet connection impact was not tested. See [feedback 005](../feedback/005-production-reown-origin-allowlist.md).
+- **Confirmed markup follow-up:** named chart/order containers use unsupported `aria-label` on generic `div`s; axe classifies them as incomplete, and source inspection confirms the missing semantics. See [feedback 006](../feedback/006-generic-container-accessible-labels.md). No screen-reader session or source fix performed.
+- Request cancellations were retained in evidence. The focused trace identified one aborted same-origin **HEAD fetch**, not a failed app document load. Additional RPC aborts occurred during interactions; their exact causes are not established, and successful settled refreshes are recorded separately. **Zero page exceptions**; console is **not clean** because of the Reown issue.
+- Still outside scope: real wallet connection, signing, financial lifecycle/fill correctness, nonempty live portfolio overlays, connected-only action reachability, full screen-reader/manual accessibility and performance certification. No writes/signatures were attempted; the protective route log contains **zero blocked write attempts**. No push.
