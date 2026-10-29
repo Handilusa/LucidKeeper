@@ -342,7 +342,7 @@ export function TradingBox({
         <span className="eyebrow">{market.baseSymbol}-PERP</span>
       </div>
       <div className="order-controls">
-        <div className="side-control" aria-label="Order side">
+        <div className="side-control" role="group" aria-label="Order side">
           {(['buy', 'sell'] as const).map((value) => (
             <button
               key={value}
@@ -354,7 +354,7 @@ export function TradingBox({
             </button>
           ))}
         </div>
-        <div className="order-types" aria-label="Order type">
+        <div className="order-types" role="group" aria-label="Order type">
           <button aria-pressed={orderType === 'market'} onClick={() => setOrderType('market')}>
             Market
           </button>

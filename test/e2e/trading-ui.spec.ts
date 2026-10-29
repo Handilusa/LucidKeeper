@@ -163,6 +163,78 @@ test('empty and failed history pages retain Previous and isolate their cache', a
   await expect(page.locator('.history-row')).toHaveCount(20);
 });
 
+for (const [width, height] of [[1440, 900], [390, 844]]) {
+  test(`named chart and order groups preserve button keyboard behavior at ${width}px`, async ({ page }) => {
+    const fixture = await terminalFixture(page);
+    await page.setViewportSize({ width, height });
+    await page.goto('/');
+    const group = (name: string) => page.getByRole('group', { name, exact: true });
+    const checkGroup = async (name: string) => {
+      const container = group(name);
+      await expect(container).toHaveCount(1);
+      await expect(container).toBeVisible();
+      await expect(container).toHaveAccessibleName(name);
+      expect(await container.evaluate(el => el.tabIndex)).toBe(-1);
+    };
+    const checkButtons = async (name: string, count: number) => {
+      await checkGroup(name);
+      const buttons = group(name).getByRole('button');
+      await expect(buttons).toHaveCount(count);
+      await expect(group(name).locator('[aria-pressed="true"]')).toHaveCount(1);
+      await buttons.first().focus();
+      for (let index = 1; index < count; index++) {
+        await page.keyboard.press('Tab');
+        await expect(buttons.nth(index)).toBeFocused();
+      }
+      for (let index = count - 2; index >= 0; index--) {
+        await page.keyboard.press('Shift+Tab');
+        await expect(buttons.nth(index)).toBeFocused();
+      }
+    };
+    const activate = async (name: string, label: string, key: 'Enter' | 'Space') => {
+      const button = group(name).getByRole('button', { name: label, exact: true });
+      await button.focus();
+      await page.keyboard.press(key);
+      await expect(button).toBeFocused();
+      await expect(button).toHaveAttribute('aria-pressed', 'true');
+      await expect(group(name).locator('[aria-pressed="true"]')).toHaveCount(1);
+    };
+
+    await checkButtons('Chart timeframes', 6);
+    await activate('Chart timeframes', 'Timeframe 5m', 'Enter');
+    await expect.poll(() => fixture.candleRequests.at(-1)?.interval).toBe(300);
+    await activate('Chart timeframes', 'Timeframe 15m', 'Space');
+    await expect.poll(() => fixture.candleRequests.at(-1)?.interval).toBe(900);
+    await checkButtons('Chart price scale', 2);
+    await activate('Chart price scale', 'Full range', 'Enter');
+    await activate('Chart price scale', 'Robust scale', 'Space');
+    await checkGroup('Candle prices');
+    await expect(group('Candle prices')).toHaveAttribute('aria-live', 'off');
+    await expect(group('Candle prices')).toContainText('UTC');
+    await checkGroup('Chart price references');
+    await expect(group('Chart price references')).toContainText('Mark 81,000.0');
+
+    if (width < 1024) {
+      await page.getByRole('navigation', { name: 'Trading workspace' })
+        .getByRole('button', { name: 'Trade', exact: true }).click();
+    }
+    await checkButtons('Order side', 2);
+    await activate('Order side', 'Short / Sell', 'Enter');
+    await activate('Order side', 'Long / Buy', 'Space');
+    await checkButtons('Order type', 2);
+    await activate('Order type', 'Limit', 'Enter');
+    await expect(page.getByLabel('Limit price', { exact: false })).toBeVisible();
+    await activate('Order type', 'Market', 'Space');
+    await expect(page.getByLabel('Limit price', { exact: false })).toBeHidden();
+    await expect(page.locator('.submit-order')).toHaveText('Connect wallet to trade');
+    expect(fixture.walletCalls).toEqual([]);
+    expect(fixture.simulationCalls).toEqual([]);
+    expect(fixture.sends).toEqual([]);
+    expect(fixture.pageErrors).toEqual([]);
+    expect(fixture.unexpected).toEqual([]);
+  });
+}
+
 test('keyboard chart inspection exposes candle OHLC and UTC time', async ({ page }) => {
   const fixture = await terminalFixture(page);
   await page.goto('/');

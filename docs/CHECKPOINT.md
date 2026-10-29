@@ -1,6 +1,6 @@
 # Frontend checkpoint
 
-- **Updated:** 29 October 2026 — Reown production configuration verified at 20:34 UTC.
+- **Updated:** 29 October 2026 — feedback 006 local implementation and verification complete.
 - **Repository:** `dream-sentinel/` is the Git root; branch `main`, starting HEAD `968746b`.
 - **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
@@ -57,7 +57,19 @@ Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tok
 
 ## NEXT
 
-Reown production configuration now passes; no further ID/allowlist change needed for the observed origin. Accessible-group follow-up 006 and actual wallet-connection validation remain separate tasks requiring authorization. No agent cloud login, signatures or push.
+After saving this reviewed local increment, await user deployment confirmation before any production semantics check; actual screen-reader coverage remains separate. Final commit hash/clean status are reported separately. No wallet connection, guard arming, claims, signatures, transactions or push. Reown configuration remains unchanged.
+
+## Authorized accessibility follow-up 006 — 29 October 2026
+
+- User explicitly approved “yes, continue please”. Started with clean tracked status at `1b59f94`; inherited work preserved.
+- Step 1 complete: added only `role="group"` to the four named chart containers and two named order-control containers. Existing names, `aria-pressed`, `aria-live="off"`, buttons, handlers, styling and layout are unchanged. No radio/tab/toolbar semantics or new focus stops.
+- Regression tests, local production-build accessibility-tree/axe inspection and validation pending. Production resolution and screen-reader behavior are not yet verified. `rtk` unavailable; native commands used without installing anything.
+- Step 2 complete: added two isolated, disconnected Chromium regressions (1440px desktop and 390px phone). They assert all six exact group names, no added focus stops, button counts/single pressed states, Tab/Shift+Tab order, Enter/Space selection, native candle intervals, unchanged OHLC live setting and limit-field visibility. They also require zero wallet/simulation/send calls, page exceptions or unexpected requests. Checks pending; no connected/write/armed-guard scenarios will be run.
+- Regression baseline against the existing pre-fix `dist/`: both new scenarios fail as expected because `Chart timeframes` has zero accessible group matches. Fresh unit tests **65/65**, typecheck and ESLint **PASS**. Rebuild and post-fix Chromium/AX/axe verification are next; the baseline failure is not a failed fix build.
+- Step 3 checks so far: production build **PASS** (12.61s; existing dependency/chunk warnings); focused disconnected Chromium run **6/6 PASS (9.9s)**, including both new name/keyboard regressions plus market switching, chart error/empty/stale handling, chart keyboard inspection and side/leverage liquidation preview. Full connected/write suite was deliberately not run. Chromium AX/axe inspection remains next.
+- Step 3 complete: independent AX/axe inspection **2/2 PASS (4.5s)** at **20:46:49–20:46:51 UTC**, Chromium156.0.8078.4 / axe4.11.0. All six exact names are non-ignored AX groups at both sizes; each affected container explicitly passes `aria-prohibited-attr`, with zero scoped violations/incomplete results. WCAG-tagged automatic violations zero; contrast incomplete nodes **34 desktop / 14 phone Chart / 28 phone Trade**. Three new isolated-font renders inspected, no deployed parity claim or screen-reader/modal-focus certification.
+- Step 4 documentation complete: feedback006, validation, STATUS and local memory now separate verified local resolution from pending deployment/screen-reader checks. Evidence stays in `.git/lucidkeeper-audit/groups-006-{1440,390}-2026-10-29T20-46-*/`; local source/evidence/link verifier PASS. Final staging/scanner/local commit next; no wallet calls, simulations, sends, arming, claims, signatures, cloud changes or push.
+- Step 5 checks: exactly seven reviewed public source/test/documentation paths staged; six-role-only source/evidence verifier and **13 local documentation links PASS**. Staged whitespace **PASS**; unchanged supplemental secret scanner **exits 0, zero findings** in tracked worktree/latest 100 commits. Ignored memory/audits excluded; inherited work preserved. Save one small local accessibility commit and verify clean status; no push. Exact final hash is kept in ignored memory and the response, not self-referenced here.
 
 ## Authorized Reown follow-up — 29 October 2026
 

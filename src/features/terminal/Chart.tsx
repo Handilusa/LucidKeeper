@@ -205,7 +205,7 @@ export function Chart({
         <span className="chart-heading">
           {symbol}-PERP <span className="muted font-normal">/ Execution price</span>
         </span>
-        <div className="timeframes" aria-label="Chart timeframes">
+        <div className="timeframes" role="group" aria-label="Chart timeframes">
           {INTERVALS.map((item) => (
             <button
               key={item.seconds}
@@ -232,14 +232,14 @@ export function Chart({
         </button>
       </div>
       <div className="chart-scale-controls">
-        <div className="scale-toggle" aria-label="Chart price scale">
+        <div className="scale-toggle" role="group" aria-label="Chart price scale">
           <button aria-pressed={robust} onClick={() => setRobust(true)}>Robust scale</button>
           <button aria-pressed={!robust} onClick={() => setRobust(false)}>Full range</button>
         </div>
         <HelpTip label="robust chart scale">View-only scaling uses median close and deviation, includes all candle bodies and the mark, and may put unusual wicks outside the viewport. Original OHLC remains available in the cursor tooltip. Full range restores every visible candle’s high and low.</HelpTip>
         {robust && !!scale?.outliers && <span className="caution" data-testid="chart-outliers">{scale.outliers} candle{scale.outliers === 1 ? '' : 's'} beyond robust bounds · <button className="underline" onClick={() => setRobust(false)}>Show full range</button></span>}
       </div>
-      <div className="chart-ohlc" aria-label="Candle prices" aria-live="off">
+      <div className="chart-ohlc" role="group" aria-label="Candle prices" aria-live="off">
         {(['open', 'high', 'low', 'close'] as const).map((key) => (
           <span key={key}>
             <b>{key[0].toUpperCase()}</b>
@@ -254,7 +254,7 @@ export function Chart({
           </time>
         )}
       </div>
-      <div className="chart-reference" aria-label="Chart price references">
+      <div className="chart-reference" role="group" aria-label="Chart price references">
         <span>Last {last ? <AnimatedValue value={last.close} digits={Math.max(1, tickSize.split('.')[1]?.length || 0)} flash /> : '—'}</span>
         <span className="brand-text">Mark {currentMarkPrice > 0 ? formatDynamicPrice(currentMarkPrice) : '—'}</span>
         {position && <span title={`Portfolio snapshot block ${position.readBlock}; other market marks held constant.`}>Entry {formatDynamicPrice(position.entryPrice)} · <span className="caution">Est. liq {position.liquidationPrice == null ? '—' : formatDynamicPrice(position.liquidationPrice)}</span></span>}
