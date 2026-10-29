@@ -1,14 +1,14 @@
 # Frontend checkpoint
 
-- **Updated:** 29 October 2026 — ordered completion, step 1.
+- **Updated:** 29 October 2026 — ordered completion, step 2.
 - **Repository:** `dream-sentinel/` is the Git root; branch `main`, starting HEAD `968746b`.
 - **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
 
 ## Ordered steps
 
-1. [x] Commit the existing work with explicit staging, preserving inherited staged docs. Final documentation/checkpoint commit and clean-status readback complete this step.
-2. [ ] Regenerate `docs/design.tokens.json` from the built violet palette; lint `docs/DESIGN.md`.
+1. [x] Commit existing work with explicit staging; inherited staged docs preserved; clean Git status verified.
+2. [x] Regenerate `docs/design.tokens.json` from the built violet palette; lint `docs/DESIGN.md`.
 3. [ ] Create `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md`; update `STATUS.md`.
 4. [ ] **BLOCKED:** deployed-site settled-data QA, only after the user confirms the new build is deployed.
 
@@ -23,8 +23,16 @@
 | `efbf92d` | Activity, collateral and share dialogs |
 | `0e7550e` | Current-read gates, order preview and Guardian-first app integration |
 | `0513d6f` | Production-preview fixture browser tests |
+| `da2301e` | Existing audit/plan/built DESIGN and step-1 checkpoint |
 
-The final step-1 documentation commit includes the existing audit, plan, built DESIGN and this checkpoint. Resolve its hash with `git rev-parse HEAD`; check `git status --porcelain=v1 --untracked-files=all` immediately afterward. No inherited paths were discarded or unstaged. No push.
+After `da2301e`, `git status --porcelain=v1 --untracked-files=all` returned no output: **clean**. All eight hashes were reported to the user. No inherited paths were discarded or unstaged. No push.
+
+## Step 2 — export and lint
+
+- CLI **0.4.0** DTCG export regenerated from current DESIGN; **17 colors**, with official violet `#771be8`, action foreground `#f5f5f5` and readable tint `#bc93f3`.
+- `node .git/lucidkeeper-audit/verify-violet-export.mjs`: **PASS**; stored JSON equals the CLI-generated JSON and all 17 colors match DESIGN and CSS. Audit script remains local Git metadata.
+- `npx -y -p @google/design.md designmd lint docs/DESIGN.md`: **0 errors, 9 orphan-token warnings**, no modeled-component contrast warnings. DESIGN now distinguishes this from the previous three-warning/15-color baseline.
+- Worktree whitespace check: **PASS**. This step changes DESIGN prose, generated JSON and CHECKPOINT only; no runtime source or deployed-site checks.
 
 ## Checks actually run in this completion session
 
@@ -37,7 +45,7 @@ The final step-1 documentation commit includes the existing audit, plan, built D
 
 ## NEXT
 
-After the clean-status/hash readback, execute **step 2 only**: export the current DESIGN frontmatter to DTCG and lint it. Then refresh this checkpoint and commit the exact generated/documentation paths. Step 3 records current local results, not old deployment claims.
+Execute **step 3**: create `docs/LUCIDKEEPER_REDESIGN_VALIDATION.md` and refresh `STATUS.md`. Complete the local browser suite with a longer timeout and record actual local results and limitations. Refresh CHECKPOINT and commit exact docs paths. **Stop before deployed-site QA until the user confirms the new build is deployed.**
 
 ## Boundaries / remaining evidence
 
