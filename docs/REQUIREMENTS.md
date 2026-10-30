@@ -25,7 +25,7 @@ Audit conducted against the deployed production terminal (`https://lucid-keeper.
 | **11** | **Cierre Parcial** | Close 25% or 50% of an open position from table | **FAIL** | **Missing Feature:** `PositionsTable.tsx` hardcodes 100% of `pos.size` in `handleClosePosition`. No partial close slider, percentage presets, or quantity input. |
 | **12** | **Medidor de Salud** | View Health Factor gauge and status in Sentinel HUD | **PARTIAL** | Shows gauge and status, but calculates maintenance margin using a hardcoded 5% approximation (`notional * 0.05`) instead of reading pool's canonical `maintenanceMarginBps`. |
 | **13** | **Panic De-Risk** | Click De-Risk 50% or Panic Exit 100% | **PARTIAL** | Sends IOC exit on-chain, but does not parse receipt `OrderFilled` events to report actual filled quantity vs remaining size, and lacks retry on partial fill. |
-| **14** | **Tarjeta para X** | Open Card modal from position, download and tweet | **PARTIAL** | Generates 1200x675 canvas, but download is named `DreamSentinel-...` and tweet text has `#DreamSentinel` instead of unified `LucidKeeper`. Fallback for missing hash shows pool address. |
+| **14** | **Tarjeta para X** | Open Card modal from position, download and tweet | **PARTIAL** | Historical baseline used legacy-branded download and hashtag strings instead of unified `LucidKeeper`. Fallback for missing hash shows pool address. |
 
 ---
 
@@ -57,7 +57,7 @@ Audit conducted against the deployed production terminal (`https://lucid-keeper.
 | **REQ-UI-06** | **Active Orders & Trade History** | **IN PROGRESS** | Resting limit orders tab with Cancel button needed. Trade History needs indexer (`Fill` / `MarginEvent`) replacement over `localStorage`. |
 | **REQ-UI-07** | **Margin Hub Modal** | **IN PROGRESS** | Deposit & Withdraw modal. Needs fix for sequential approve receipt awaiting. |
 | **REQ-UI-08** | **LucidKeeper Risk Guardian** | **IN PROGRESS** | Health Factor gauge, labeled What-If stress simulation. Needs tab-active guard rebranding and exact fill reporting on panic de-risk. |
-| **REQ-UI-09** | **Viral X Card Generator** | **IN PROGRESS** | Canvas export. Needs rebranding to unified LucidKeeper (no DreamSentinel) and exact tx hash binding. |
+| **REQ-UI-09** | **Viral X Card Generator** | **IN PROGRESS** | Canvas export. Needs unified LucidKeeper branding and exact tx hash binding. |
 
 ---
 
@@ -135,3 +135,9 @@ All below are pending implementation/verification unless dated evidence says oth
 12. Validate production build and compare deployed production with localhost; record actual deployment differences without pushing or signing.
 
 Baseline check: `npm run typecheck` PASS on inherited source, 29 October 2026. Remaining gates are pending.
+
+## Canonical LucidKeeper branding — 30 October 2026
+
+- **Requirement:** Every public/project-name reference uses exact `LucidKeeper` branding. This includes application metadata, Reown app name, server output, fallback UI, card/download text, README, documentation and proposed X copy.
+- **Implemented locally:** Former-name strings removed from all active-project text; fallback initials changed to `LK`; lowercase npm/localStorage identifiers retained as technical namespaces; established local directory unchanged.
+- **Acceptance evidence:** tracked-text branding regression PASS in the **66/66** unit suite; active-project and built-output searches find zero former-name or incorrect-casing matches; typecheck, ESLint, build and isolated rendered title/header/footer Chromium check PASS. Deployment verification remains separate.

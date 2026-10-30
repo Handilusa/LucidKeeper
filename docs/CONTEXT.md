@@ -1,6 +1,6 @@
 # LucidKeeper — Permanent Context (CONTEXT.md)
 
-**Project:** LucidKeeper (DreamSentinel) — Autonomous On-Chain Risk Sentinel & Trading Terminal for dreamDEX Perps on Somnia Tokyo.  
+**Project:** LucidKeeper — Autonomous On-Chain Risk Sentinel & Trading Terminal for dreamDEX Perps on Somnia Tokyo.
 **Network:** Somnia Tokyo (Testnet, Chain ID `50383`).  
 **Author:** @Miguel / Engineering Lead.  
 **Last updated:** 27 October 2026.

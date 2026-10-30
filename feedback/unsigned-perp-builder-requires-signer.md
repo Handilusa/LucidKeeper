@@ -45,7 +45,7 @@ Reproduced locally on 2026-10-26. Stack: `txSend.resolveSigner` → `writer.crea
 
 Published sources: `src/txSend.ts`, `src/orders.ts` (`buildPlacePerpOrder` / `perpOrderCall`), `src/writer.ts` (`UnsignedOrder`). The build implementation only encodes a call, but its enclosing trader is authenticated.
 
-Workaround in Lucidkeeper: encode `placeOrder` with the SDK's exported `perpPoolWriteAbi` and viem, tested for price, quantity, order type and expiry. No fake signer or private key is needed. No transaction hash: reproduction does not submit a transaction.
+Workaround in LucidKeeper: encode `placeOrder` with the SDK's exported `perpPoolWriteAbi` and viem, tested for price, quantity, order type and expiry. No fake signer or private key is needed. No transaction hash: reproduction does not submit a transaction.
 
 ## Environment
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Lucidkeeper unsigned offline signing handoff",
+  "title": "LucidKeeper unsigned offline signing handoff",
   "description": "Format only. Requires user review, released holds, decoded allowlist checks and on-chain validation before signing/broadcasting.",
   "type": "object",
   "additionalProperties": false,

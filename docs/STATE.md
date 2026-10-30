@@ -1,7 +1,7 @@
 # LucidKeeper — Current State (STATE.md)
 
 **Last Updated:** 28 October 2026, 20:15 UTC  
-**Active Repository:** `dream-sentinel/` (Git origin: `https://github.com/Handilusa/LucidKeeper.git`, branch `main`)  
+**Active Repository:** `LucidKeeper` (Git origin: `https://github.com/Handilusa/LucidKeeper.git`, branch `main`)
 **Current Phase:** Phase 1 Shipped (commit `00d1852`) · Awaiting Vercel redeploy and production smoke-test
 
 ---
@@ -58,7 +58,7 @@
 
 ## 4. Commands to Run & Validate
 
-From `dream-sentinel/`:
+From the repository root:
 
 ```powershell
 # 1. Type check
@@ -138,6 +138,12 @@ This appended entry is the current local resume state. Earlier shipped/deployed/
 - Commit **`7266e4b`** (`docs(frontend): record built design and checkpoint protocol`) contains exactly the seven reviewed documentation files. Staged validation and post-commit preservation checks **PASS**; staging is empty after that commit.
 - Remaining worktree: 16 inherited modified files and 11 inherited untracked files. No application/prompt changes were made during this documentation step; no push or on-chain operations occurred.
 - This follow-up records completion and advances CHECKPOINT's NEXT to **`npm run typecheck` from the app/Git root**. Application validation remains pending; resume the existing redesign rather than replacing it.
+
+## Canonical LucidKeeper branding — 30 October 2026
+
+- User confirmed **LucidKeeper** as the real and only project name. Local runtime/configuration, fallback UI/card/download, server output, README/social copy and dated documentation now use exact capitalization. The technical package/localStorage namespaces and established local directory remain unchanged.
+- Added a tracked-text regression and isolated rendered SPA title/header/footer browser assertion. Current results: **66/66 unit tests, typecheck, ESLint, production build and 1/1 focused Chromium PASS**. Active-project and built-output searches return zero former-name or incorrect-casing matches.
+- This is local verification only. No production/deployment claim, wallet connection, signing, transaction, cloud-setting change or push.
 
 ## Screenshot-correction implementation started — 29 October 2026, 14:42 CET
 

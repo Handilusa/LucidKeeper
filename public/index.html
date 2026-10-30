@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DreamSentinel | Autonomous On-Chain Risk Sentinel for dreamDEX Perps</title>
+  <title>LucidKeeper | Autonomous On-Chain Risk Sentinel for dreamDEX Perps</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
@@ -81,12 +81,12 @@
       <div class="flex items-center space-x-3">
         <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-amber-500 flex items-center justify-center p-[1px] glow-cyan">
           <div class="h-full w-full bg-brand-black rounded-[7px] flex items-center justify-center font-display font-extrabold text-cyan-400 text-lg">
-            DS
+            LK
           </div>
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <span class="font-display font-extrabold text-lg tracking-wide text-white">DreamSentinel</span>
+            <span class="font-display font-extrabold text-lg tracking-wide text-white">LucidKeeper</span>
             <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">Somnia Tokyo</span>
           </div>
           <p class="text-[11px] font-mono text-slate-400 -mt-0.5">Execution & Risk Sentinel for dreamDEX Perps</p>
@@ -275,7 +275,7 @@
             <span class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400">Somnia Reactivity Engine</span>
           </div>
           <p class="text-xs text-slate-400">
-            Simulate and set on-chain automated risk thresholds. When dreamDEX Mark Price breaches reactive trigger levels, DreamSentinel generates verified de-risking and emergency-exit payloads.
+            Simulate and set on-chain automated risk thresholds. When dreamDEX Mark Price breaches reactive trigger levels, LucidKeeper generates verified de-risking and emergency-exit payloads.
           </p>
 
           <!-- Interactive Stress Test Slider -->
@@ -420,7 +420,7 @@
   <footer class="border-t border-brand-border bg-brand-panel/60 py-4 mt-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-500">
       <div>
-        <span>DreamSentinel v0.1.0 · Somnia Tokyo Testnet · Built for dreamDEX Perps Builder Bounty</span>
+        <span>LucidKeeper v0.1.0 · Somnia Tokyo Testnet · Built for dreamDEX Perps Builder Bounty</span>
       </div>
       <div class="flex items-center space-x-4 text-slate-400">
         <a href="https://app.testnet.dreamdex.io" target="_blank" class="hover:text-cyan-400">Official dreamDEX</a>
@@ -563,7 +563,7 @@
       // Header Branding
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 36px "Syne", sans-serif';
-      ctx.fillText('DreamSentinel', 60, 90);
+      ctx.fillText('LucidKeeper', 60, 90);
 
       ctx.fillStyle = '#06b6d4';
       ctx.font = '20px "JetBrains Mono", monospace';
@@ -622,7 +622,7 @@
       const tweetText = encodeURIComponent(
         `⚡ Just executed real on-chain perps on @DreamDEXSomnia on @Somnia_Network Tokyo testnet!\n\n` +
         `📈 Long BTC-PERP @ 79,946.0 USDso\n` +
-        `🛡️ Protected by #DreamSentinel autonomous risk guardian\n` +
+        `🛡️ Protected by #LucidKeeper autonomous risk guardian\n` +
         `🔍 Verified Tx: https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a\n\n` +
         `#dreamDEX #SomniaTokyo #DeFi`
       );
@@ -641,7 +641,7 @@
     function downloadCard() {
       const canvas = document.getElementById('pnl-canvas');
       const link = document.createElement('a');
-      link.download = 'DreamSentinel-dreamDEX-Perp-Trade.png';
+      link.download = 'LucidKeeper-dreamDEX-Perp-Trade.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
     }

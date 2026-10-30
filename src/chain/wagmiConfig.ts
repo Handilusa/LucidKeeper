@@ -6,7 +6,7 @@ const projectId =
   import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '006c638cc6ec95a3982952a1ee86aa05';
 
 export const wagmiConfig = getDefaultConfig({
-  appName: 'LucidKeeper DreamSentinel',
+  appName: 'LucidKeeper',
   projectId,
   chains: [somniaTokyo],
   ssr: false,

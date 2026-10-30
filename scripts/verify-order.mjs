@@ -16,7 +16,7 @@ try {
   assert.equal(block.hash, receipt.blockHash, 'Receipt is no longer in the canonical block');
   const evidence = receiptEvidence(receipt, market, address);
   const latestPosition = await exchange.client.getPerpPosition({ marginBank: market.marginBank, pool: market.poolAddress, account: address });
-  const record = { network, account: address, market, transactionHash: receipt.transactionHash, receipt, ...evidence, latestPosition, note: 'Position read after verification; account events describe the transaction. Pool fills are not an account PnL calculation or proof of Lucidkeeper authorship.' };
+  const record = { network, account: address, market, transactionHash: receipt.transactionHash, receipt, ...evidence, latestPosition, note: 'Position read after verification; account events describe the transaction. Pool fills are not an account PnL calculation or proof of LucidKeeper authorship.' };
   console.log(json(evidence));
   console.log(`Evidence: ${fileURLToPath(await saveEvidence('transaction', record))}`);
 } catch (error) {

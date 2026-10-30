@@ -1,8 +1,8 @@
-# Lucidkeeper / DreamSentinel
+# LucidKeeper
 
 **Verified perps execution terminal & autonomous risk sentinel for dreamDEX Perps on Somnia Tokyo testnet.**
 
-Lucidkeeper provides real-time market telemetry, verifiable on-chain execution, interactive risk sentinels, and cryptographic execution evidence for the dreamDEX Perps Builder Bounty on Somnia Tokyo testnet (Chain ID 50383).
+LucidKeeper provides real-time market telemetry, verifiable on-chain execution, interactive risk sentinels, and cryptographic execution evidence for the dreamDEX Perps Builder Bounty on Somnia Tokyo testnet (Chain ID 50383).
 
 ---
 
@@ -57,7 +57,7 @@ Performs read-only inspection of Somnia Tokyo testnet, 21 perp markets, and curr
 npm run check -- --address 0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA
 ```
 
-### 4. Launch DreamSentinel Interactive UI
+### 4. Launch the LucidKeeper Interactive UI
 Starts the local Web3 terminal server on port 3000:
 ```bash
 npm run ui
@@ -75,7 +75,7 @@ Open **`http://localhost:3000`** in any browser to access:
 ## 🏛️ Architecture & Bounty Safeguards
 
 ```text
-dream-sentinel/
+LucidKeeper/
 ├── src/lib/
 │   ├── dreamdex.mjs             # Network clients, 21 market reads, ABI definitions, event parsers
 │   ├── funding.mjs              # Exact-amount funding calldata builders (approve / deposit)
@@ -87,7 +87,7 @@ dream-sentinel/
 │   ├── prepare-margin.mjs       # CLI for margin deposit envelope generation
 │   ├── prepare-order.mjs        # CLI for IOC order envelope generation
 │   ├── verify-order.mjs         # Verification of canonical on-chain receipt and fills
-│   └── ui-server.mjs            # Production HTTP server for the DreamSentinel Terminal
+│   └── ui-server.mjs            # Production HTTP server for the LucidKeeper Terminal
 ├── public/
 │   └── index.html               # Cyberpunk-styled interactive trader terminal & PnL card generator
 ├── evidence/public/             # Reviewed, verifiable public execution records
@@ -124,9 +124,9 @@ Required mentions of **`@DreamDEXSomnia`** and **`@Somnia_Network`**:
 
 | # | Topic | Proposed Post Copy | Evidence Link |
 | :- | :--- | :--- | :--- |
-| **1** | **Build Introduction** | *"Building #DreamSentinel for the @DreamDEXSomnia Perps Builder Bounty on @Somnia_Network Tokyo! An autonomous risk sentinel & execution terminal with zero simulation and 100% verified on-chain accounting. Check out the open-source repo: https://github.com/Handilusa/LucidKeeper 🚀 #dreamDEX #Somnia"* | [GitHub Repo](https://github.com/Handilusa/LucidKeeper) |
-| **2** | **First Real Execution** | *"First real perps execution on @DreamDEXSomnia Tokyo testnet confirmed! ⚡ Approved collateral, deposited 2 USDso margin, and filled 0.00013 BTC long @ 79,946 USDso. Check the on-chain fill receipt: https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a 🛡️ #DreamSentinel #SomniaTokyo"* | [Tx 0x8e5f...a47a](https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a) |
-| **3** | **MVP Terminal & Demo** | *"Explore the DreamSentinel terminal for @DreamDEXSomnia! Live CLOB depths, automated risk health factor, price stress testing, and viral shareable PnL cards. Test orders, protect your margin, and trade verified on @Somnia_Network. Run `npm run ui`! 📈 #DeFi #dreamDEX"* | [Terminal Public Record](evidence/public/execution-2026-10-27.json) |
+| **1** | **Build Introduction** | *"Building #LucidKeeper for the @DreamDEXSomnia Perps Builder Bounty on @Somnia_Network Tokyo! An autonomous risk sentinel & execution terminal with zero simulation and 100% verified on-chain accounting. Check out the open-source repo: https://github.com/Handilusa/LucidKeeper 🚀 #dreamDEX #Somnia"* | [GitHub Repo](https://github.com/Handilusa/LucidKeeper) |
+| **2** | **First Real Execution** | *"First real perps execution on @DreamDEXSomnia Tokyo testnet confirmed! ⚡ Approved collateral, deposited 2 USDso margin, and filled 0.00013 BTC long @ 79,946 USDso. Check the on-chain fill receipt: https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a 🛡️ #LucidKeeper #SomniaTokyo"* | [Tx 0x8e5f...a47a](https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a) |
+| **3** | **MVP Terminal & Demo** | *"Explore the LucidKeeper terminal for @DreamDEXSomnia! Live CLOB depths, automated risk health factor, price stress testing, and viral shareable PnL cards. Test orders, protect your margin, and trade verified on @Somnia_Network. Run `npm run ui`! 📈 #LucidKeeper #DeFi #dreamDEX"* | [Terminal Public Record](evidence/public/execution-2026-10-27.json) |
 
 ---
 

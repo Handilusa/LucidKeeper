@@ -3,6 +3,20 @@ import { mkdirSync } from 'node:fs';
 import { parseUnits } from 'viem';
 import { terminalFixture, connectFixtureWallet } from './terminal-fixture';
 
+test('rendered product branding is consistently LucidKeeper', async ({ page }) => {
+  const fixture = await terminalFixture(page);
+  await page.goto('/');
+  await expect(page).toHaveTitle(/^LucidKeeper/);
+  const home = page.getByRole('link', { name: 'LucidKeeper trading terminal', exact: true });
+  await expect(home).toContainText('LucidKeeper');
+  await expect(page.locator('.app-footer')).toContainText('LucidKeeper');
+  expect(fixture.walletCalls).toEqual([]);
+  expect(fixture.simulationCalls).toEqual([]);
+  expect(fixture.sends).toEqual([]);
+  expect(fixture.pageErrors).toEqual([]);
+  expect(fixture.unexpected).toEqual([]);
+});
+
 test('market selection updates mark, quantity units and native candle interval', async ({
   page,
 }) => {

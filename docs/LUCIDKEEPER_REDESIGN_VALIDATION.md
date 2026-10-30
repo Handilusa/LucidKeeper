@@ -1,6 +1,6 @@
 # LucidKeeper redesign validation
 
-**Observed:** 29 October 2026. **Scope:** local React/Vite source and production preview, plus the separately dated deployed read-only QA below. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `dream-sentinel/`, branch `main`.
+**Observed:** 29 October 2026. **Scope:** local React/Vite source and production preview, plus the separately dated deployed read-only QA below. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `LucidKeeper`, branch `main`.
 
 **Outcome:** local unit/type/lint/build and all 27 fixture scenarios pass. After the user's deployment confirmation, **40/40 deployed read-only protocol assertions pass**, with current Reown configuration and accessible-group naming follow-ups recorded below. No wallet connection, guard arming, signatures, on-chain writes or push by this QA session. Publication recorded in inherited `e755984` is separate.
 
@@ -125,3 +125,11 @@ Prices/notional use USDso. Displayed marks, funding and OI agree with captured d
 - New reports/snapshots/screenshots: `.git/lucidkeeper-audit/groups-006-1440-2026-10-29T20-46-49-255Z/` and `groups-006-390-2026-10-29T20-46-50-359Z/`. Inspected all three renders with isolated fonts; no deployed font/content parity claim. Local verifier checks six-role-only source changes, explicit axe passes, evidence and documentation links.
 - [Feedback 006](../feedback/006-generic-container-accessible-labels.md) is **fixed locally; production verification pending**. No connected wallet, simulation, send, page exception or unexpected fixture request in the new regressions/AX inspections. No arming, claims, signatures, transactions, cloud changes, deployment or push.
 - Final exact seven-path staging/source/evidence check and **13 local documentation links PASS**; staged whitespace **PASS**. Unchanged supplemental scanner **exits 0, zero findings**, tracked worktree/latest 100 commits only. Ignored local memory/audits remain excluded; save this reviewed increment locally without pushing.
+
+## Canonical LucidKeeper branding — 30 October 2026
+
+- User confirmed **LucidKeeper** as the exact project name. Normalized application configuration, server output, legacy fallback UI and `LK` initials, generated fallback card/download text, README/social copy, status and historical documentation. Lowercase package/localStorage identifiers remain technical namespaces; the established local directory was not renamed.
+- Added `test/branding.test.mjs`, which scans tracked text for the retired name and incorrect capitalization and asserts exact branding on root/fallback metadata, fallback card/download, Reown app name, server output and README/social hashtag. Added a disconnected Playwright assertion for rendered SPA title/header/footer and zero wallet/simulation/send calls.
+- Fresh **66/66 unit tests, typecheck, ESLint and production build PASS** (11.45s; existing dependency annotation and large-chunk warnings remain). Focused Chromium branding scenario **1/1 PASS (3.2s)** against the rebuilt local production preview. Active-project source/docs/evidence-note and built-output searches find zero former-name or incorrect-casing matches.
+- No complete browser-suite rerun, deployed-site verification, wallet connection, transaction, cloud change or push. Production branding must be checked after deployment confirmation.
+- Final exact 16-path staging check: branding regression, whitespace and supplemental tracked-worktree/latest-100-commits secret scan PASS with zero findings. Reviewed diff is 128 insertions/33 deletions; saved locally with clean post-commit status and no push.

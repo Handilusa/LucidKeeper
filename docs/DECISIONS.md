@@ -62,7 +62,7 @@
 
 ### DEC-008: Rebranding to LucidKeeper
 - **Date:** 27 October 2026
-- **Decision:** Renamed the risk module from "DreamSentinel Core" to "LucidKeeper" and updated all brand banners, titles, and headers.
+- **Decision:** Standardized the risk module and product name as "LucidKeeper" across all brand banners, titles, and headers.
 - **Reason:** Consistency with the official product name and repository name requested by the user.
 
 ---
@@ -114,3 +114,11 @@
 - **User decision:** Prioritize visible pre-trade liquidation and leverage, resilient stale displays, reversible robust chart scaling, and an always-visible Guardian. Adopt verified Somnia brand violet instead of the previous cyan brand accent; keep directional and warning colors semantic. Use local licensed token logos and state-driven motion.
 - **Implementation constraints:** Do not alter raw candles, invent exact execution counts from aggregate candles, or present an isolated sizing estimate as an exact cross-margin liquidation boundary. Verify parameters and label assumptions. Cached values are display-only whenever current reads fail.
 - **Status:** Requested direction, not yet built; DESIGN will change alongside implementation. The immutable frontend brief remains intact; this dated decision records the user's subsequent refinements.
+
+---
+
+### DEC-015: Canonical product name is LucidKeeper
+- **Date:** 30 October 2026
+- **User decision:** The real and only public product name is **LucidKeeper**, with this exact capitalization. Remove the former working name from application surfaces, configuration, fallback UI, generated card/download copy, documentation and proposed social posts.
+- **Technical scope:** Keep the established local directory unchanged and retain lowercase package/localStorage identifiers where required as technical namespaces. Generic “risk sentinel” language describes product functionality and is not a project name.
+- **Verification:** A tracked-text regression prevents the retired name and incorrect LucidKeeper casing from returning. The rendered SPA title/header/footer also receive an isolated browser assertion.

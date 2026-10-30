@@ -1,7 +1,7 @@
 # Frontend checkpoint
 
-- **Updated:** 29 October 2026 — feedback 006 local implementation and verification complete.
-- **Repository:** `dream-sentinel/` is the Git root; branch `main`, starting HEAD `968746b`.
+- **Updated:** 30 October 2026 — project-wide LucidKeeper brand normalization implemented and locally verified.
+- **Repository:** This directory is the Git root; branch `main`, brand-task starting HEAD `3ff1433`.
 - **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
 
@@ -57,7 +57,19 @@ Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tok
 
 ## NEXT
 
-After saving this reviewed local increment, await user deployment confirmation before any production semantics check; actual screen-reader coverage remains separate. Final commit hash/clean status are reported separately. No wallet connection, guard arming, claims, signatures, transactions or push. Reown configuration remains unchanged.
+Await deployment confirmation before production branding/accessibility QA. The reviewed branding increment is committed locally and post-commit status is clean; its hash is reported separately. No wallet action, transaction, cloud change or push.
+
+## Authorized LucidKeeper brand normalization — 30 October 2026
+
+- User explicitly requested that all references to the former project name become **LucidKeeper**, the real project name. Started at clean `3ff1433`, synchronized with `origin/main`; no inherited changes.
+- Initial tracked inventory: 25 matches across the README, runtime/fallback UI, server log, Reown app name, status and historical documentation. Six additional incorrect-casing matches found. Generic “risk sentinel” descriptions remain valid product-function language; the established local directory and lowercase npm/localStorage identifiers remain technical identifiers, not public brand names.
+- Next: normalize tracked branding and initials/social/download strings, add regression coverage, then verify zero tracked legacy-name matches and exact LucidKeeper casing on user-facing surfaces. No parent-workspace changes, deployment, wallet/signing/on-chain action or push.
+- Step 1 complete: runtime Reown name, server output, legacy public title/header/initials/body/footer/card/hashtag/download, README/social copy, status and dated docs now use exact **LucidKeeper**. Technical directory was not renamed; prose refers to the repository root or canonical GitHub name. Tracked search now finds zero former-name matches.
+- Step 2 complete: added `test/branding.test.mjs`, scanning every tracked text file for the retired name and incorrect LucidKeeper casing, plus exact assertions for root/fallback titles, fallback header/card/download, Reown app name, server output, README and hashtag. Added an isolated Chromium assertion for the rendered SPA title/header/footer and zero wallet/simulation/send calls.
+- Checks so far: active-project text search has zero former-name or incorrect-casing matches; unit suite **66/66 PASS**, typecheck and ESLint PASS; production build **PASS (11.45s)** with existing third-party annotation and large-chunk warnings. Scanner and final staging checks remain.
+- Step 3 complete: isolated rendered SPA branding check **1/1 PASS (3.2s)** against rebuilt production preview; title/header/footer use LucidKeeper with zero wallet/simulation/send calls, page exceptions or unexpected fixture requests. Built-output search also has zero former-name or incorrect-casing matches. Full browser suite was not rerun because unrelated connected/write fixture flows are outside this naming change.
+- Step 4 complete: appended DEC-015 and dated REQUIREMENTS/STATE/validation records; STATUS now marks local branding complete and production pending. Final exact staging/whitespace/scanner/branding checks and local commit remain. No deployment, wallet/signing/on-chain action, cloud change or push.
+- Step 5 complete: exactly **16 reviewed tracked paths** passed the branding-only test, staged whitespace and unchanged supplemental secret scanner with zero findings in tracked worktree/latest 100 commits. Final commit diff: **128 insertions / 33 deletions**; local commit saved and post-commit porcelain status empty. Final hash is reported separately; no push.
 
 ## Authorized accessibility follow-up 006 — 29 October 2026
 

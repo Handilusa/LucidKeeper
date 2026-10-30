@@ -2,7 +2,7 @@
 
 Updated: **29 October 2026**. Update this file whenever the state changes.
 
-**Project:** `dream-sentinel` (Lucidkeeper), **dreamDEX Perps Builder Bounty**, Somnia Tokyo testnet, **chain 50383**. Not Perps Arena.
+**Project:** **LucidKeeper**, **dreamDEX Perps Builder Bounty**, Somnia Tokyo testnet, **chain 50383**. Not Perps Arena.
 **Submission deadline:** **1 November 2026, 23:59 UTC** (user-provided).
 
 ## Local completion
@@ -23,6 +23,8 @@ Updated: **29 October 2026**. Update this file whenever the state changes.
 
 ## Pending / limitations
 
+- **Canonical branding complete locally, 30 October:** all active project-name strings now use exact `LucidKeeper`; fallback initials/card/download, Reown app name, server output, README/social copy and docs are normalized. **66/66 unit tests, typecheck, lint, build and 1/1 focused Chromium PASS**; source/built searches have zero former-name or incorrect-casing matches. Repository directory and lowercase technical identifiers remain unchanged; production verification pending.
+
 - **Reown production configuration verified, 20:34 UTC: 5/5 focused read-only checks PASS.** Live requests use the supplied public Project ID; config HTTP200, telemetry202, no console/page errors. [Feedback 005](feedback/005-production-reown-origin-allowlist.md) resolved for configuration only; actual wallet connection/signing remains untested. Earlier 16:33 old-ID/403 observations are historical.
 - [Feedback 006](feedback/006-generic-container-accessible-labels.md) **fixed locally, 20:46 UTC**: six exact names appear in Chromium's accessibility tree; scoped axe naming violations/incomplete results zero. Production/screen-reader verification pending. WCAG-tagged runs still have contrast incomplete/manual-review items; not full accessibility certification.
 - Build dependency/large-chunk warnings, dense labels/small targets and full manual accessibility/performance audit remain open. Live error/stale recovery and nonempty portfolio paths were not exercised; prior fixtures cover them.
@@ -34,4 +36,4 @@ Whitelist, Discord, X posts, DoraHacks submission, wallet and signer setup.
 
 ## Next
 
-Await user deployment confirmation before production group-semantics QA; screen-reader testing remains separate. Local checks complete; Reown configuration unchanged. No cloud login, wallet actions or push.
+Await deployment confirmation before production LucidKeeper branding/group-semantics QA. The local branding increment is committed and clean; screen-reader testing remains separate. No cloud login, wallet actions or push.

@@ -177,6 +177,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🪐 DreamSentinel Terminal server running on http://localhost:${PORT}`);
+  console.log(`\n🪐 LucidKeeper Terminal server running on http://localhost:${PORT}`);
   console.log(`   Connected to Somnia Tokyo testnet (chain 50383)\n`);
 });
