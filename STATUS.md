@@ -4,7 +4,9 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 
 ## Frontend self-improvement — local branch, 30 October 2026
 
-Iterations 1–4 verified on `chore/frontend-self-improve`: reachable controls, cheaper motion, responsive/focus fixes, truthful recovery and clearer semantics. Build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; latest browser audit **8 passed** (four terminal widths plus isolated recovery), 36 axe scans report no violations. Existing broader browser suite still has six baseline flat-account assumptions to reconcile. [Audit](FRONTEND_AUDIT.md) · [Scores and commits](IMPROVEMENT_LOG.md). Local work only.
+Five iterations complete on `chore/frontend-self-improve`: **16 atomic improvements**, including accessible exports, read-backed portfolio assertions and a reproduced chart-disposal fix. Independently checked 30 October: build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; broader browser **15 passed / 16 skipped / 0 failed**; four-width/recovery audit **8 passed**, plus **2 focused checks**. **45 axe scans report zero violations**; 44px targets, short-window focus, 320px reflow and text spacing verified. Main JS remains **427.39kB gzip**; human screen-reader/device and connected-wallet validation remain pending. [Audit](FRONTEND_AUDIT.md) · [Scores, commits and five deferred ideas](IMPROVEMENT_LOG.md). Stopped at the five-iteration cap; local work only.
+
+Final frontend reads around **21:58–21:59 UTC** included BTC and DOGE shorts. These are dated read-only UI observations, not new receipt verification or execution attribution. Historical execution records below retain their original timestamps.
 
 ## Owner-relayed DOGE execution — independently audited 20:39:31–20:39:37 UTC
 
@@ -95,8 +97,8 @@ Inherited authorization/branding commits were preserved. Deployment observations
 - **Offline CLI:** preview-only, not complete unsigned-envelope integration; never hand historical previews to a signer.
 - **Future close expiry requirement, not implemented:** user requests a **720-second on-chain IOC window**. Existing `assertReviewFresh` caps both IOC review and calldata expiry at **300 seconds**. Make and test the scoped expiry change before any future close preparation; do not extend a historical review or confuse the approval deadline with on-chain expiry. Canonical envelope validation already binds `orderType=2`.
 - **Security:** **27 runtime affected entries / 0 dev-only**, **17 high / 8 moderate / 2 low**, three advisories; non-forced remediation unavailable. No confirmed exploit path, but third-party wallet/Zod resource-exhaustion reachability is unresolved. [Triage](docs/DEPENDENCY_TRIAGE.md).
-- Controlled wallet/failure/race/fill coverage is skipped, not passing; no fresh live nonempty portfolio/write lifecycle. Revalidation is not protocol reduce-only protection against changes after preflight.
-- Manual screen-reader/contrast/targets/performance and build warnings remain. Prior fixture-based recovery tests are historical only.
+- Controlled wallet/failure/race/fill coverage remains skipped. The frontend audit above verifies real nonempty portfolio reads and chart lifecycle; write outcomes remain unverified. Revalidation is not protocol reduce-only protection against changes after preflight.
+- Actual screen-reader, browser-zoom and real-device performance checks remain pending; build warnings remain. Latest automated contrast/target checks and isolated ErrorBoundary recovery evidence are recorded in [the frontend log](IMPROVEMENT_LOG.md).
 - [007–011](feedback/README.md) local application fixes are not demonstrated dreamDEX protocol bugs or delivered bounty feedback. Original SDK/docs/connectivity reports remain unsubmitted.
 
 ## User-owned delivery

@@ -6,18 +6,18 @@ Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `ch
 
 ## Scores / 10
 
-| Area | Before | Iteration 1 | Iteration 2 | Iteration 3 | Iteration 4 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Visual system | 8 | 8 | 8 | 8.5 | 8.5 |
-| Originality | 8 | 8 | 8 | 8 | 8 |
-| UX psychology | 7.5 | 8 | 8 | 8.5 | 9 |
-| Motion | 6.5 | 6.5 | 8.5 | 8.5 | 8.5 |
-| Responsiveness | 8 | 8 | 8 | 8.5 | 8.5 |
-| Accessibility | 7 | 8.5 | 8.5 | 8.5 | 8.5 |
-| UI states | 8 | 8.5 | 8.5 | 8.5 | 9 |
-| Performance | 6.5 | 6.5 | 7 | 7 | 7 |
-| Code quality | 7.5 | 7.5 | 8 | 8 | 8 |
-| Robustness | 7 | 7.5 | 7.5 | 8 | 8 |
+| Area | Before | Iteration 1 | Iteration 2 | Iteration 3 | Iteration 4 | Final / iteration 5 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Visual system | 8 | 8 | 8 | 8.5 | 8.5 | 8.5 |
+| Originality | 8 | 8 | 8 | 8 | 8 | 8 |
+| UX psychology | 7.5 | 8 | 8 | 8.5 | 9 | 9 |
+| Motion | 6.5 | 6.5 | 8.5 | 8.5 | 8.5 | 8.5 |
+| Responsiveness | 8 | 8 | 8 | 8.5 | 8.5 | 8.5 |
+| Accessibility | 7 | 8.5 | 8.5 | 8.5 | 8.5 | 9 |
+| UI states | 8 | 8.5 | 8.5 | 8.5 | 9 | 9 |
+| Performance | 6.5 | 6.5 | 7 | 7 | 7 | 7 |
+| Code quality | 7.5 | 7.5 | 8 | 8 | 8 | 8.5 |
+| Robustness | 7 | 7.5 | 7.5 | 8 | 8 | 8.5 |
 
 ## Iteration 1 — reachable controls and input feedback
 
@@ -58,3 +58,51 @@ Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `ch
 **Verification:** `iteration-4`: build/lint/typecheck pass; offline **57/20/0**; browser **8 passed** (four real-service audits plus four isolated recovery checks). **36 axe scans, zero violations**. Production ErrorBoundary was bundled alone with a deliberately throwing UI child: expandable long diagnostics, no overflow and actual reload/navigation verified at four widths; this is an isolated software-crash fixture, not a live-service failure or financial response replacement. Names/groups/UTC attributes checked in real terminal; four-width screenshots inspected.
 
 **Self-critique:** recovery diagnostic typography uses the system fallback in the offline isolated harness. No actual screen-reader or transaction outcome certification. The semantic improvements reduce ambiguity but do not establish user-research-backed originality. Meaningful gain: truthful product/recovery language and independently understandable controls/records.
+
+## Iteration 5 — observed state, exports and lifecycle
+
+- `a40c6c0` — F13: decode actual browser RPC responses by request ID, authorized account and exact block. Position counts, markets, sides, quantities, equity, maintenance and health labels must match a complete observed portfolio. Missing reads fail; no historical zero balances or hardcoded DOGE position. Short-window submission is verified through focus-driven scrolling.
+- `efad969` — remaining F14: one shared 200ms Radix tooltip provider. Repeated taps, Escape, keyboard opening and continuous mouse movement between explanations pass.
+- `89b5735` — F15: canvas alternative includes actual snapshot values, direction, network and transaction/pool context. The existing success toast provides copy feedback while the action keeps its stable name. Light-card directional text now has **6.22:1 long / 5.96:1 short** contrast against its background.
+- `f168b08` — F16, discovered during verification: guard position-overlay cleanup when its chart has already been removed. Native frame scheduling traced `Object is disposed` to `removePriceLine` after chart disposal; reproduced without axe. A permanent browser regression switches away from an actually observed position twice. [Issue and evidence](feedback/013-chart-overlay-disposal.md).
+
+**Verification:** `iteration-5-final`: build/lint/typecheck pass; additional browser-test TypeScript check passes; offline **57 passed / 20 skipped / 0 failed**. Broader real-service suite **15 passed / 16 skipped / 0 failed** (baseline **8 passed / 16 skipped / 6 failed**, plus one new lifecycle regression). Four-width/recovery audit **8 passed**; **49 measured states**, **45 axe scans, zero violations**, zero sub-44px targets, page overflow, page/console errors or blocked writes. Two focused browser checks pass for actual live motion and drawn canvas alternatives/contrast. PNG download, actual clipboard image dimensions/pixels, dark/light themes and reopen behavior pass at all four widths. Real keyboard focus, 1280×600 form access, text-spacing overrides at four widths and 320px reflow pass. Screenshots inspected, including light export and focused controls.
+
+**Failures retained and explained:** initial desktop hover test teleported the pointer across Radix's transit region; replaced with a continuous 12-step path. Real RPC reads timed out in two intermediate runs; those runs fail rather than fabricate health. Another stale browser expectation required the short-window submit action to be initially onscreen; its new assertion verifies full visibility on focus, consistent with iteration 3's document-scroll design. The chart error was a real application defect and was fixed, not filtered. The account changed during this work: final reads contained both BTC and DOGE shorts. These are dated UI observations, not transaction attribution or a new receipt audit.
+
+**Self-critique:** initial JS is **1,375.23kB / 427.39kB gzip**, versus **1,374.16 / 427.16** at baseline; CSS **72.59 / 14.29kB**, versus **71.54 / 14.08**. This is not a bundle-size improvement. Large targets increase scrolling, particularly in the 1280px order panel; keyboard reachability is verified. The response observer adds test complexity but now rejects real inconsistencies instead of depending on a historical wallet state. Meaningful gain: useful image alternatives, truthful copy feedback and a reproduced lifecycle fix. Scores remain below nine where evidence or scope is insufficient.
+
+## Final handoff — five-iteration cap reached
+
+**16 atomic improvements**, with a separate baseline audit and an evidence/documentation commit after each iteration. All ten scores are above; the unchanged originality score reflects preservation of the chosen design. Stop reason: **five iterations**, not a claim that every area reached nine.
+
+### Key-flow and evidence inventory
+
+| Check | Final evidence / scope |
+| --- | --- |
+| Market selection, 21-market menu, quantity units and candle interval | Real SDK/RPC/indexer services; no response replacement |
+| Actual portfolio, chart overlays and market switch | Pinned responses, decoded units and permanent lifecycle regression |
+| Collateral validation and modal keyboard use | Invalid amount description, focus trap, Escape and trigger restoration |
+| Activity / history / Guardian | Keyboard tabs, actual rows/UTC links, destination focus and sticky-nav clearance |
+| Share card | Actual position values, two PNG themes, clipboard pixels, repeat/reopen feedback |
+| Motion | Observed both upward/downward live flashes; opacity-only, 200ms custom easing, one animation per target; reduced motion cancels and permits zero new flashes during continuing reads |
+| Recovery | Actual ErrorBoundary with a deliberately throwing isolated UI child, disclosure and reload; no fabricated financial outcomes |
+| Accessibility / resilience | 45 automated A/AA scans; 44px targets; four widths, short desktop, 320px CSS reflow and WCAG text-spacing overrides |
+
+Local evidence root: `.git/lucidkeeper-audit/frontend/`. Final logs: `iteration-5-final-{build,lint,typecheck,unit,e2e,audit,details}.log`; summary `final-summary.json`; screenshots/JSON `iteration-5-final/`; native animation/canvas observations `iteration-5-final-details/`. Four labeled, full-resolution before/after comparisons: `comparisons/{375,768,1280,1920}-before-after.png`. Financial values differ between captures; compare structure, not pixels/prices. Prior failed runs remain available. The extra browser-test typecheck used `tsc --project .git/lucidkeeper-audit/frontend/e2e-tsconfig.json --noEmit`.
+
+### Remaining limitations
+
+- Main JS remains large; build annotation/chunk warnings and previously documented dependency triage remain. No field CWV or real-device GPU certification.
+- Axe success is not full WCAG conformance. Actual screen-reader operation, cross-browser/device coverage, browser zoom and third-party shadow-animation behavior remain unverified. **320px CSS reflow is not a claim of testing browser zoom.**
+- The 16 original controlled/connected-wallet cases remain explicit skips. Separate real-share/motion checks cover only the observed paths. Empty/resting-order and history checks still depend on real service state; current unavailable services must fail readiness checks.
+- No publication/deployment verification in this task. Existing trading handlers, chain/API contracts and policy gates were preserved; frontend browser checks do not certify live execution outcomes.
+- Skill setup: existing skills reused and ten missing requested skills installed locally. `building-components` was absent from the specified source; no substitute. Conditional scroll-animation skill was unnecessary for this terminal.
+
+### Five deferred ideas
+
+1. **Profile and split wallet/terminal bundles** — requires a dedicated dependency-loading change and measured startup comparison.
+2. **Screen-reader, browser-zoom and real-device validation** — requires human assistive-technology sessions and representative hardware.
+3. **Optional compact/comfortable density** — a subjective product decision; larger targets currently trade space for reachability.
+4. **Connected-wallet and failure-outcome matrix** — requires separately authorized, evidence-backed scenarios; no invented financial responses.
+5. **Split large App/TradingBox responsibilities** — broader architecture work would touch business-sensitive paths beyond this bounded polish pass.

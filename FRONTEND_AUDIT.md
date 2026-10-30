@@ -74,4 +74,8 @@ Up to five iterations of 3–5 separately committed, evidence-backed improvement
 
 ## Progress
 
-Iterations 1–4 verified: F1–F12 and the stable-number-config part of F14 addressed. See [scores, commits and self-critique](IMPROVEMENT_LOG.md). Baseline observations above are preserved for comparison.
+Iterations 1–5 verified: F1–F15 addressed in 16 atomic improvements, including additional **F16** discovered in iteration 5: position-overlay cleanup repainted a disposed chart during market switching. Fixed with an ownership guard and a real-position browser regression; [issue 013](feedback/013-chart-overlay-disposal.md).
+
+Final checks on 30 October 2026: build/lint/typecheck pass; offline **57 passed / 20 skipped / 0 failed**; broader browser **15 passed / 16 skipped / 0 failed**; four-width/recovery audit **8 passed** plus **2 focused checks**. **45 axe scans across 49 measured states**, zero reported violations, small targets or page overflow. Four widths, 1280×600 keyboard access, 320px reflow, text-spacing, live reduced motion and real clipboard/theme/reopen flows verified. Actual screen readers/browser zoom and field performance remain pending.
+
+Stopped at the **five-iteration cap**. Final scores, all atomic commits, self-critique, remaining limitations, five deferred ideas and evidence paths: [IMPROVEMENT_LOG.md](IMPROVEMENT_LOG.md). Baseline observations above remain unchanged for comparison.
