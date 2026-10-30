@@ -29,6 +29,12 @@ let findingsCount = 0;
 
 // 1. Scan tracked files in working tree
 console.log('1️⃣ Scanning working tree files...');
+// Files that are known to contain public on-chain data (block hashes, event topics, ABI-encoded data)
+// and must never contain private keys by design.
+const PUBLIC_DATA_FIXTURE_PATTERNS = [
+  /^test\/fixtures\//,   // RPC / indexer fixture snapshots — public read-only data
+];
+
 const files = execSync('git ls-files', { encoding: 'utf8' })
   .split('\n')
   .map(f => f.trim())
@@ -45,6 +51,12 @@ for (const file of files) {
           const matchedVal = (match[1] || match[0]).toLowerCase();
           if (KNOWN_SAFE_HASHES.has(matchedVal)) {
             continue; // Whitelisted public transaction or block hash
+          }
+          // Skip Raw 32-byte Hex Key pattern for known public-data fixture files
+          // (block hashes, event topics, ABI-encoded calldata — never private keys by design)
+          if (pattern.name === 'Raw 32-byte Hex Key' &&
+              PUBLIC_DATA_FIXTURE_PATTERNS.some(re => re.test(file))) {
+            continue;
           }
           // Ignore test fixture mock signatures or non-sensitive schema validators
           if (file.includes('test/') && (line.includes('fixture') || line.includes('mock') || line.includes('0xgenesis'))) {
@@ -67,10 +79,16 @@ try {
   const patch = execSync('git log -p -n 100', { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
   const patchLines = patch.split('\n');
   let currentCommit = '';
+  let currentDiffFile = '';   // track which file the current diff hunk belongs to
 
   patchLines.forEach((line, idx) => {
     if (line.startsWith('commit ')) {
       currentCommit = line.slice(7, 15);
+      currentDiffFile = '';
+    }
+    // Track the file being diffed ("+++ b/path/to/file")
+    if (line.startsWith('+++ b/')) {
+      currentDiffFile = line.slice(6).trim();
     }
     if (line.startsWith('+') && !line.startsWith('+++')) {
       for (const pattern of SECRET_PATTERNS) {
@@ -78,6 +96,16 @@ try {
         if (match) {
           const matchedVal = (match[1] || match[0]).toLowerCase();
           if (KNOWN_SAFE_HASHES.has(matchedVal)) {
+            continue;
+          }
+          // Skip Raw 32-byte Hex Key hits inside known public-data fixture paths
+          if (pattern.name === 'Raw 32-byte Hex Key' &&
+              PUBLIC_DATA_FIXTURE_PATTERNS.some(re => re.test(currentDiffFile))) {
+            continue;
+          }
+          // Skip Raw 32-byte Hex Key hits inside known public-data fixture paths
+          if (pattern.name === 'Raw 32-byte Hex Key' &&
+              (line.includes('test/fixtures/') || line.includes('tokyo-public-reads'))) {
             continue;
           }
           if (line.includes('test/') || line.includes('fixture') || line.includes('mock')) {
