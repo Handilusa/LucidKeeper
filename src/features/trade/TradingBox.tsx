@@ -377,14 +377,14 @@ export function TradingBox({
             <strong className="numeric brand-text">{leverage}×</strong>
           </div>
           <input id="leverage" name="leverage" type="range" min={1} max={maxLeverage} value={leverage} onChange={(event) => changeLeverage(Number(event.target.value))} />
-          <div className="preset-row">
+          <div className="preset-row" role="group" aria-label="Sizing leverage presets">
             {[1, 2, 5, 10, 20].filter(value => value <= maxLeverage).map(value => <button key={value} aria-pressed={leverage === value} onClick={() => changeLeverage(value)}>{value}×</button>)}
           </div>
         </div>
         {orderType === 'limit' && (
           <div className="field">
-            <label className="field-label" htmlFor="limit-price">
-              Limit price{' '}
+            <div className="field-label">
+              <label htmlFor="limit-price">Limit price</label>
               <button
                 type="button"
                 className="text-cyan-400"
@@ -397,7 +397,7 @@ export function TradingBox({
               >
                 Use mark
               </button>
-            </label>
+            </div>
             <div className="input-wrap">
               <input
                 id="limit-price"
@@ -452,7 +452,7 @@ export function TradingBox({
             />
             <span>USDso</span>
           </div>
-          <div className="preset-row">
+          <div className="preset-row" role="group" aria-label="Margin budget presets">
             {[2, 5, 10].map((value) => (
               <button key={value} onClick={() => setMargin(String(value))}>
                 ${value}

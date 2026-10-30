@@ -121,7 +121,7 @@ export function TradeCardModal({
       title="Share position"
       description="Export the current position snapshot. A related transaction link does not independently verify the position or its performance."
     >
-      <div className="order-types">
+      <div className="order-types" role="group" aria-label="Position card theme">
         {(['dark', 'light'] as const).map((value) => (
           <button key={value} aria-pressed={theme === value} onClick={() => setTheme(value)}>
             {value === 'dark' ? 'Dark' : 'Light'}

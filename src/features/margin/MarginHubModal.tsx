@@ -160,7 +160,7 @@ export function MarginHubModal({
           </dd>
         </div>
       </dl>
-      <div className="order-types">
+      <div className="order-types" role="group" aria-label="Collateral action">
         {(['deposit', 'withdraw'] as const).map((value) => (
           <button
             key={value}
