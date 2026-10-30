@@ -2,6 +2,10 @@
 
 Updated: **30 October 2026**. Update this file whenever the state changes.
 
+## Landing and portfolio — local feature branch
+
+P0 implemented on `feat/landing-and-profile`: landing `/`, existing terminal `/app`, shared navigation/testnet disclosure and `/app/docs`. Real historical product capture, attributed Somnia architecture, dated receipts and explicit Guardian limits. Build/lint/typecheck pass. Twelve read-only browser states across 375/768/1280/1920: zero axe violations, overflow, console/page errors or write requests. Landing loads no wallet/market services. Portfolio is the next block; publication remains user-owned. [Sources](docs/LANDING_SOURCES.md).
+
 ## Frontend self-improvement — local branch, 30 October 2026
 
 Five iterations complete on `chore/frontend-self-improve`: **16 atomic improvements**, including accessible exports, read-backed portfolio assertions and a reproduced chart-disposal fix. Independently checked 30 October: build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; broader browser **15 passed / 16 skipped / 0 failed**; four-width/recovery audit **8 passed**, plus **2 focused checks**. **45 axe scans report zero violations**; 44px targets, short-window focus, 320px reflow and text spacing verified. Main JS remains **427.39kB gzip**; human screen-reader/device and connected-wallet validation remain pending. [Audit](FRONTEND_AUDIT.md) · [Scores, commits and five deferred ideas](IMPROVEMENT_LOG.md). Stopped at the five-iteration cap; local work only.

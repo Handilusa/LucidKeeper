@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-10-30T22:30:20.564Z",
+  "source": "Local production build; actual public Tokyo RPC/indexer reads; disconnected bounty-account watch view",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "note": "Historical UI capture, not current balances or execution attribution. No wallet, signing or sends."
+}
