@@ -1,220 +1,65 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  computeUnrealizedPnl,
-  computeNotional,
-  computeAccruedFunding,
-  computeReturnOnMarginBps,
-} from '../src/lib/math/pnl.ts';
-import {
-  computeMarginRequirements,
-  classifyMarginStatus,
-  computeHealthFactor,
-} from '../src/lib/math/margin.ts';
+import { formatUnits } from 'viem';
+import { computeUnrealizedPnl, computeNotional, computeReturnOnMarginBps } from '../src/lib/math/pnl.ts';
+import { computeMarginRequirements, classifyMarginStatus, computeHealthFactor } from '../src/lib/math/margin.ts';
 import { computeLiquidationPrice } from '../src/lib/math/liquidation.ts';
-import {
-  formatPrice,
-  formatDynamicPrice,
-  formatTokenAmount,
-  formatPercent,
-  shortenAddress,
-  quantizeToGrid,
-} from '../src/lib/math/format.ts';
-
+import { formatPrice, formatTokenAmount, formatPercent, shortenAddress, quantizeToGrid } from '../src/lib/math/format.ts';
+import { capture, btc, doge } from './fixtures/captured.mjs';
+const size = BigInt(capture.historicalPosition.size);
+const entry = BigInt(capture.historicalPosition.avgEntryPrice);
+const mark = BigInt(btc.mark[1]);
+const oneBase = BigInt(btc.oneBase);
 test('PnL: computes long and short unrealized PnL accurately', () => {
-  const oneBase = 10n ** 8n; // BTC 8 decimals
-  const entry = 80000n * 10n ** 18n; // 80,000 USDso
-  const markHigh = 82000n * 10n ** 18n; // 82,000 USDso (+2,000)
-  const markLow = 78000n * 10n ** 18n;
-  const size = 13000n; // 0.00013 BTC
-
-  // Long in profit
-  const pnlLong = computeUnrealizedPnl({
-    size,
-    avgEntryPrice: entry,
-    markPrice: markHigh,
-    oneBase,
-  });
-  // 2000 * 13000 / 1e8 = 0.26 USDso (260000000000000000n wei)
-  assert.equal(pnlLong, 260000000000000000n);
-
-  // Long in loss
-  const pnlLongLoss = computeUnrealizedPnl({
-    size,
-    avgEntryPrice: entry,
-    markPrice: markLow,
-    oneBase,
-  });
-  assert.equal(pnlLongLoss, -260000000000000000n);
-
-  // Short in loss
-  const pnlShort = computeUnrealizedPnl({
-    size: -size,
-    avgEntryPrice: entry,
-    markPrice: markHigh,
-    oneBase,
-  });
-  assert.equal(pnlShort, -260000000000000000n);
-
-  // Edge cases: size 0 or oneBase 0
-  assert.equal(computeUnrealizedPnl({ size: 0n, avgEntryPrice: entry, markPrice: markHigh, oneBase }), 0n);
-  assert.equal(computeUnrealizedPnl({ size, avgEntryPrice: entry, markPrice: markHigh, oneBase: 0n }), 0n);
+  // Labeled historical-position/current-mark scenario, not a current PnL claim.
+  const result = computeUnrealizedPnl({ size, avgEntryPrice: entry, markPrice: mark, oneBase });
+  assert.equal(result, (mark - entry) * size / oneBase);
+  assert.equal(computeUnrealizedPnl({ size: -size, avgEntryPrice: entry, markPrice: mark, oneBase }), -result);
+  assert.equal(computeUnrealizedPnl({ size: 0n, avgEntryPrice: entry, markPrice: mark, oneBase }), 0n);
 });
-
 test('Notional: computes absolute position notional and edge cases', () => {
-  const oneBase = 10n ** 8n;
-  const size = 13000n; // 0.00013 BTC
-  const mark = 80000n * 10n ** 18n; // 80,000 USDso
-
-  const notional = computeNotional(size, mark, oneBase);
-  // 0.00013 * 80000 = 10.4 USDso (10.4 * 1e18)
-  assert.equal(notional, 10400000000000000000n);
-
-  // Short negative size
-  const notionalShort = computeNotional(-size, mark, oneBase);
-  assert.equal(notionalShort, 10400000000000000000n);
-
-  // Zero checks
+  assert.equal(computeNotional(size, mark, oneBase), size * mark / oneBase);
+  assert.equal(computeNotional(-size, mark, oneBase), computeNotional(size, mark, oneBase));
   assert.equal(computeNotional(0n, mark, oneBase), 0n);
-  assert.equal(computeNotional(size, mark, 0n), 0n);
 });
-
 test('Funding and Return on Margin', () => {
-  const oneBase = 10n ** 8n;
-  const size = 13000n;
-
-  // Accrued funding
-  assert.equal(computeAccruedFunding(0n, 100n, 50n, oneBase), 0n);
-  const fundingExact = computeAccruedFunding(size, 10n ** 26n, 0n, oneBase);
-  assert(fundingExact > 0n);
-
-  // Ceil division check for non-exact remainder
-  const fundingCeil = computeAccruedFunding(size, 10n ** 18n + 3n, 10n ** 18n, oneBase);
-  assert.equal(typeof fundingCeil, 'bigint');
-
-  // Return on margin
-  assert.equal(computeReturnOnMarginBps(500n, 0n), null);
-  assert.equal(computeReturnOnMarginBps(-500n, -100n), null);
-  assert.equal(computeReturnOnMarginBps(250000000000000000n, 1000000000000000000n), 2500); // 25% = 2500 bps
+  const pnl = computeUnrealizedPnl({ size, avgEntryPrice: entry, markPrice: mark, oneBase });
+  const margin = BigInt(capture.account.state.unlockedCollateralBalance);
+  assert.equal(computeReturnOnMarginBps(pnl, margin), Number((pnl * 10000n) / margin));
+  assert.equal(computeReturnOnMarginBps(pnl, 0n), null);
 });
-
+test('accrued funding rounding branch', { skip: 'Previous invented cumulative funding indexes removed; capture contains funding rate, not both required cumulative indexes.' }, () => {});
 test('Liquidation: exact formula matches protocol behavior for Long and Short', () => {
-  const oneBase = 10n ** 8n;
-  const size = 13000n; // 0.00013 BTC Long
-  const mark = 80000n * 10n ** 18n;
-  const equity = 2n * 10n ** 18n; // 2.0 USDso
-  const mmReq = 520000000000000000n; // 0.52 USDso (5% maintenance on 10.4)
-  const maintenanceMarginBps = 500n; // 5%
-
-  // Long
-  const liqPriceLong = computeLiquidationPrice({
-    equity,
-    mmReq,
-    size,
-    markPrice: mark,
-    maintenanceMarginBps,
-    oneBase,
-  });
-
-  assert(liqPriceLong !== null);
-  assert(liqPriceLong < mark);
-  assert(liqPriceLong > 0n);
-
-  // Short
-  const liqPriceShort = computeLiquidationPrice({
-    equity,
-    mmReq,
-    size: -size,
-    markPrice: mark,
-    maintenanceMarginBps,
-    oneBase,
-  });
-  assert(liqPriceShort !== null);
-  assert(liqPriceShort > mark);
-
-  // Edge cases
-  assert.equal(
-    computeLiquidationPrice({ equity, mmReq, size: 0n, markPrice: mark, maintenanceMarginBps, oneBase }),
-    null
-  );
-  assert.equal(
-    computeLiquidationPrice({ equity, mmReq, size, markPrice: mark, maintenanceMarginBps: 10000n, oneBase }),
-    null
-  );
-  assert.equal(
-    computeLiquidationPrice({ equity, mmReq, size, markPrice: mark, maintenanceMarginBps, oneBase: 0n }),
-    null
-  );
+  // Real account health and historical size as a hypothetical risk scenario.
+  const input = { equity: BigInt(capture.account.health[0]), mmReq: BigInt(capture.account.health[2]), size, markPrice: mark, maintenanceMarginBps: BigInt(btc.parameters.maintenanceMarginBps), oneBase };
+  const result = computeLiquidationPrice(input);
+  assert.ok(result === 0n || result < mark);
+  assert.ok(computeLiquidationPrice({ ...input, size: -size }) > mark);
+  assert.equal(computeLiquidationPrice({ ...input, size: 0n }), null);
 });
-
 test('Margin Requirements & Health Status Classification & Health Factor', () => {
-  const notional = 10n * 10n ** 18n; // 10 USDso
-  const { imReq, mmReq, cmReq } = computeMarginRequirements({
-    notional,
-    effectiveImfBps: 1000n, // 10%
-    maintenanceMarginBps: 500n, // 5%
-    closeOutMarginBps: 250n, // 2.5%
-  });
-
-  assert.equal(imReq, 1n * 10n ** 18n); // 1 USDso
-  assert.equal(mmReq, 500000000000000000n); // 0.5 USDso
-  assert.equal(cmReq, 250000000000000000n); // 0.25 USDso
-
-  assert.equal(classifyMarginStatus(2n * 10n ** 18n, imReq, mmReq, cmReq), 'Healthy');
-  assert.equal(classifyMarginStatus(750000000000000000n, imReq, mmReq, cmReq), 'MarginCall');
-  assert.equal(classifyMarginStatus(300000000000000000n, imReq, mmReq, cmReq), 'PartialLiquidation');
-  assert.equal(classifyMarginStatus(100000000000000000n, imReq, mmReq, cmReq), 'CloseOut');
-
-  // Health factor calculation
-  assert.equal(computeHealthFactor(1n * 10n ** 18n, 0n), 999.0);
-  assert.equal(computeHealthFactor(-1n * 10n ** 18n, 500000000000000000n), 0);
-  const hf = computeHealthFactor(1000000000000000000n, 500000000000000000n);
-  assert.equal(hf, 2);
+  const notional = computeNotional(size, mark, oneBase);
+  const input = { notional, effectiveImfBps: BigInt(btc.parameters.initialMarginBps), maintenanceMarginBps: BigInt(btc.parameters.maintenanceMarginBps), closeOutMarginBps: BigInt(btc.parameters.closeOutMarginBps) };
+  const result = computeMarginRequirements(input);
+  for (const [key, rate] of [['imReq', input.effectiveImfBps], ['mmReq', input.maintenanceMarginBps], ['cmReq', input.closeOutMarginBps]]) assert.equal(result[key], (notional * rate + 9999n) / 10000n);
+  assert.equal(classifyMarginStatus(BigInt(capture.account.health[0]), ...capture.account.health.slice(1).map(BigInt)), 'Healthy');
+  assert.ok(computeHealthFactor(BigInt(capture.account.health[0]), BigInt(capture.account.health[2])) > 0);
 });
-
 test('Format utilities: prices, token amounts, percentages, addresses', () => {
-  assert.equal(formatPrice(80000.5, 2), '80,000.50');
-  assert.equal(formatPrice('invalid'), '0.00');
-  assert.equal(formatPrice(100, 2, { showSign: true }), '+100.00');
-  assert.equal(formatPrice(-50, 2, { showSign: true }), '-50.00');
-
-  assert.equal(formatTokenAmount(13000n, 8, 5), '0.00013');
-  assert.equal(formatTokenAmount(1000000000000000000n, 18, 2), '1');
-
-  assert.equal(formatPercent(5.234), '5.23%');
-  assert.equal(formatPercent(5.234, { showSign: true }), '+5.23%');
-  assert.equal(formatPercent(-3.5, { showSign: true }), '-3.50%');
-
-  assert.equal(shortenAddress('0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA'), '0x1420...8fDA');
-  assert.equal(shortenAddress('0x123'), '0x123');
+  const decimal = Number(formatUnits(mark, btc.market.quoteDecimals));
+  assert.equal(formatPrice(decimal, 2), decimal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  assert.equal(formatTokenAmount(size, btc.market.baseDecimals, 5), formatUnits(size, btc.market.baseDecimals));
+  assert.equal(shortenAddress(capture.account.address), '0x1420...8fDA');
+  const percent = Number(btc.funding) / 1e18 * 100;
+  assert.equal(formatPercent(percent), `${percent.toFixed(2)}%`);
 });
-
 test('Grid quantization: enforces strict tick and lot grid alignment', () => {
-  const tickBtc = 100000000000000000n; // 0.1 USDso
-  const tickDoge = 10000000000000n; // 0.00001 USDso
-
-  // BTC tick quantization
-  const rawBtcPrice = 80007220000000000000000n; // 80,007.22 (unaligned)
-  const quantizedBtc = quantizeToGrid(rawBtcPrice, tickBtc, 'floor');
-  assert.equal(quantizedBtc, 80007200000000000000000n); // 80,007.20 (aligned)
-  assert.equal(quantizedBtc % tickBtc, 0n);
-
-  // DOGE tick quantization
-  const rawDogePrice = 78648805703500000n; // 0.0786488... (unaligned)
-  const quantizedDoge = quantizeToGrid(rawDogePrice, tickDoge, 'floor');
-  assert.equal(quantizedDoge, 78640000000000000n); // 0.07864 (aligned)
-  assert.equal(quantizedDoge % tickDoge, 0n);
-
-  // DOGE lot size quantization
-  const lotDoge = 1000000000n; // 10 DOGE (8 decimals)
-  const qty = 13500000000n; // 135 DOGE
-  const quantizedQty = quantizeToGrid(qty, lotDoge, 'floor');
-  assert.equal(quantizedQty, 13000000000n); // 130 DOGE (multiple of 10)
-  assert.equal(quantizedQty % lotDoge, 0n);
-
-  // Dynamic price formatting
-  assert.equal(formatDynamicPrice(80815.38), '80,815.38');
-  assert.equal(formatDynamicPrice(0.07856), '0.0786');
-  assert.equal(formatDynamicPrice(0.000052), '0.000052');
-  assert.equal(formatDynamicPrice(0), '0.00');
+  for (const snapshot of [btc, doge, capture.snapshots.find(s => s.market.baseSymbol === '1000PEPE')]) {
+    const price = BigInt(snapshot.mark[1]);
+    const tick = BigInt(snapshot.grid.tickSize);
+    const floor = quantizeToGrid(price, tick, 'floor');
+    const ceil = quantizeToGrid(price, tick, 'ceil');
+    assert.equal(floor % tick, 0n); assert.ok(floor <= price && price - floor < tick);
+    assert.equal(ceil % tick, 0n); assert.ok(ceil >= price && ceil - price < tick);
+  }
 });

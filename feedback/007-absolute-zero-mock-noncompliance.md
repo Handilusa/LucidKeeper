@@ -22,7 +22,10 @@ Source inspection and 66/66 unit tests passing on 30 October 2026. The 30/30 com
 - Network: Somnia Tokyo testnet, chain 50383; mocked in the affected tests
 - Public bounty account: `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`; no real wallet connected
 - Runtime / OS: Node 24.19.0 / Windows
-- Status: Open; local app review finding, not submitted
+- Status: Fixed locally 2026-10-30; real-service verification pending, explicit coverage gaps retained; not submitted
 
 ## Recommended next action
 Replace transport-double coverage with pure offline tests and real read-only integration/browser checks. Real transaction coverage requires separate authorization and reviewed execution. Do not simply delete tests to make a zero-mocks claim. No tests or runtime code were changed in this review.
+
+## Fix — 2026-10-30
+The subsequent owner-authorized fix removes module/recovery/RPC/filesystem/time mocks, response fulfillment and injected wallets. Captured public Tokyo reads and historical canonical receipts label their sources; live read-only integration/browser tests have a write firewall. Former controlled scenarios remain explicit skips, with reasons and replacements in [TEST_DATA_SOURCES](../docs/TEST_DATA_SOURCES.md). This changes test coverage, not historical evidence or live execution permission.

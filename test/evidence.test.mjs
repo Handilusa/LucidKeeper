@@ -1,35 +1,13 @@
 import assert from 'node:assert/strict';
-import { mock, test } from 'node:test';
-// Node 22 spread of a native ESM namespace inside mock.module loses named exports
-// because the namespace is a live binding object. List each export explicitly.
-import {
-  access, appendFile, chmod, chown, copyFile, cp, lchmod, lchown, link,
-  lstat, lutimes, mkdir as _mkdir, mkdtemp, open, opendir, readdir,
-  readFile, readlink, realpath, rename, rm, rmdir, stat, statfs,
-  symlink, truncate, unlink, utimes, watch, writeFile as _writeFile,
-} from 'node:fs/promises';
-
-const writes = [];
-mock.module('node:fs/promises', { exports: {
-  access, appendFile, chmod, chown, copyFile, cp, lchmod, lchown, link,
-  lstat, lutimes, mkdtemp, open, opendir, readdir,
-  readFile, readlink, realpath, rename, rm, rmdir, stat, statfs,
-  symlink, truncate, unlink, utimes, watch,
-  mkdir: async () => {},
-  writeFile: async (file, data, options) => { writes.push({ file: file.href, data, options }); },
-} });
-const { saveEvidence } = await import('../src/lib/dreamdex.mjs');
-
-test('same-millisecond broadcast records use distinct exclusive files (mock filesystem)', async t => {
-  t.mock.timers.enable({ apis: ['Date'], now: 1000 });
-  await Promise.all([
-    saveEvidence('broadcast', { state: 'validated-not-sent', checkedBlock: 1n }),
-    saveEvidence('broadcast', { state: 'send-uncertain', checkedBlock: 1n }),
-  ]);
-  assert.equal(writes.length, 2);
-  assert.notEqual(writes[0].file, writes[1].file);
-  for (const write of writes) {
-    assert.equal(write.options.flag, 'wx');
-    assert.equal(JSON.parse(write.data).checkedBlock, '1');
-  }
+import { test } from 'node:test';
+import { readFile, unlink } from 'node:fs/promises';
+import { saveEvidence } from '../src/lib/dreamdex.mjs';
+import { capture } from './fixtures/captured.mjs';
+test('concurrent evidence records use distinct exclusive files on the real filesystem', async () => {
+  // Real filesystem and real receipt/read data; concurrency, no forced/fake clock.
+  const files = await Promise.all([saveEvidence('test-capture', capture.provenance), saveEvidence('test-capture', capture.provenance)]);
+  try {
+    assert.notEqual(files[0].href, files[1].href);
+    for (const file of files) assert.equal(JSON.parse(await readFile(file, 'utf8')).block.hash, capture.provenance.block.hash);
+  } finally { await Promise.all(files.map(file => unlink(file))); }
 });

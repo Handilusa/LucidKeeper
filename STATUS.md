@@ -15,6 +15,7 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 ## Local completion
 
 - Fix 1, 2026-10-30: compatibility HTML now starts unavailable/loading and consumes real `/api/status` values without numeric fallbacks. Synthetic positions, book sizes, risk calculations and trade cards removed; historical evidence explicitly dated. Compatibility and updated branding regressions pass (2/2).
+- Fix 2: inherited mock-removal work reviewed/completed. Public Tokyo captures label source/block/time; actual SDK/RPC and browser checks replace fabricated responses. Unit run: **48 passed, 22 explicitly skipped, 0 failed**. No mock APIs/provider injection/fulfillment/secret generation found. [Sources and coverage gaps](docs/TEST_DATA_SOURCES.md); browser verification pending.
 
 - Existing redesign committed in eight logical increments through `da2301e`; inherited staged docs preserved and clean Git status verified.
 - Guardian-first violet workspace, visible leverage/liquidation scenarios, retained stale balances and reversible chart scale are implemented locally.
