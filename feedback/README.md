@@ -16,11 +16,11 @@ Actualizado: **30 de octubre de 2026**. Un Markdown por incidencia; distinguir d
 | [008 — Compatibility finances](008-compatibility-terminal-fabricated-finances.md) | Corregido localmente en `b187b28`: datos reales o loading/unavailable; no se certifica despliegue |
 | [009 — IOC price precision](009-ioc-price-precision-loss.md) | Corregido localmente en `613940d`: bigint raw, regresión 1000PEPE y 21 mercados; ninguna orden enviada |
 | [010 — Stale partial-close snapshot](010-stale-partial-close-snapshot-risk.md) | Mitigado localmente en `baeeda5`: snapshot actual, preflight pinned y revalidación; no equivale a reduce-only del protocolo |
-| [011 — Operating policy divergence](011-operating-policy-runtime-divergence.md) | Corregido runtime en `c05b495`; HOLD activo e integración completa del envelope CLI aún pendiente |
+| [011 — Operating policy divergence](011-operating-policy-runtime-divergence.md) | Corregido runtime en `c05b495`; posterior confirmación escrita libera HOLD solo para EOA/Tokyo, integración completa del envelope CLI aún pendiente |
 
 **007–011 son hallazgos de la aplicación LucidKeeper, no bugs acreditados de dreamDEX ni entregas del bounty.** [Triage de dependencias](../docs/DEPENDENCY_TRIAGE.md): 27 entradas runtime afectadas, 0 dev-only, tres advisories; sin solución compatible no forzada ni explotabilidad confirmada. Alcance de entradas wallet/Zod sin resolver; JSON completo local, no publicar payloads de explotación.
 
-**Bloqueo operativo vigente:** instrucciones y runtime aplican HOLD activo. Falta confirmación escrita del permiso dreamDEX para usar los fondos como margen; no preparar, firmar ni transmitir. Lecturas reales o capturas públicas con procedencia, nunca respuestas fabricadas. Último QA local: 56 unit/integration pass / 21 skips; 14 Chromium pass / 16 skips; cero fallos. Despliegue de fixes y ciclo real de ejecución no certificados. Borradores y raw firmados fuera de Git; publicación/entrega del usuario.
+**Permiso operativo actualizado:** posterior confirmación escrita del propietario libera HOLD solo para EOA bounty/Tokyo50383; afirmación del propietario, no evidencia independiente. [Registro y límites](../STATUS.md#owner-authorization--2026-10-30). Sin transferencias/Arena; approve/deposit exactos2USDso e IOC revisados únicamente. Cada paso real requiere JSON completo y aprobación separada; CLI completo pendiente. Lecturas reales o capturas públicas con procedencia, nunca respuestas fabricadas. QA de fixes previo:56unit/integrationpass/21skips;14Chromiumpass/16skips;cero fallos. Despliegue/ciclo real de ejecución no recertificados aquí; borradores/raw fuera de Git, publicación/entrega del usuario.
 
 ## Formato
 

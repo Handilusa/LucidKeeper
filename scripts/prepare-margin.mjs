@@ -9,6 +9,8 @@ import {
 import { buildUnsignedMarginDeposit } from '../src/lib/funding.mjs';
 import { assertOnchainActionAllowed } from '../src/lib/operating-policy.mjs';
 
+// Fail closed: this preview has no complete wallet-bound reviewed envelope yet.
+// A scoped margin release must not silently enable incomplete signing handoffs.
 assertOnchainActionAllowed('deposit');
 
 const { values } = parseArgs({ options: {

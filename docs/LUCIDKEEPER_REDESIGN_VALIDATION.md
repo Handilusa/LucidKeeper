@@ -2,7 +2,7 @@
 
 **Updated:** 30 October 2026. **Scope:** local React/Vite source and production preview, plus separately dated deployed read-only QA. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `LucidKeeper`, branch `main`.
 
-**Current outcome after six fixes:** Typecheck/lint/build PASS (46.25s); **56 unit/integration passed / 21 skipped / 0 failed**, **14 local real-service Chromium passed / 16 skipped / 0 failed**, no retries/fabricated responses. Five responsive screenshots inspected. HOLD is active/shared across browser/CLI/broadcast; no live wallet connection/arming/preparation/signing/sending. Local fixes through `a88cf26` are not certified deployed. Latest supplied instructions reserve push to the user.
+**Outcome after six fixes, before the subsequent scoped release:** Typecheck/lint/build PASS (46.25s); **56 unit/integration passed / 21 skipped / 0 failed**, **14 local real-service Chromium passed / 16 skipped / 0 failed**, no retries/fabricated responses. Five responsive screenshots inspected, with HOLD active at that time. Subsequent explicit owner confirmation releases margin HOLD only for the bounty EOA/Tokyo; required wallet/network context and exact allowlist remain. No live wallet connection/arming/preparation/signing/sending in the policy update. Local source is not newly certified deployed; publication stays user-owned. [Current permission](../STATUS.md#owner-authorization--2026-10-30).
 
 ## Current verification boundaries — final fix completion
 

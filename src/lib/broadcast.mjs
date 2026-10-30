@@ -64,11 +64,12 @@ async function preflight(rpc, envelope, intent, expiresAt) {
 
 // No caller-supplied transport, policy override, signer or live CLI.
 export async function broadcastSignedTransaction(request) {
-  // First instruction: malformed input cannot even create an RPC client during HOLD.
-  assertOnchainActionAllowed('approve');
+  // First gate: HOLD or absent/foreign wallet context stops before transport/evidence.
+  assertOnchainActionAllowed('approve', { chainId: request?.envelope?.chainId, wallet: request?.envelope?.from });
   const { raw, envelope, intent, expiresAt } = structuredClone(request);
   const validated = await validateSignedTransaction(raw, envelope, intent);
-  assertOnchainActionAllowed(validated.action);
+  const context = { chainId: envelope.chainId, wallet: validated.from };
+  assertOnchainActionAllowed(validated.action, context);
   assertFresh(expiresAt, intent);
   const rpc = createPublicClient({ chain: hidekiTestnet, transport: http(TOKYO_RPC, { retryCount: 0, timeout: 15_000 }) });
   // Sanitize upstream errors: RPC implementations can include raw payloads in messages.
@@ -81,10 +82,10 @@ export async function broadcastSignedTransaction(request) {
   const evidence = { chainId: 50383, from: BOUNTY_EOA, action: intent.action, hash: validated.hash, checkedBlock };
   // Persist the computed hash before a send, without the raw payload or signature.
   await saveEvidence('broadcast', { ...evidence, state: 'validated-not-sent' });
-  assertOnchainActionAllowed(validated.action);
+  assertOnchainActionAllowed(validated.action, context);
   assertFresh(expiresAt, intent);
   assert.equal(await rpc.getTransactionCount({ address: BOUNTY_EOA, blockTag: 'pending' }), envelope.nonce, 'Pending nonce changed before send');
-  assertOnchainActionAllowed(validated.action);
+  assertOnchainActionAllowed(validated.action, context);
   assertFresh(expiresAt, intent);
   let state = 'submitted';
   try {

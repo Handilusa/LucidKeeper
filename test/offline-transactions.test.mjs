@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { buildUnsignedEnvelope, validateUnsignedEnvelope } from '../src/lib/offline-transactions.mjs';
+import { encodeFunctionData, erc20Abi, maxUint256 } from 'viem';
+import { buildUnsignedEnvelope, validateUnsignedEnvelope, TEST_MARGIN_AMOUNT } from '../src/lib/offline-transactions.mjs';
 import { approval, order, decodedOrder, amount, historicalEnvelope, capture } from './fixtures/captured.mjs';
 const envelope = historicalEnvelope();
 const intent = { action: 'approve', amount: amount.toString() };
@@ -24,6 +25,18 @@ test('schema boundary rejects missing/extra fields and malformed numeric input',
 });
 test('zero nonce/priority fee work without silently defaulting missing fields', { skip: 'No captured allowlisted transaction with zero priority fee; do not fabricate a wire fixture.' }, () => {});
 test('allowlist binds exact funding selector, destination, spender and amount', () => {
+  assert.equal(amount, TEST_MARGIN_AMOUNT);
+  for (const record of [approval, capture.execution[1]]) {
+    const review = historicalEnvelope(record);
+    const funding = { action: record === approval ? 'approve' : 'deposit', amount: amount.toString() };
+    assert.equal(validateUnsignedEnvelope(review, funding), funding.action);
+    for (const changedAmount of [amount - 1n, amount + 1n, maxUint256])
+      assert.throws(() => validateUnsignedEnvelope(review, { ...funding, amount: changedAmount.toString() }), /exactly 2 USDso/);
+    assert.throws(() => validateUnsignedEnvelope({ ...review, to: order.transaction.to }, funding), /Destination is outside/);
+  }
+  // Malicious calldata boundary inputs, never approvals sent to any contract.
+  for (const args of [[capture.system.marginBank, maxUint256], [capture.system.collateralToken, amount]])
+    assert.throws(() => validateUnsignedEnvelope({ ...envelope, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args }) }, intent), /Calldata differs/);
   assert.throws(() => validateUnsignedEnvelope({ ...envelope, to: capture.system.marginBank }, intent));
   assert.throws(() => validateUnsignedEnvelope({ ...envelope, data: envelope.data + '00' }, intent));
   assert.throws(() => validateUnsignedEnvelope(envelope, { action: 'transfer', amount: intent.amount }));
@@ -40,4 +53,4 @@ for (const title of [
   'unsigned, malformed, non-EIP1559 and invalid signature inputs fail closed',
   'real cryptographic recovery never treats synthetic signature fields as the EOA',
   'production broadcast validates input when hold is released',
-]) test(title, { skip: 'Synthetic signature/HOLD-release scenario removed; real sender and mismatch checks run in dreamdex.test.mjs. Live broadcasting is held.' }, () => {});
+]) test(title, { skip: 'Synthetic signature/HOLD-release scenario removed; real sender and mismatch checks run in dreamdex.test.mjs. Tests never broadcast live transactions.' }, () => {});

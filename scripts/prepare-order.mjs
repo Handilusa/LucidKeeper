@@ -5,6 +5,7 @@ import { formatUnits } from 'viem';
 import { openTokyo, verifyNetwork, verifiedMarket, readAccount, bountyAddress, orderParams, buildUnsignedOrder, saveEvidence, json } from '../src/lib/dreamdex.mjs';
 import { assertOnchainActionAllowed } from '../src/lib/operating-policy.mjs';
 
+// Fail closed until this preview integrates the complete wallet-bound envelope.
 assertOnchainActionAllowed('order');
 
 const { values } = parseArgs({ options: Object.fromEntries(['address', 'market', 'side', 'quantity', 'price'].map(key => [key, { type: 'string' }])) });

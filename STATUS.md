@@ -9,7 +9,10 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 
 - Written project-owner authorization received to fund the configured signer and execute live project/bounty-demo transactions **only when runtime rules allow**. HOLD is a hard stop and must never be bypassed.
 - Before each live action, show exact action, market, size and wallet, plus the complete unsigned transaction for explicit review. First run small; stop on any error or mismatch.
-- This is not written confirmation that dreamDEX permits these funds as margin. Until that condition is satisfied, HOLD wins over general funding/execution permission. No live action has been performed in fix mode.
+- The earlier general authorization did not release HOLD. **Subsequent explicit written owner confirmation, 30 October:** the owner confirms that dreamDEX permits the USDso in EOA `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA` as margin on Tokyo **50383**. **HOLD released locally for this wallet/network only**; every other wallet/network remains rejected, including callers that omit wallet context. No live action was performed in this policy update.
+- **Owner-reported provenance:** MVP/Builder track only; personal EOA, not in Perps Arena; the owner reports no transfers to/from Arena smart wallets and USDso obtained from the SomniaHacks Telegram faucet after whitelisting. These statements are not independently verified wallet-history or team evidence. The supplied `[screenshot/date]` was a placeholder, not an attached screenshot; earlier records are preserved, not silently rewritten. The explicit follow-up answer **“Yes, permission confirmed”** is the written margin-use confirmation relied upon for the scoped release.
+- Allowlist unchanged: **exactly 2 USDso approve** to the verified MarginBank, **exactly 2 USDso deposit** for this EOA, and separately reviewed **IOC orders** to verified official PerpPools. No Arena funding, wallet-to-wallet transfers, claims, cancel, withdrawal, limit signing, unlimited approval or unexpected native value. First live run small; show action/market/size/wallet and complete unsigned JSON before each separate approval; stop on any error or mismatch. Agent signing remains a user-mediated offline handoff.
+- **Scoped-policy checks, 30 October:** 13 offline test files, **47 passed / 20 skipped / 0 failed**; typecheck, lint and build **PASS** (45.71s, existing warnings). Missing/foreign context, disallowed actions, changed funding amount/spender and unlimited approval are rejected. Real-service SDK/recovery and browser suites were not rerun; live send/fill branches remain unverified. Complete CLI envelope integration remains pending/fail-closed.
 - Earlier owner authorization covered ordered fixes, one local commit per fix, then push/deployment verification. **Latest supplied local instructions reserve publication to the user: no agent push.** No credential/secret inspection or signer setup.
 
 ## Six local fixes completed
@@ -43,7 +46,7 @@ Inherited authorization/branding commits were preserved. Fixes are local, not ve
 
 ## Remaining blockers / limitations
 
-- **HOLD active:** written dreamDEX margin-funds permission still missing. No live demo transaction is authorized under HOLD. Cancel, withdraw, limit signing and claims remain outside the runtime allowlist.
+- **Scoped permission is not transaction approval:** wallet/Tokyo margin HOLD is released locally, but each live action still needs a fresh complete unsigned review and separate approval. No live preparation, signing or broadcast in this update; controlled live-path coverage remains pending. Any restored HOLD must stop funding and orders alike.
 - **Offline CLI:** preview-only, not complete unsigned-envelope integration; never hand historical previews to a signer.
 - **Security:** **27 runtime affected entries / 0 dev-only**, **17 high / 8 moderate / 2 low**, three advisories; non-forced remediation unavailable. No confirmed exploit path, but third-party wallet/Zod resource-exhaustion reachability is unresolved. [Triage](docs/DEPENDENCY_TRIAGE.md).
 - Controlled wallet/failure/race/fill coverage is skipped, not passing; no fresh live nonempty portfolio/write lifecycle. Revalidation is not protocol reduce-only protection against changes after preflight.
@@ -53,4 +56,4 @@ Inherited authorization/branding commits were preserved. Fixes are local, not ve
 
 ## User-owned delivery
 
-Publish local commits and verify deployment parity; resolve HOLD and configure the sole-EOA offline signer; record the demo video; publish **2–3 X posts** with both required mentions and save URLs in README; deliver feedback; confirm whitelist and complete bounty/DoraHacks submission before **1 November, 23:59 UTC**. Agent does not log in, push, operate wallets, contact Discord or submit on the user's behalf.
+Publish any new local commits and verify deployment parity; finish the complete offline envelope integration and configure the sole-EOA offline signer; separately review/approve small live actions; record the demo video; publish **2–3 X posts** with both required mentions and save URLs in README; deliver feedback; confirm whitelist and complete bounty/DoraHacks submission before **1 November, 23:59 UTC**. Agent does not log in, push, operate wallets, contact Discord or submit on the user's behalf.

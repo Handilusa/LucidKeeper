@@ -1,13 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { broadcastSignedTransaction } from '../src/lib/broadcast.mjs';
-test('HOLD prevents transport creation, evidence writes and sends', async () => {
-  // No input, transport or mocked recovery: the real first-action gate rejects.
-  await assert.rejects(broadcastSignedTransaction(undefined), /HOLD:/);
+import { capture, historicalEnvelope } from './fixtures/captured.mjs';
+test('absent or foreign wallet context prevents broadcaster transport creation', async () => {
+  // No raw transaction/recovery/transport: actual first-action scope gate rejects.
+  await assert.rejects(broadcastSignedTransaction(undefined), /Only the authorized bounty EOA/);
+  const envelope = historicalEnvelope();
+  for (const invalid of [{ ...envelope, from: capture.system.marginBank }, { ...envelope, chainId: 0 }, { ...envelope, from: undefined }])
+    await assert.rejects(broadcastSignedTransaction({ envelope: invalid }), /Only the authorized bounty EOA/);
 });
 
 // Preserved test inventory: no synthetic recovery, RPC, receipt, time or filesystem.
-// These integration branches cannot execute under HOLD without controlled sends.
+// These integration branches require separately approved controlled real sends.
 // See docs/TEST_DATA_SOURCES.md. Skips are gaps, never passing transaction evidence.
 for (const title of [
   'mocked recovered sender permits an exact wire match without real signing',
@@ -23,4 +27,4 @@ for (const title of [
   'ambiguous send errors are sanitized, queried by computed hash, and never resent',
   'timeout may still resolve to a receipt; a reverted receipt is recorded as reverted',
   'noncanonical and foreign receipts cannot become confirmed evidence',
-]) test(title, { skip: 'Former mocked send/recovery/preflight branch: requires real controlled transaction outcomes; HOLD forbids live execution. See docs/TEST_DATA_SOURCES.md.' }, () => {});
+]) test(title, { skip: 'Former mocked send/recovery/preflight branch: requires separately approved real controlled transaction outcomes. No live execution in tests. See docs/TEST_DATA_SOURCES.md.' }, () => {});

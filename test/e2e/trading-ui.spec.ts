@@ -114,4 +114,4 @@ for (const title of [
   'funding normalizes a four-hour contract window and simulation failure never reaches the wallet',
   'portfolio health and overlays share a pinned block; Guardian settings isolate accounts and networks',
   'price motion is directional, bounded and disabled by reduced motion; slow reads offer recovery',
-]) test(title, async () => { test.skip(true, 'Needs a real connected signer/nonempty position or controlled wallet/network outcome. No provider injection or synthetic responses allowed; HOLD remains active. See docs/TEST_DATA_SOURCES.md.'); });
+]) test(title, async () => { test.skip(true, 'Needs a real connected signer/nonempty position or separately approved controlled wallet/network outcome. No provider injection, synthetic responses or live writes in this suite. See docs/TEST_DATA_SOURCES.md.'); });

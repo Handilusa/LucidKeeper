@@ -2,14 +2,26 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
-import { MARGIN_HOLD, assertOnchainActionAllowed } from '../src/lib/operating-policy.mjs';
+import { MARGIN_HOLD, AUTHORIZED_SIGNER, assertOnchainActionAllowed } from '../src/lib/operating-policy.mjs';
+import { capture } from './fixtures/captured.mjs';
 
-test('conditional owner authorization never overrides the active HOLD', () => {
-  assert.equal(MARGIN_HOLD.active, true);
+test('written margin release permits only explicit bounty EOA/Tokyo context', () => {
+  assert.equal(MARGIN_HOLD.active, false);
+  assert.equal(MARGIN_HOLD.releasedFor, capture.account.address);
+  assert.equal(AUTHORIZED_SIGNER, capture.account.address);
+  assert.equal(MARGIN_HOLD.chainId, capture.provenance.network.chainId);
+  assert.equal(Object.isFrozen(MARGIN_HOLD), true);
   for (const action of ['approve', 'deposit', 'order']) {
-    assert.throws(() => assertOnchainActionAllowed(action), /HOLD:/);
+    const context = { chainId: MARGIN_HOLD.chainId, wallet: capture.account.address };
+    assert.doesNotThrow(() => assertOnchainActionAllowed(action, context));
+    assert.doesNotThrow(() => assertOnchainActionAllowed(action, { ...context, wallet: context.wallet.toLowerCase() }));
+    for (const invalid of [undefined, {}, { ...context, wallet: undefined }, { ...context, wallet: null }, { ...context, wallet: 1 }, { ...context, wallet: capture.system.marginBank }, { ...context, chainId: undefined }, { ...context, chainId: String(context.chainId) }, { ...context, chainId: 0 }]) {
+      // Invalid boundary mutations/real contract address, not fabricated wallets or RPC.
+      assert.throws(() => assertOnchainActionAllowed(action, invalid), /Only the authorized bounty EOA/);
+    }
   }
-  assert.throws(() => assertOnchainActionAllowed('transfer'), /outside the bounty allowlist/);
+  for (const action of ['transfer', 'cancel', 'withdraw', 'limit', 'claim', 'signMessage'])
+    assert.throws(() => assertOnchainActionAllowed(action, { chainId: MARGIN_HOLD.chainId, wallet: capture.account.address }), /outside the bounty allowlist/);
 });
 
 test('every browser write entry point imports the shared hard-stop and review rules', () => {
@@ -24,7 +36,7 @@ test('every browser write entry point imports the shared hard-stop and review ru
   assert.doesNotMatch(source, /process\.env|privateKeyToAccount|signTransaction/);
 });
 
-test('all preparation CLIs stop at HOLD before arguments, network or evidence writes', () => {
+test('incomplete preparation CLIs remain fail-closed before network or evidence writes', () => {
   const directory = new URL('../evidence/', import.meta.url);
   const before = readdirSync(directory).sort();
   for (const script of ['prepare-margin.mjs', 'prepare-order.mjs', 'prepare-close-order.mjs']) {
@@ -33,7 +45,7 @@ test('all preparation CLIs stop at HOLD before arguments, network or evidence wr
     });
     assert.ifError(result.error);
     assert.notEqual(result.status, 0, `${script} should fail without required arguments`);
-    assert.match(result.stderr, /HOLD:/);
+    assert.match(result.stderr, /Only the authorized bounty EOA/);
   }
   assert.deepEqual(readdirSync(directory).sort(), before);
 });

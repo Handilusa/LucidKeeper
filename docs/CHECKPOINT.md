@@ -2,7 +2,7 @@
 
 - **Updated:** 30 October 2026 — six ordered local fixes completed; final documentation/read-only deployment reconciliation.
 - **Repository:** This directory is the Git root; branch `main`. Final continuation started clean at `a88cf26`, nine ahead of `origin/main` at `3ff1433`; inherited commits preserved. Current final hash is obtained with `git rev-parse HEAD`.
-- **Authority:** Earlier owner permission covered per-fix local commits and publication. Latest supplied local instructions reserve push to the user; no agent login/push, keys, wallet connection, arming, signatures, transactions or cloud changes. Active HOLD still needs written dreamDEX margin-funds permission.
+- **Authority:** Earlier owner permission covered per-fix local commits and publication. Local instructions reserve push to the user; no agent login/push, keys, wallet connection, arming, signatures, transactions or cloud changes in this update. Subsequent explicit written owner confirmation releases margin HOLD only for the bounty EOA/Tokyo; missing/foreign wallet context still fails closed. [Confirmation](../STATUS.md#owner-authorization--2026-10-30).
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
 
 ## Current completion — six fixes
@@ -18,7 +18,7 @@
 
 Latest fix checks: typecheck/lint/build PASS, build46.25s; **56 unit/integration passed / 21 skipped / 0 failed**, **14 local real-service Chromium passed / 16 skipped / 0 failed**, no retries, five sizes. All five responsive screenshots now visually inspected. Existing annotation/chunk warnings and [coverage gaps](TEST_DATA_SOURCES.md) remain. No live write evidence or networked unit rerun in this final docs continuation.
 
-**NEXT:** user publication and exact deployed-content parity; written team-margin permission before any live work; complete offline CLI envelope integration, manual accessibility, demo video, published X URLs, original feedback delivery and whitelist/submission by1November23:59UTC. Agent publication remains forbidden by latest supplied instructions. Fresh final production status/desktop/mobile observations are recorded in STATUS/validation, independently of these local test totals.
+**NEXT:** user publication and exact deployed-content parity; complete offline CLI envelope integration and separate full unsigned review/approval before any small live step; manual accessibility, demo video, published X URLs, original feedback delivery and whitelist/submission by1November23:59UTC. Agent publication remains forbidden. Dated production status/desktop/mobile observations are recorded in STATUS/validation, independently of local test totals and the subsequent wallet-scoped permission release.
 
 Final public main/Vercel still `3ff1433` (status/assets 13:29–13:30 UTC); local parity FAIL, 77/166 HTML/JS/CSS match. Browser 13:36:05–13:36:14 UTC: 12/12 smoke observations PASS at 1440×900 / 390×844, zero page/console/HTTP errors/blocked writes; four renders inspected, desktop post-switch loading is not screenshot-only settled-health evidence. No newer local deployment or full production Playwright certification. Evidence local under `.git/lucidkeeper-audit/final-deployment-2026-10-30T13-36-05-104Z/`; earlier auditor-selector failures retained separately.
 

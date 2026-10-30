@@ -17,7 +17,7 @@ Current frontend authority: [STATUS.md](STATUS.md), [checkpoint](docs/CHECKPOINT
 - **Latest fix checks:** TypeScript, ESLint and production build pass; **56 unit/integration passed / 21 skipped**, **14 real-service Playwright passed / 16 skipped**, zero failures. Five viewport screenshots inspected. Former controlled mock cases remain explicit skips, not coverage claims. [Sources and gaps](docs/TEST_DATA_SOURCES.md).
 - **Implemented:** market/limit order UI, indexed activity, cancel orders, partial close, sequential approval/deposit, withdrawal and browser-local Guardian triggers. These do not have a fresh production transaction smoke test.
 - **Historical execution:** the 27 October approval, deposit and first BTC fill are preserved below. The 0.00013 BTC long is **not a current-position claim**; 29 October read-only QA observed zero positions. No new position/receipt audit was performed in this documentation reconciliation.
-- **Operational policy, 2026-10-30:** owner authorizes configured-signer project/demo execution within runtime rules. **HOLD remains active and now enforced**; written dreamDEX margin-funds permission is still required. Exact-2-USDso funding and reviewed IOC only; other actions remain outside the allowlist. No live fix-mode transactions.
+- **Operational policy, 2026-10-30:** subsequent explicit written owner confirmation releases margin HOLD **only for the bounty EOA on Tokyo 50383**, with mandatory wallet/network context. Owner-reported provenance, not independently verified team/wallet-history evidence. Exact-2-USDso funding and separately reviewed IOC only; every live action still requires full unsigned review/approval. No live transactions in this policy update. [Confirmation and safeguards](STATUS.md#owner-authorization--2026-10-30).
 - **Residual dependencies:** 27 runtime affected entries, 0 dev-only, three advisories; non-forced remediation made no dependency changes. Wallet-input reachability remains unresolved, not declared harmless. [Triage](docs/DEPENDENCY_TRIAGE.md).
 
 ---
@@ -91,8 +91,8 @@ LucidKeeper/
 │   └── broadcast.mjs           # RPC preflight checks, non-retryable broadcast, receipt canonicalization
 ├── scripts/
 │   ├── connectivity.mjs         # Public read-only market and account inspector
-│   ├── prepare-margin.mjs       # HOLD-gated preview; complete envelope integration pending
-│   ├── prepare-order.mjs        # HOLD-gated IOC preview; not a signing handoff
+│   ├── prepare-margin.mjs       # Fail-closed preview; complete envelope integration pending
+│   ├── prepare-order.mjs        # Fail-closed IOC preview; not a signing handoff
 │   ├── verify-order.mjs         # Verification of canonical on-chain receipt and fills
 │   └── ui-server.mjs            # Retained compatibility HTTP terminal
 ├── public/
@@ -107,7 +107,7 @@ LucidKeeper/
 ### Data integrity and operating boundaries
 1. **No fabricated financial data:** Live PnL, equity and fills use contracts/indexer data. Hypothetical stress/liquidation scenarios are labeled; test captures retain source/time/block and are historical, not current balances. Controlled outcomes without real evidence stay skipped.
 2. **Dedicated Bounty Account:** Exclusively uses EOA `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA` on Somnia Tokyo (Chain 50383).
-3. **Conditional signing authorization:** Configured signer may sign only runtime-allowed requests after exact unsigned review. HOLD cannot be bypassed. No secret inspection or wallet-to-wallet transfers.
+3. **Scoped signing authorization:** Margin HOLD is released only for the authorized EOA/Tokyo after written owner confirmation. Missing/foreign wallet/network contexts remain rejected; any restored HOLD cannot be bypassed. Every action requires exact unsigned review. No secret inspection, Arena funding or wallet-to-wallet transfers.
 4. **Funding safeguards:** Exact-amount approval and receipt sequencing are implemented. Historical zero allowance is not a current guarantee; the offline broadcaster checks zero allowance for orders. No new allowance/deposit verification was performed here.
 
 ---
