@@ -5,6 +5,13 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 **Project:** **LucidKeeper**, **dreamDEX Perps Builder Bounty**, Somnia Tokyo testnet, **chain 50383**. Not Perps Arena.
 **Submission deadline:** **1 November 2026, 23:59 UTC** (user-provided).
 
+## Owner authorization — 2026-10-30
+
+- Written project-owner authorization received to fund the configured signer and execute live project/bounty-demo transactions **only when runtime rules allow**. HOLD is a hard stop and must never be bypassed.
+- Before each live action, show exact action, market, size and wallet, plus the complete unsigned transaction for explicit review. First run small; stop on any error or mismatch.
+- This is not written confirmation that dreamDEX permits these funds as margin. Until that condition is satisfied, HOLD wins over general funding/execution permission. No live action has been performed in fix mode.
+- Owner authorizes ordered fixes, one local commit per fix, then push and deployment verification. No credential/secret inspection or signer setup is authorized by this workflow.
+
 ## Local completion
 
 - Existing redesign committed in eight logical increments through `da2301e`; inherited staged docs preserved and clean Git status verified.
@@ -27,6 +34,11 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 
 ## Pending / limitations
 
+- **Absolute zero-mocks review, 30 October, 12:00–12:14 UTC: NOT COMPLIANT / not complete.** Test doubles remain ([007](feedback/007-absolute-zero-mock-noncompliance.md)); retained executable compatibility HTML contains fabricated finances ([008](feedback/008-compatibility-terminal-fabricated-finances.md)). This does not mean production React displays those fixed balances.
+- **Reproduced:** actual-source IOC pricing differs from raw on-chain arithmetic by 4–5 ticks on 1000PEPE ([009](feedback/009-ioc-price-precision-loss.md)). **Source-based risk, not live reproduction:** outdated partial-close snapshots ([010](feedback/010-stale-partial-close-snapshot-risk.md)). Policy enforcement/handoff divergence remains open ([011](feedback/011-operating-policy-runtime-divergence.md)). No fixes made by this review.
+- **Fresh review checks:** unit **66/66**, typecheck, lint and build PASS (33.96s; existing warnings). Real-service browser smoke passes production desktop/phone and local desktop: 21 options, DOGE switch/native candles, settled empty portfolio/orders, 15 indexed history rows, view-only collateral dialog; zero captured page/console/HTTP errors, blocked writes or horizontal overflow. Current indexed history has no reproduced pagination gap. Full Playwright was not rerun in this review; its earlier 30/30 result uses doubles.
+- **Dependency triage open:** `npm audit --omit=dev --json` exits 1 and reports **27 affected package entries: 17 high, 8 moderate, 2 low** (three distinct advisory URLs, not 27 distinct exploits). App exploitability is not established; detailed report stays local. No forced upgrades.
+
 - **Canonical branding complete locally, 30 October:** all active project-name strings now use exact `LucidKeeper`; fallback initials/card/download, Reown app name, server output, README/social copy and docs are normalized. **66/66 unit tests, typecheck, lint, build and 1/1 focused Chromium PASS**; source/built searches have zero former-name or incorrect-casing matches. Repository directory and lowercase technical identifiers remain unchanged; production verification pending.
 
 - **Reown production configuration verified, 20:34 UTC: 5/5 focused read-only checks PASS.** Live requests use the supplied public Project ID; config HTTP200, telemetry202, no console/page errors. [Feedback 005](feedback/005-production-reown-origin-allowlist.md) resolved for configuration only; actual wallet connection/signing remains untested. Earlier 16:33 old-ID/403 observations are historical.
@@ -41,4 +53,4 @@ Whitelist, Discord, X posts, DoraHacks submission, wallet and signer setup.
 
 ## Next
 
-User: resolve funding/signer policy before any live work; deliver video, X posts, feedback and bounty submission. Confirm deployment of the newer local branding separately. Agent QA is complete for production groups and the full isolated suite; manual accessibility/live transaction verification remains separate. No cloud login/settings changes or push.
+Resolve the zero-mocks/data-integrity findings and source-based execution risks before claiming completion. User: resolve funding/signer policy before live work; publish the local increments, confirm newer branding deployment, deliver video, published X URLs, feedback and bounty submission. Manual accessibility/live transaction verification remains separate. This review changes reports/status only; no cloud settings, push, wallet operation or transaction.

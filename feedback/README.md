@@ -12,6 +12,13 @@ Actualizado: **30 de octubre de 2026**. Un Markdown por incidencia; distinguir d
 | [004 — Mixed candle intervals](004-mixed-candle-intervals.md) | Resuelto: intervalos nativos, OHLC/unidades validados; evidencia en auditoría/validación |
 | [005 — Reown production allowlist](005-production-reown-origin-allowlist.md) | Configuración resuelta en producción el 29 de octubre: HTTP200/202, 5/5; conexión/relay/firma real pendientes |
 | [006 — Accessible group semantics](006-generic-container-accessible-labels.md) | Fix local y producción verificados el 30 de octubre; seis grupos AX en escritorio/móvil; lector de pantalla pendiente |
+| [007 — Absolute zero-mocks](007-absolute-zero-mock-noncompliance.md) | Incumplimiento confirmado en tests; sin corregir |
+| [008 — Compatibility finances](008-compatibility-terminal-fabricated-finances.md) | Datos financieros ficticios en fallback ejecutable; no observados en la SPA de producción |
+| [009 — IOC price precision](009-ioc-price-precision-loss.md) | Reproducido con lecturas reales: 1000PEPE difiere 4–5 ticks; sin enviar orden |
+| [010 — Stale partial-close snapshot](010-stale-partial-close-snapshot-risk.md) | Riesgo por inspección de código; efecto financiero real no reproducido |
+| [011 — Operating policy divergence](011-operating-policy-runtime-divergence.md) | Divergencia de código/documentos confirmada; ninguna operación autorizada |
+
+**007–011 son hallazgos de la aplicación LucidKeeper, no bugs acreditados de dreamDEX ni entregas del bounty.** La auditoría de dependencias se conserva local y requiere evaluación privada de seguridad; no se ha establecido explotabilidad en esta aplicación.
 
 **Bloqueo operativo vigente para este trabajo:** instrucciones/signing docs mantienen HOLD, pero `src/lib/operating-policy.mjs` lo declara inactivo. El usuario debe resolver por escrito permiso de margen y modelo de firma; no preparar, firmar ni transmitir para reproducir incidencias antes de esa resolución. Usar lecturas o fixtures aislados; estos no son evidencia on-chain. No se cambió la política. Borradores y raw firmados permanecen fuera de Git. La entrega de feedback es del usuario.
 
