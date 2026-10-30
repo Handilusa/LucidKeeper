@@ -35,7 +35,7 @@
   --color-amber: #e5b875;
   --radius-control: 5px;
   --space-panel: 20px;
-  --motion: 150ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 * {
   box-sizing: border-box;
@@ -54,13 +54,6 @@ summary,
 select {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-}
-button,
-a {
-  transition:
-    color var(--motion),
-    background-color var(--motion),
-    border-color var(--motion);
 }
 button,
 summary {
@@ -960,7 +953,7 @@ input[type='range'] {
 .guardian-gauge svg { width: 100%; overflow: visible; }
 .gauge-track, .gauge-warning { fill: none; stroke: var(--color-violet); stroke-width: 7; }
 .gauge-warning { stroke: var(--color-amber); }
-.gauge-needle { transform-origin: 80px 80px; transition: transform 200ms ease-out; }
+.gauge-needle { transform-origin: 80px 80px; transition: transform 200ms var(--ease-out); }
 .gauge-needle path { stroke: var(--text); stroke-width: 2; }
 .gauge-needle circle { fill: var(--text); }
 .guardian-gauge text { fill: var(--text); font: 600 19px var(--font-mono); }
@@ -1006,12 +999,12 @@ input[type='range'] {
 .chart-caption { flex-wrap: wrap; }
 .loading-state { display: flex; align-items: center; flex-direction: column; gap: 10px; font-size: 11px; text-align: center; }
 .loading-track { display: block; width: 88px; height: 3px; background: var(--bg-surface); overflow: hidden; }
-.loading-track::after { content: ''; display: block; height: 100%; width: 40%; background: var(--color-violet); animation: read-loading 1.2s ease-in-out 3; }
+.loading-track::after { content: ''; display: block; height: 100%; width: 40%; background: var(--color-violet); animation: read-loading 1.2s linear 3; }
 .state-spinner { animation: state-spin 0.9s linear 5; }
-.confirmed-check { animation: state-confirm 180ms ease-out; }
+.confirmed-check { animation: state-confirm 180ms var(--ease-out); }
 @keyframes read-loading { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @keyframes state-spin { to { transform: rotate(360deg); } }
-@keyframes state-confirm { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+@keyframes state-confirm { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: scale(1); } }
 
 @media (min-width: 1550px) {
   .terminal {
