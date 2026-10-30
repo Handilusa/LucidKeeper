@@ -28,7 +28,10 @@ Real mark/grid reads and actual-source arithmetic on 30 October 2026, starting 1
 - Network: Somnia Tokyo testnet, chain 50383
 - Public bounty account: `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`; public reads only
 - Runtime / OS: Node 24.19.0 / Windows
-- Status: Open; reproduced app defect, not submitted
+- Status: Fixed locally 2026-10-30; no live execution, not submitted
 
 ## Recommended next action
 Retain raw bigint mark/size and use market tick precision for controls and display. Test exact arithmetic across all verified markets without mocked transport. This review did not fix the conversion.
+
+## Fix — 2026-10-30
+`src/lib/math/ioc.ts` now retains raw bigint through multiply/divide/tick floor. Trade, close and Guardian use it; the limit Use mark control also snaps raw atoms. `test/ioc.test.mjs` uses sourced block 37084078 and all 21 captured grids. Exact sell/buy prices are 5101400000000000 / 5309600000000000 atoms. HOLD remains separate; no live transaction executed.

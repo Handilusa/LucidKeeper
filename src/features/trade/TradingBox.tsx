@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { parseUnits, zeroAddress } from 'viem';
+import { formatUnits, parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { perpPoolAbi } from '@/chain/abis';
 import type { MarketInfo } from '@/lib/data/indexer';
 import { quantizeToGrid } from '@/lib/math/format';
+import { iocPrice } from '@/lib/math/ioc';
 import { positiveDecimal, validateOrderInput } from '@/lib/math/orderInput';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
@@ -19,6 +20,7 @@ import { Check, LoaderCircle, Plus } from 'lucide-react';
 interface TradingBoxProps {
   market: MarketInfo;
   markPrice: number;
+  markPriceRaw: bigint | null;
   availableMargin: number;
   availableRead: ReadDisplay;
   marginReady: boolean;
@@ -39,6 +41,7 @@ function savedLeverage(pool: string) {
 export function TradingBox({
   market,
   markPrice,
+  markPriceRaw,
   availableMargin,
   availableRead,
   marginReady,
@@ -255,14 +258,9 @@ export function TradingBox({
         orderBookParams?.lotSize ?? parseUnits(market.lotSize, market.baseDecimals);
       let rawPrice: bigint;
       if (orderType === 'market') {
-        const basePriceAtoms = parseUnits(
-          executionPrice.toFixed(market.quoteDecimals > 6 ? 6 : 2),
-          market.quoteDecimals
-        );
-        const slippagePrice =
-          side === 'buy' ? (basePriceAtoms * 102n) / 100n : (basePriceAtoms * 98n) / 100n;
-        rawPrice = quantizeToGrid(slippagePrice, rawTickSize, 'floor');
-        if (rawPrice === 0n) rawPrice = rawTickSize;
+        const mark = await publicClient.readContract({ address: market.poolAddress as `0x${string}`, abi: perpPoolAbi, functionName: 'tryGetMarkPrice' });
+        if (!mark[0]) throw new Error('Current mark unavailable');
+        rawPrice = iocPrice(mark[1], rawTickSize, side === 'buy');
       } else {
         rawPrice = quantizeToGrid(
           parseUnits(limitPrice, market.quoteDecimals),
@@ -385,12 +383,10 @@ export function TradingBox({
               <button
                 type="button"
                 className="text-cyan-400"
-                disabled={markPrice <= 0}
+                disabled={markPriceRaw === null}
                 onClick={() =>
                   setLimitPrice(
-                    (
-                      Math.round(markPrice / Number(market.tickSize)) * Number(market.tickSize)
-                    ).toFixed(market.tickSize.split('.')[1]?.length || 0)
+                    markPriceRaw === null ? '' : formatUnits(quantizeToGrid(markPriceRaw, parseUnits(market.tickSize, market.quoteDecimals), 'round'), market.quoteDecimals)
                   )
                 }
               >

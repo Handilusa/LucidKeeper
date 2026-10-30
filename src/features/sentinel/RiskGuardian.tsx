@@ -6,6 +6,7 @@ import { parseUnits, zeroAddress } from 'viem';
 import { perpPoolAbi } from '@/chain/abis';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
+import { iocPrice } from '@/lib/math/ioc';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
 import { TokenLogo } from '@/components/TokenLogo';
@@ -294,15 +295,9 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         return;
       }
 
-      const currentMark = effectiveMark > 0 ? effectiveMark : activePosition.entryPrice || 1;
-      const baseMarkPrice = parseUnits(
-        currentMark.toFixed(quoteDecimals > 6 ? 6 : 2),
-        quoteDecimals
-      );
-      const slippagePrice = activePosition.isLong
-        ? (baseMarkPrice * 98n) / 100n
-        : (baseMarkPrice * 102n) / 100n;
-      const rawPrice = quantizeToGrid(slippagePrice, tickSize, 'floor');
+      const currentMark = effectiveMark;
+      if (activePosition.markPriceRaw === null) throw new Error('Current raw mark unavailable');
+      const rawPrice = iocPrice(activePosition.markPriceRaw, tickSize, !activePosition.isLong);
 
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
 

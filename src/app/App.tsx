@@ -113,6 +113,7 @@ export const App: React.FC = () => {
     query: { staleTime: 60000 },
   });
   const staleMark = markQuery.isError || now - markQuery.dataUpdatedAt > 30000;
+  const markPriceRaw = !staleMark && markQuery.data?.[0] ? markQuery.data[1] : null;
   const markPrice =
     !staleMark && markQuery.data?.[0]
       ? Number(formatUnits(markQuery.data[1], selectedMarket.quoteDecimals))
@@ -235,6 +236,7 @@ export const App: React.FC = () => {
             size,
             entryPrice,
             markPrice: poolMark,
+            markPriceRaw: mark[0] ? mark[1] : null,
             liquidationPrice: liquidation === null ? null : Number(formatUnits(liquidation, market.quoteDecimals)),
             readBlock: blockNumber.toString(),
             maintenanceMarginBps: params.maintenanceMarginBps,
@@ -352,6 +354,7 @@ export const App: React.FC = () => {
             <TradingBox
               market={selectedMarket}
               markPrice={markPrice}
+              markPriceRaw={markPriceRaw}
               availableMargin={freeCollateral}
               availableRead={availableRead}
               marginReady={marginReady && !positionsError && !!positionQuery.data}

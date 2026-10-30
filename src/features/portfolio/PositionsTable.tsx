@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { RefreshCw, ChartNoAxesCombined, ListOrdered, History } from 'lucide-react';
 import { perpPoolAbi } from '@/chain/abis';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
+import { iocPrice } from '@/lib/math/ioc';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import {
   fetchUserTradeHistory,
@@ -31,6 +32,7 @@ export interface PositionItem {
   size: number;
   entryPrice: number;
   markPrice: number;
+  markPriceRaw: bigint | null;
   liquidationPrice?: number | null;
   readBlock?: string;
   maintenanceMarginBps?: number;
@@ -134,20 +136,12 @@ export function PositionsTable({
     if (!canManage || busy || pos.markPrice <= 0) return;
     try {
       lastClose.current = { pos, percent: value };
-      const baseMark = parseUnits(
-        pos.markPrice.toFixed(pos.quoteDecimals && pos.quoteDecimals > 6 ? 6 : 2),
-        pos.quoteDecimals || 18
-      );
-      const price = pos.isLong ? (baseMark * 98n) / 100n : (baseMark * 102n) / 100n;
+      if (pos.markPriceRaw === null) throw new Error('Current raw mark unavailable');
       const market = ALL_VERIFIED_PERP_MARKETS.find(
         (m) => m.poolAddress.toLowerCase() === pos.poolAddress.toLowerCase()
       );
       if (!market) throw new Error('Market parameters unavailable');
-      const rawPrice = quantizeToGrid(
-        price,
-        parseUnits(market.tickSize, pos.quoteDecimals || 18),
-        'floor'
-      );
+      const rawPrice = iocPrice(pos.markPriceRaw, parseUnits(market.tickSize, market.quoteDecimals), !pos.isLong);
       const fullQuantity = parseUnits(pos.size.toString(), pos.baseDecimals || 8);
       const rawQuantity = quantizeToGrid(
         value === 100 ? fullQuantity : (fullQuantity * BigInt(value)) / 100n,
