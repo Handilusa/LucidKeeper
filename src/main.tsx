@@ -12,7 +12,28 @@ const isApp = window.location.pathname === '/app' || window.location.pathname.st
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      {isApp ? <Suspense fallback={<main className="content-page"><TestnetBadge /><p role="status">Loading LucidKeeper…</p></main>}><TerminalRoutes /></Suspense> : window.location.pathname === '/' ? <Landing /> : <main className="content-page"><TestnetBadge /><h1>Page not found</h1><a className="button" href="/">Go to homepage</a></main>}
+      {isApp ? (
+        <Suspense
+          fallback={
+            <main className="content-page">
+              <TestnetBadge />
+              <p role="status">Loading LucidKeeper…</p>
+            </main>
+          }
+        >
+          <TerminalRoutes />
+        </Suspense>
+      ) : window.location.pathname === '/' ? (
+        <Landing />
+      ) : (
+        <main className="content-page">
+          <TestnetBadge />
+          <h1>Page not found</h1>
+          <a className="button" href="/">
+            Go to homepage
+          </a>
+        </main>
+      )}
     </ErrorBoundary>
   </React.StrictMode>
 );

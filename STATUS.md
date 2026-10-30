@@ -4,7 +4,7 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 
 ## Landing and portfolio — local feature branch
 
-P0 implemented on `feat/landing-and-profile`: landing `/`, existing terminal `/app`, shared navigation/testnet disclosure and `/app/docs`. Real historical product capture, attributed Somnia architecture, dated receipts and explicit Guardian limits. Build/lint/typecheck pass. Twelve read-only browser states across 375/768/1280/1920: zero axe violations, overflow, console/page errors or write requests. Landing loads no wallet/market services. Portfolio is the next block; publication remains user-owned. [Sources](docs/LANDING_SOURCES.md).
+P0/P1 implemented on `feat/landing-and-profile`: landing `/`, existing terminal `/app`, portfolio `/app/profile` and guide `/app/docs`. Portfolio has pinned account reads, bounded indexed history, local aliases, sorting/pagination, CSV and PNG export; missing ROI/equity-history/win-rate inputs are explicit. Build/lint/typecheck pass. Sixteen read-only browser states across 375/768/1280/1920: zero axe violations, overflow, console/page errors or write requests. Alias persistence/validation, six tables, four windows, sorted 15-fill CSV, actual PNG and transport failure/recovery pass. Landing loads no wallet/market services. Vivid-color/motion passes are next; publication remains user-owned. [Sources](docs/LANDING_SOURCES.md) · [Portfolio methodology](docs/PORTFOLIO_DATA.md).
 
 ## Frontend self-improvement — local branch, 30 October 2026
 
