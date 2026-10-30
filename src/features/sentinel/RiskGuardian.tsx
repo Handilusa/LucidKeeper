@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShieldAlert, Volume2, VolumeX, ShieldCheck, ShieldOff, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
-import { formatUnits, parseUnits, zeroAddress } from 'viem';
-import { perpPoolAbi } from '@/chain/abis';
+import { formatUnits, zeroAddress } from 'viem';
+import { CONTRACT_ADDRESSES, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
-import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
+import { formatDynamicPrice } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
+import { closeQuantity } from '@/lib/math/close';
 import { assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
 import { reviewBrowserWrite } from '@/lib/browser-policy';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
@@ -277,39 +278,25 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       const marketMeta = ALL_VERIFIED_PERP_MARKETS.find(
         (m) => m.poolAddress.toLowerCase() === activePosition.poolAddress.toLowerCase()
       );
-      const baseDecimals = activePosition.baseDecimals || marketMeta?.baseDecimals || 8;
-      const quoteDecimals = activePosition.quoteDecimals || marketMeta?.quoteDecimals || 18;
-
-      const lotSize = marketMeta?.lotSize
-        ? parseUnits(marketMeta.lotSize, baseDecimals)
-        : parseUnits('0.00001', baseDecimals);
-      const tickSize = marketMeta?.tickSize
-        ? parseUnits(marketMeta.tickSize, quoteDecimals)
-        : parseUnits('0.00001', quoteDecimals);
-
-      const rawFullSize = parseUnits(activePosition.size.toString(), baseDecimals);
-      let targetExitQuantity =
-        percent === 100 ? rawFullSize : (rawFullSize * BigInt(percent)) / 100n;
-      targetExitQuantity = quantizeToGrid(targetExitQuantity, lotSize, 'floor');
-
-      if (targetExitQuantity <= 0n) {
-        toast.error(
-          `Position size (${activePosition.size} ${effectiveSymbol}) is too small to split ${percent}%. Execute Panic Exit 100% instead.`
-        );
-        setActivePanicPercent(null);
-        return;
-      }
-
-      const currentMark = effectiveMark;
-      if (activePosition.markPriceRaw === null) throw new Error('Current raw mark unavailable');
-      const rawPrice = iocPrice(activePosition.markPriceRaw, tickSize, !activePosition.isLong);
+      if (!marketMeta) throw new Error('Verified market unavailable');
+      const baseDecimals = marketMeta.baseDecimals;
+      const blockNumber = await publicClient.getBlockNumber({ cacheTime: 0 });
+      const [current, mark, grid] = await Promise.all([
+        publicClient.readContract({ address: CONTRACT_ADDRESSES.MARGIN_BANK, abi: marginBankAbi, functionName: 'getPosition', args: [address, activePosition.poolAddress as `0x${string}`], blockNumber }),
+        publicClient.readContract({ address: activePosition.poolAddress as `0x${string}`, abi: perpPoolAbi, functionName: 'tryGetMarkPrice', blockNumber }),
+        publicClient.readContract({ address: activePosition.poolAddress as `0x${string}`, abi: perpPoolAbi, functionName: 'getOrderBookParameters', blockNumber }),
+      ]);
+      if (!mark[0]) throw new Error('Current mark unavailable');
+      const targetExitQuantity = closeQuantity(activePosition.sizeRaw, current.size, percent, grid.lotSize);
+      const currentMark = Number(formatUnits(mark[1], marketMeta.quoteDecimals));
+      const rawPrice = iocPrice(mark[1], grid.tickSize, current.size < 0n);
 
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n;
 
       lastOrderRef.current = {
         symbol: effectiveSymbol,
         isLong: activePosition.isLong,
-        size: activePosition.size * (percent / 100),
+        size: Number(formatUnits(targetExitQuantity, baseDecimals)),
         price: currentMark,
         percent,
       };
@@ -333,6 +320,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         gas: 5_000_000n,
       } as const;
       const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${effectiveSymbol}-PERP`, size: formatUnits(targetExitQuantity, baseDecimals), description: `Request ${percent}% Guardian reduction by IOC; requires wallet approval, not autonomous signing.` });
+      const finalPosition = await publicClient.readContract({ address: CONTRACT_ADDRESSES.MARGIN_BANK, abi: marginBankAbi, functionName: 'getPosition', args: [address, activePosition.poolAddress as `0x${string}`] });
+      closeQuantity(current.size, finalPosition.size, percent, grid.lotSize);
       assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
       await writeContractAsync({ ...request, ...reviewed });
 

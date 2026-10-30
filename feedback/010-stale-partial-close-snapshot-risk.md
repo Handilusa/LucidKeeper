@@ -16,6 +16,7 @@ Reject a stale close review, reread current position/mark and present the revise
 `canManage` can reflect a fresh successful parent query while `closePosition` remains older. Execution uses the old side and quantity and calls ordinary `placeOrder`, with no fresh position read or reduce-only argument. A changed net position could therefore receive an exposure-increasing order instead of the intended reduction. A final reread reduces risk but is not equivalent to protocol-enforced reduce-only execution.
 
 ## Evidence
+Fix 2026-10-30: dialog stores only pool identity, resolves current parent reads and disables closed/unavailable state. Close/Guardian use fresh pinned raw position/mark/grid and recheck position size after review. `test/close.test.mjs` uses sourced historical bounty BTC snapshots for changed/flat/flipped cases; no fabricated positions or live close. Concurrent changes after preflight remain possible because the protocol call has no reduce-only flag.
 30 October 2026 source inspection of the paths above. The public bounty account currently has zero positions; no nonempty modal/transaction reproduction was possible within the read-only scope. Offline-signing documentation identifies no reduce-only parameter in this order ABI. Do not report a reproduced flip or loss.
 
 ## Environment
@@ -23,7 +24,7 @@ Reject a stale close review, reread current position/mark and present the revise
 - Network: Somnia Tokyo testnet, chain 50383
 - Public bounty account: `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`; no connected wallet
 - Runtime / OS: Node 24.19.0 / Windows
-- Status: Open, source-based risk; not submitted
+- Status: Fixed locally 2026-10-30; no live close, post-preflight race disclosed; not submitted
 
 ## Recommended next action
 Bind the modal to account/pool and invalidate its review when position state changes; revalidate raw on-chain size/direction/mark before any later approved close. Document the protocol limitation. No code was changed in this review.

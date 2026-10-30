@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import * as Tabs from '@radix-ui/react-tabs';
-import { formatUnits, parseUnits, zeroAddress } from 'viem';
+import { formatUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { RefreshCw, ChartNoAxesCombined, ListOrdered, History } from 'lucide-react';
-import { perpPoolAbi } from '@/chain/abis';
-import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
+import { CONTRACT_ADDRESSES, marginBankAbi, perpPoolAbi } from '@/chain/abis';
+import { formatDynamicPrice } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
+import { closeQuantity, positionByPool } from '@/lib/math/close';
 import { assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
 import { reviewBrowserWrite } from '@/lib/browser-policy';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
@@ -32,6 +33,7 @@ export interface PositionItem {
   poolAddress: string;
   isLong: boolean;
   size: number;
+  sizeRaw: bigint;
   entryPrice: number;
   markPrice: number;
   markPriceRaw: bigint | null;
@@ -70,7 +72,10 @@ export function PositionsTable({
   const publicClient = usePublicClient({ chainId: 50383 });
   const [activeTab, setActiveTab] = useState('positions');
   const [page, setPage] = useState(0);
-  const [closePosition, setClosePosition] = useState<PositionItem | null>(null);
+  const [closePool, setClosePool] = useState<string | null>(null);
+  const closePosition = !error && !loading ? positionByPool(positions, closePool) : null;
+  const [preparing, setPreparing] = useState(false);
+  const closeLock = useRef(false);
   const [percent, setPercent] = useState(100);
   const history = useQuery({
     queryKey: ['tradeHistory', account, page],
@@ -106,21 +111,21 @@ export function PositionsTable({
   });
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
-  const busy = isPending || receipt.isLoading;
+  const busy = preparing || isPending || receipt.isLoading;
   const notified = useRef<string | null>(null);
-  const lastClose = useRef<{ pos: PositionItem; percent: number } | null>(null);
+  const lastClose = useRef<{ pos: PositionItem; percent: number; quantity: number } | null>(null);
   useEffect(() => {
     if (receipt.data?.status !== 'success' || !hash || notified.current === hash) return;
     notified.current = hash;
     if (lastClose.current) {
-      const { pos, percent: value } = lastClose.current;
+      const { pos, percent: value, quantity } = lastClose.current;
       saveTradeHistoryItem(account, {
         id: `close-${hash}`,
         hash,
         type: 'close',
         marketSymbol: pos.marketSymbol,
         side: pos.isLong ? 'sell' : 'buy',
-        size: (pos.size * value) / 100,
+        size: quantity,
         timestamp: Date.now(),
         description: `Close order transaction confirmed · requested ${value}% of ${pos.marketSymbol}; actual fill pending verification`,
       });
@@ -131,48 +136,53 @@ export function PositionsTable({
     void history.refetch();
     void orders.refetch();
     onPositionClosed?.();
-    setClosePosition(null);
+    setClosePool(null);
   }, [receipt.data, hash, account, onPositionClosed, history.refetch, orders.refetch]);
 
   async function executeClose(pos: PositionItem, value: number) {
-    if (!canManage || busy || pos.markPrice <= 0) return;
+    if (!canManage || busy || closeLock.current || !publicClient || pos.markPrice <= 0) return;
+    closeLock.current = true;
+    setPreparing(true);
     try {
       assertOnchainActionAllowed('order', { chainId: 50383, wallet: account });
-      lastClose.current = { pos, percent: value };
-      if (pos.markPriceRaw === null) throw new Error('Current raw mark unavailable');
       const market = ALL_VERIFIED_PERP_MARKETS.find(
         (m) => m.poolAddress.toLowerCase() === pos.poolAddress.toLowerCase()
       );
       if (!market) throw new Error('Market parameters unavailable');
-      const rawPrice = iocPrice(pos.markPriceRaw, parseUnits(market.tickSize, market.quoteDecimals), !pos.isLong);
-      const fullQuantity = parseUnits(pos.size.toString(), pos.baseDecimals || 8);
-      const rawQuantity = quantizeToGrid(
-        value === 100 ? fullQuantity : (fullQuantity * BigInt(value)) / 100n,
-        parseUnits(market.lotSize, pos.baseDecimals || 8),
-        'floor'
-      );
-      if (rawQuantity <= 0n) {
-        toast.error('Position is too small to split. Choose a larger percentage.');
-        return;
-      }
+      const blockNumber = await publicClient.getBlockNumber({ cacheTime: 0 });
+      const [current, mark, grid] = await Promise.all([
+        publicClient.readContract({ address: CONTRACT_ADDRESSES.MARGIN_BANK, abi: marginBankAbi, functionName: 'getPosition', args: [account as `0x${string}`, pos.poolAddress as `0x${string}`], blockNumber }),
+        publicClient.readContract({ address: pos.poolAddress as `0x${string}`, abi: perpPoolAbi, functionName: 'tryGetMarkPrice', blockNumber }),
+        publicClient.readContract({ address: pos.poolAddress as `0x${string}`, abi: perpPoolAbi, functionName: 'getOrderBookParameters', blockNumber }),
+      ]);
+      if (!mark[0]) throw new Error('Current mark unavailable');
+      const rawQuantity = closeQuantity(pos.sizeRaw, current.size, value, grid.lotSize);
+      const rawPrice = iocPrice(mark[1], grid.tickSize, current.size < 0n);
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n;
       const request = {
         chainId: 50383,
         address: pos.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
-        args: [!pos.isLong, 0n, rawPrice, rawQuantity, expiry, 2, 0, zeroAddress, 0n],
+        args: [current.size < 0n, 0n, rawPrice, rawQuantity, expiry, 2, 0, zeroAddress, 0n],
         gas: 5_000_000n,
       } as const;
-      if (!publicClient) throw new Error('Tokyo client unavailable');
       const reviewed = await reviewBrowserWrite(publicClient, request, 'order', account as `0x${string}`, { market: `${pos.marketSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Request ${value}% position reduction with opposite-side IOC; fill is not guaranteed.` });
+      // Wallet review can take time: recheck position after approval and stop on change.
+      const finalPosition = await publicClient.readContract({ address: CONTRACT_ADDRESSES.MARGIN_BANK, abi: marginBankAbi, functionName: 'getPosition', args: [account as `0x${string}`, pos.poolAddress as `0x${string}`] });
+      closeQuantity(current.size, finalPosition.size, value, grid.lotSize);
       assertOnchainActionAllowed('order', { chainId: 50383, wallet: account });
+      lastClose.current = { pos, percent: value, quantity: Number(formatUnits(rawQuantity, market.baseDecimals)) };
       await writeContractAsync({ ...request, ...reviewed });
       toast.info('Close order submitted · awaiting confirmation');
     } catch (e) {
       toast.error('Close order rejected or failed', {
         description: (e as { shortMessage?: string }).shortMessage || (e as Error).message,
       });
+      onPositionClosed?.();
+    } finally {
+      closeLock.current = false;
+      setPreparing(false);
     }
   }
   async function cancelOrder(order: ActiveOrderItem) {
@@ -287,7 +297,7 @@ export function PositionsTable({
                             disabled={!canManage || busy || pos.markPrice <= 0}
                             onClick={() => {
                               setPercent(50);
-                              setClosePosition(pos);
+                              setClosePool(pos.poolAddress);
                             }}
                           >
                             Partial
@@ -475,12 +485,12 @@ export function PositionsTable({
         </div>
       )}
       <Modal
-        open={!!closePosition}
-        onClose={() => setClosePosition(null)}
+        open={!!closePool}
+        onClose={() => setClosePool(null)}
         title={`Partial close · ${closePosition?.marketSymbol || ''}-PERP`}
-        description="An opposite-side IOC order requests this reduction. Actual execution depends on liquidity; unfilled quantity is cancelled."
+        description="An opposite-side IOC requests this reduction. No protocol reduce-only flag: concurrent trades can change the position after preflight. Unfilled quantity is cancelled."
       >
-        {closePosition && (
+        {!closePosition ? <p role="status">Position unavailable or closed. Refresh and review again; no close can be submitted.</p> : (
           <>
             <dl>
               <div className="summary-row">

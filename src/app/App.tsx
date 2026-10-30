@@ -235,6 +235,7 @@ export const App: React.FC = () => {
             poolAddress: market.poolAddress,
             isLong,
             size,
+            sizeRaw: pos.size,
             entryPrice,
             markPrice: poolMark,
             markPriceRaw: mark[0] ? mark[1] : null,
