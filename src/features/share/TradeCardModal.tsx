@@ -14,9 +14,11 @@ export function TradeCardModal({
   position: PositionItem | null;
 }) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
-  const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const hasHash = !!position?.openTxHash && /^0x[0-9a-fA-F]{64}$/.test(position.openTxHash);
+  const entryPrice = position ? `${formatDynamicPrice(position.entryPrice)} USDso` : 'Unavailable';
+  const quantity = position ? `${position.size} ${position.marketSymbol}` : 'Unavailable';
+  const markPrice = position && position.markPrice > 0 ? `${formatDynamicPrice(position.markPrice)} USDso` : 'Unavailable';
   useEffect(() => {
     if (!isOpen || !position || !canvas) return;
     let active = true;
@@ -40,18 +42,15 @@ export function TradeCardModal({
       ctx.fillStyle = foreground;
       ctx.font = 'bold 60px "Plus Jakarta Sans", sans-serif';
       ctx.fillText(`${position.marketSymbol}-PERP`, 60, 242);
-      ctx.fillStyle = position.isLong ? '#60cf9f' : '#f4808b';
+      ctx.fillStyle = position.isLong
+        ? (theme === 'dark' ? '#60cf9f' : '#176842')
+        : (theme === 'dark' ? '#f4808b' : '#b42336');
       ctx.font = '26px "JetBrains Mono", monospace';
       ctx.fillText(`${position.isLong ? 'LONG' : 'SHORT'} · CROSS MARGIN`, 60, 290);
       const metrics = [
-        ['ENTRY PRICE', `${formatDynamicPrice(position.entryPrice)} USDso`],
-        ['QUANTITY', `${position.size} ${position.marketSymbol}`],
-        [
-          'MARK PRICE',
-          position.markPrice > 0
-            ? `${formatDynamicPrice(position.markPrice)} USDso`
-            : 'Unavailable',
-        ],
+        ['ENTRY PRICE', entryPrice],
+        ['QUANTITY', quantity],
+        ['MARK PRICE', markPrice],
       ];
       metrics.forEach(([label, value], index) => {
         const x = 60 + index * 380;
@@ -85,7 +84,7 @@ export function TradeCardModal({
     return () => {
       active = false;
     };
-  }, [isOpen, position, canvas, theme, hasHash]);
+  }, [isOpen, position, canvas, theme, hasHash, entryPrice, quantity, markPrice]);
 
   const download = () => {
     if (!canvas || !position) return;
@@ -105,7 +104,6 @@ export function TradeCardModal({
         )
       );
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      setCopied(true);
       toast.success('Position card copied');
     } catch {
       toast.error('Clipboard unavailable. Download the PNG instead.');
@@ -134,14 +132,14 @@ export function TradeCardModal({
         height={675}
         className="w-full h-auto"
         role="img"
-        aria-label={`${position?.marketSymbol || ''} position snapshot with entry, quantity, mark price and related transaction`}
+        aria-label={position ? `${position.marketSymbol}-PERP ${position.isLong ? 'long' : 'short'} cross-margin position snapshot on Somnia Tokyo testnet, chain 50383. Entry price: ${entryPrice}. Quantity: ${quantity}. Mark price: ${markPrice}. ${hasHash ? `Related transaction: ${position.openTxHash}` : `Perp pool: ${position.poolAddress}; no linked transaction`}. Snapshot, not proof of realized PnL.` : 'Position snapshot unavailable'}
       />
       <div className="flex flex-wrap gap-2 mt-5">
         <button className="button" onClick={download}>
           Download PNG
         </button>
         <button className="button" onClick={() => void copy()}>
-          {copied ? 'Copied' : 'Copy image'}
+          Copy image
         </button>
         <a
           className="button button-primary"
