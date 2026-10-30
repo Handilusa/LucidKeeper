@@ -1,8 +1,45 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { broadcastSignedTransaction } from '../src/lib/broadcast.mjs';
+import { assertReviewFresh, broadcastSignedTransaction } from '../src/lib/broadcast.mjs';
 import { capture, historicalEnvelope } from './fixtures/captured.mjs';
 import { runPolicyBoundaryProbe } from './helpers/run-policy-boundary-probe.mjs';
+
+// Pure deadline arithmetic using the sourced capture's block time; no clock,
+// RPC, sender recovery or transaction outcome is replaced.
+const reviewTimestamp = BigInt(capture.provenance.block.timestamp);
+
+test('approval review accepts thirty and forty-five minutes, up to one hour', () => {
+  for (const seconds of [1800n, 2700n, 3600n])
+    assert.doesNotThrow(() => assertReviewFresh(Number(reviewTimestamp + seconds), { action: 'approve' }, reviewTimestamp));
+});
+
+test('approval review rejects expired, invalid and over-one-hour deadlines', () => {
+  for (const expiresAt of [Number(reviewTimestamp - 1n), Number(reviewTimestamp), Number(reviewTimestamp + 3601n), NaN, '2700'])
+    assert.throws(() => assertReviewFresh(expiresAt, { action: 'approve' }, reviewTimestamp), /Review expired or outside/);
+});
+
+test('deposit and order reviews keep their five-minute maximum', () => {
+  for (const action of ['deposit', 'order']) {
+    const intent = { action, expireTimestampNs: ((reviewTimestamp + 300n) * 1_000_000_000n).toString() };
+    assert.doesNotThrow(() => assertReviewFresh(Number(reviewTimestamp + 300n), intent, reviewTimestamp));
+    for (const seconds of [301n, 1800n, 2700n])
+      assert.throws(() => assertReviewFresh(Number(reviewTimestamp + seconds), intent, reviewTimestamp), /Review expired or outside/);
+  }
+});
+
+test('order calldata expiry remains live and no more than five minutes', () => {
+  for (const seconds of [-1n, 0n, 301n, 2700n])
+    assert.throws(() => assertReviewFresh(Number(reviewTimestamp + 300n), {
+      action: 'order', expireTimestampNs: ((reviewTimestamp + seconds) * 1_000_000_000n).toString(),
+    }, reviewTimestamp), /Order expired or expiry exceeds five minutes/);
+});
+
+test('the original approval deadline still expires despite the longer maximum', () => {
+  const expiresAt = Number(reviewTimestamp + 2700n);
+  assert.doesNotThrow(() => assertReviewFresh(expiresAt, { action: 'approve' }, reviewTimestamp + 2699n));
+  assert.throws(() => assertReviewFresh(expiresAt, { action: 'approve' }, reviewTimestamp + 2700n), /Review expired or outside/);
+});
+
 test('absent or foreign wallet context prevents broadcaster transport creation', async () => {
   // No raw transaction/recovery/transport: actual first-action scope gate rejects.
   await assert.rejects(broadcastSignedTransaction(undefined), /Only the authorized bounty EOA/);

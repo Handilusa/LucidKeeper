@@ -20,8 +20,11 @@ const poolReadAbi = parseAbi([
   'function getOrderBookParameters() view returns ((uint256 tickSize, uint256 minQuantity, uint256 lotSize))',
 ]);
 
-function assertFresh(expiresAt, intent, timestamp = BigInt(Math.floor(Date.now() / 1000))) {
-  assert(Number.isSafeInteger(expiresAt) && BigInt(expiresAt) > timestamp && BigInt(expiresAt) <= timestamp + 300n, 'Review expired or outside the five-minute validity window');
+export function assertReviewFresh(expiresAt, intent, timestamp = BigInt(Math.floor(Date.now() / 1000))) {
+  // Owner requested a longer offline approval review on 30 October. Only
+  // approvals get up to one hour; deposit/IOC windows and live checks stay strict.
+  const maximumWindow = intent.action === 'approve' ? 3600n : 300n;
+  assert(Number.isSafeInteger(expiresAt) && BigInt(expiresAt) > timestamp && BigInt(expiresAt) <= timestamp + maximumWindow, 'Review expired or outside the action validity window');
   if (intent.action === 'order') {
     const expiry = BigInt(intent.expireTimestampNs);
     assert(expiry > timestamp * 1_000_000_000n && expiry <= (timestamp + 300n) * 1_000_000_000n, 'Order expired or expiry exceeds five minutes');
@@ -31,7 +34,7 @@ function assertFresh(expiresAt, intent, timestamp = BigInt(Math.floor(Date.now()
 async function preflight(rpc, envelope, intent, expiresAt) {
   assert.equal(await rpc.getChainId(), 50383, 'RPC is not Tokyo');
   const block = await rpc.getBlock({ blockTag: 'latest' });
-  assertFresh(expiresAt, intent, block.timestamp);
+  assertReviewFresh(expiresAt, intent, block.timestamp);
   assert.equal(await rpc.getTransactionCount({ address: BOUNTY_EOA, blockTag: 'pending' }), envelope.nonce, 'Pending nonce changed; review a new envelope');
   const code = await rpc.getCode({ address: BOUNTY_EOA, blockTag: 'pending' });
   assert(!code || code === '0x', 'Authorized account must remain an undelegated EOA');
@@ -70,7 +73,7 @@ export async function broadcastSignedTransaction(request) {
   const validated = await validateSignedTransaction(raw, envelope, intent);
   const context = { chainId: envelope.chainId, wallet: validated.from };
   assertOnchainActionAllowed(validated.action, context);
-  assertFresh(expiresAt, intent);
+  assertReviewFresh(expiresAt, intent);
   const rpc = createPublicClient({ chain: hidekiTestnet, transport: http(TOKYO_RPC, { retryCount: 0, timeout: 15_000 }) });
   // Sanitize upstream errors: RPC implementations can include raw payloads in messages.
   let checkedBlock;
@@ -83,10 +86,10 @@ export async function broadcastSignedTransaction(request) {
   // Persist the computed hash before a send, without the raw payload or signature.
   await saveEvidence('broadcast', { ...evidence, state: 'validated-not-sent' });
   assertOnchainActionAllowed(validated.action, context);
-  assertFresh(expiresAt, intent);
+  assertReviewFresh(expiresAt, intent);
   assert.equal(await rpc.getTransactionCount({ address: BOUNTY_EOA, blockTag: 'pending' }), envelope.nonce, 'Pending nonce changed before send');
   assertOnchainActionAllowed(validated.action, context);
-  assertFresh(expiresAt, intent);
+  assertReviewFresh(expiresAt, intent);
   let state = 'submitted';
   try {
     const hash = await rpc.sendRawTransaction({ serializedTransaction: raw });
