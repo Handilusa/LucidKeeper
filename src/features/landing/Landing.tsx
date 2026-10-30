@@ -117,8 +117,8 @@ export default function Landing() {
             </p>
             <div className="hero-actions">
               <Launch large />
-              <a className="text-link" href="#how-it-works">
-                See how it works <ArrowRight size={17} aria-hidden="true" />
+              <a className="text-link" href="/app/profile">
+                Explore portfolio <ArrowRight size={17} aria-hidden="true" />
               </a>
             </div>
             <p className="hero-footnote">
@@ -354,6 +354,16 @@ export default function Landing() {
                 </tbody>
               </table>
             </div>
+            <aside className="portfolio-invite" aria-label="Read-only trader portfolio">
+              <div>
+                <p className="section-kicker">THE RECORD AFTER THE TRADE</p>
+                <h3>Your activity. With the source attached.</h3>
+                <p>Inspect pinned account reads, filter indexed history and export the evidence. Missing return inputs stay visible as missing.</p>
+              </div>
+              <a className="button" href="/app/profile">
+                View read-only portfolio <ArrowUpRight size={17} aria-hidden="true" />
+              </a>
+            </aside>
           </Reveal>
         </section>
 
@@ -706,6 +716,7 @@ export default function Landing() {
             GitHub ↗
           </a>
           <a href="/app/docs">Docs</a>
+          <a href="/app/profile">Portfolio</a>
           <a href={PROJECT.dreamdex} target="_blank" rel="noreferrer">
             dreamDEX ↗
           </a>

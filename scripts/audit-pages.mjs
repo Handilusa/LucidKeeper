@@ -66,13 +66,9 @@ try {
           false,
           'Landing loaded trading dependencies or services'
         );
-        assert.equal(
-          await page
-            .getByRole('link', { name: 'Launch App', exact: false })
-            .first()
-            .getAttribute('href'),
-          '/app'
-        );
+        for (const link of await page.getByRole('link', { name: 'Launch App', exact: false }).all())
+          assert.equal(await link.getAttribute('href'), '/app');
+        assert.equal(await page.getByRole('link', { name: 'Explore portfolio', exact: false }).getAttribute('href'), '/app/profile');
         await page.keyboard.press('Tab');
         assert.equal(
           await page.evaluate(() => document.activeElement?.textContent),

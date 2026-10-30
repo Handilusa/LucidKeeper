@@ -282,6 +282,13 @@
 .data-streams > div:nth-child(2) i { border-color: #6ce5f260; background: var(--glow-cyan); }
 .data-streams > div:nth-child(3) i { border-color: #ec91df60; background: var(--glow-magenta); }
 .comparison-scroll { border-radius: 10px; border: 1px solid var(--border-color); }
+.portfolio-invite { display: flex; align-items: center; gap: 32px; margin-top: 24px; padding: 28px 32px; border: 1px solid var(--border-color); border-left: 2px solid var(--color-cyan); border-radius: 8px; background: var(--gradient-panel); }
+.portfolio-invite > div { flex: 1; }
+.portfolio-invite .section-kicker { margin: 0; }
+.portfolio-invite h3 { margin: 12px 0; font: 600 24px var(--font-display); }
+.portfolio-invite p:last-child { margin: 0; max-width: 630px; color: var(--muted); font-size: 14px; }
+.portfolio-invite > a { flex-shrink: 0; }
+@media (max-width: 767px) { .portfolio-invite { flex-direction: column; align-items: start; padding: 24px; gap: 24px; } }
 .landing-section {
   padding-block: 104px;
   scroll-margin-top: 112px;

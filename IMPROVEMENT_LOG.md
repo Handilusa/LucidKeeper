@@ -26,6 +26,14 @@ Visual review caught a cramped mobile identity card; a two-column grid now keeps
 
 Build/lint/typecheck pass. Existing terminal suite updated only for `/app`/brand navigation: **15 passed / 16 preserved skips**, including chart disposal, real pinned portfolio comparisons and keyboard inspection. Initial browser-suite port conflict and two audit-script timing/mobile-pane mistakes are preserved, corrected and rerun. Offline subset: **57 passed / 20 skipped / 0 failed**. No live transaction tests. **Critique:** app feedback is now coherent and mobile identity readable; the landing still needs a direct portfolio invitation.
 
+### Final refinement and handoff — 31 October 2026
+
+One post-pass refinement closes the discovery gap: direct portfolio entry in the hero/footer plus a source-focused invitation below the comparison. Inspected the invitation at **375/768/1280/1920**: readable mobile stack and inline tablet/desktop, contained CTA and correct `/app/profile` destination. No second redesign round. The long judge-oriented story, historical screenshot's phone legibility and external font/data dependencies remain the principal visual/performance tradeoffs.
+
+Final build/lint/typecheck pass. `final/` records **16** reduced-motion route/width states with zero axe violations/overflow/errors/writes; `final-motion/` passes pause/system preference at all four widths. Final local Lighthouse **30 October 23:24:39 UTC: 87/100/100/100**, LCP **3.3s**, CLS **0.022**, TBT **0ms**. The prior terminal/profile interaction and offline-suite results above still apply; the refinement adds only landing markup/styles and link assertions.
+
+The English [README](README.md), [reusable prompt](docs/README_PROMPT.md) and [delivery report](docs/LANDING_PROFILE_QUALITY.md) cover the judge tour, sources, methodology, screenshots, commits, failures/skips, critique and omissions. X posts remain drafts. Local delivery is complete; publishing the branch/build, real X URLs, demo recording and bounty submission remain owner delivery items. No wallet connection, transaction preparation/signing/broadcast or publication occurred during this task.
+
 ## Method — 30 October 2026
 
 Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `chore/frontend-self-improve`, starting clean at `4e55157`. Each iteration has 3–5 atomic improvements, build/lint/typecheck, the **13-file offline subset** (excluding `dreamdex.test.mjs`), and real-service read-only browser checks at 375, 768, 1280 and 1920px. Local screenshots/JSON/logs: `.git/lucidkeeper-audit/frontend/`. Scores are reviewer judgments, not usability study results. No publication or live transactions.
