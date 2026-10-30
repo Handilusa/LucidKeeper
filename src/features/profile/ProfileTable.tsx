@@ -71,6 +71,7 @@ export function ProfileTable({
         </div>
       ) : pending ? (
         <div className="profile-empty" role="status">
+          <span className="loading-track" aria-hidden="true" />
           Reading Tokyo history…
         </div>
       ) : !rows.length ? (
@@ -130,7 +131,8 @@ export function ProfileTable({
                 {sorted.slice(currentPage * 10, currentPage * 10 + 10).map((row) => (
                   <tr key={row.id}>
                     {row.cells.map((cell, index) => (
-                      <td key={index} className={typeof cell === 'number' ? 'numeric' : undefined}>
+                      <td key={index} className={typeof cell === 'number' ? 'numeric' : undefined}
+                        data-tone={typeof cell === 'number' && cell !== 0 && /PnL|Realized/.test(headers[index]) ? cell > 0 ? 'positive' : 'negative' : undefined}>
                         {typeof cell === 'number' ? numberText(cell, 8) : (cell ?? '—')}
                       </td>
                     ))}

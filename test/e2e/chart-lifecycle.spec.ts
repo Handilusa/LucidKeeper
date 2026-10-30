@@ -4,7 +4,7 @@ import { terminalFixture, assertObservedPortfolio, assertReadOnly } from './term
 
 test('switching away from an observed position disposes chart overlays cleanly', async ({ page }, testInfo) => {
   const state = await terminalFixture(page);
-  await page.goto('/');
+  await page.goto('/app');
   const snapshot = await assertObservedPortfolio(page, state);
   const openPool = Object.entries(snapshot.positions).find(([, size]) => BigInt(size) !== 0n)?.[0];
   test.skip(!openPool, 'No real open position available to exercise overlay disposal.');

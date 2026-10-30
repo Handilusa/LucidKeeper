@@ -308,7 +308,7 @@
   border-bottom: 1px solid var(--border-color);
 }
 .profile-table-scroll tbody tr:hover {
-  background: #ffffff03;
+  background: var(--bg-surface);
 }
 .table-receipt {
   display: inline-flex;
@@ -326,6 +326,7 @@
   color: var(--muted);
 }
 .profile-empty {
+  gap: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -362,6 +363,31 @@
   font-size: 11px;
   margin-left: auto;
 }
+.profile-metric[data-tone='positive'] .metric-value,
+.profile-table-scroll td[data-tone='positive'] { color: var(--color-emerald); }
+.profile-metric[data-tone='negative'] .metric-value,
+.profile-table-scroll td[data-tone='negative'] { color: var(--color-rose); }
+.metric-pending { font: 12px var(--font-mono); color: var(--muted); letter-spacing: 0; }
+.profile-metric { position: relative; }
+.profile-metric[aria-busy='true']::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: var(--gradient-accent); transform-origin: left;
+  animation: metric-reading 1.2s var(--ease-out) 3;
+}
+.profile-feedback > span { display: inline-block; padding: 6px 12px; border-left: 2px solid var(--color-cyan); background: var(--glow-cyan); }
+.profile-table-scroll tbody tr:focus-within { background: var(--bg-surface); }
+.profile-segments button, .profile-table-tabs button { position: relative; }
+.profile-table-tabs button[aria-pressed='true'] { border-bottom-color: transparent; }
+.profile-segments button::after, .profile-table-tabs button::after {
+  content: ''; position: absolute; bottom: 0; left: 12px; right: 12px; height: 2px;
+  background: var(--gradient-accent); transform: scaleX(0); transform-origin: left;
+}
+.profile-segments button[aria-pressed='true']::after, .profile-table-tabs button[aria-pressed='true']::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: no-preference) {
+  .profile-segments button::after, .profile-table-tabs button::after { transition: transform 180ms var(--ease-out); }
+  .profile-table-panel, .profile-chart, .profile-feedback > span { animation: content-arrive 180ms var(--ease-out); }
+}
+@keyframes metric-reading { from { transform: scaleX(.05); opacity: .2; } to { transform: scaleX(1); opacity: 1; } }
 @media (max-width: 1023px) {
   .account-metrics {
     grid-template-columns: 1fr 1fr;
@@ -389,6 +415,9 @@
     font-size: 11px;
   }
   .profile-identity {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
     padding: 18px;
     gap: 16px;
   }
@@ -409,6 +438,8 @@
     margin-top: 16px;
   }
   .profile-identity > .button {
+    grid-column: 1 / -1;
+    justify-self: start;
     margin-top: 6px;
   }
   .alias-form label {

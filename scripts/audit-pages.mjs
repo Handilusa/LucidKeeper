@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 const base = process.env.AUDIT_URL || 'http://127.0.0.1:4175';
 const output = `.git/lucidkeeper-audit/landing-profile/${process.argv[2] || 'current'}`;
-const paths = process.argv.includes('--p0')
+const paths = process.argv.includes('--profile') ? ['/app/profile'] : process.argv.includes('--p0')
   ? ['/', '/app', '/app/docs']
   : ['/', '/app', '/app/profile', '/app/docs'];
 await mkdir(output, { recursive: true });
@@ -15,7 +15,7 @@ try {
     for (const path of paths) {
       const page = await browser.newPage({
         viewport: { width, height: 1000 },
-        reducedMotion: 'reduce',
+        reducedMotion: process.argv.includes('--motion') ? 'no-preference' : 'reduce',
       });
       const errors = [];
       const writes = [];

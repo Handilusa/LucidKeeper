@@ -1,14 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { terminalFixture, assertReadOnly, assertObservedPortfolio } from './terminal-fixture';
 test('rendered product branding is consistently LucidKeeper', async ({ page }) => {
-  const state = await terminalFixture(page); await page.goto('/');
+  const state = await terminalFixture(page); await page.goto('/app');
   await expect(page).toHaveTitle(/^LucidKeeper/);
-  await expect(page.getByRole('link', { name: 'LucidKeeper trading terminal', exact: true })).toContainText('LucidKeeper');
+  await expect(page.getByRole('link', { name: 'LucidKeeper home', exact: true })).toContainText('LucidKeeper');
   await expect(page.locator('.app-footer')).toContainText('LucidKeeper');
   await assertReadOnly(state);
 });
 test('market selection updates mark, quantity units and native candle interval', async ({ page }) => {
-  const state = await terminalFixture(page); await page.goto('/');
+  const state = await terminalFixture(page); await page.goto('/app');
   await expect(page.locator('.market-stat.primary .animated-value')).toBeVisible();
   await page.getByRole('combobox', { name: 'Select perpetual market' }).click();
   await expect(page.getByRole('option')).toHaveCount(21);
@@ -21,7 +21,7 @@ test('market selection updates mark, quantity units and native candle interval',
   await assertReadOnly(state);
 });
 test('collateral modal traps focus, closes with Escape, and restores its trigger', async ({ page }) => {
-  const state = await terminalFixture(page); await page.goto('/');
+  const state = await terminalFixture(page); await page.goto('/app');
   const trigger = page.getByRole('button', { name: 'Manage margin collateral' }); await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Manage collateral' }); await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Close dialog' }).focus(); await page.keyboard.press('Shift+Tab');
@@ -30,7 +30,7 @@ test('collateral modal traps focus, closes with Escape, and restores its trigger
   await assertReadOnly(state);
 });
 test('activity tabs match observed positions and support keyboard navigation', async ({ page }, testInfo) => {
-  const state = await terminalFixture(page); await page.goto('/');
+  const state = await terminalFixture(page); await page.goto('/app');
   const snapshot = await assertObservedPortfolio(page, state);
   await testInfo.attach('observed-pinned-portfolio', { body: JSON.stringify(snapshot, null, 2), contentType: 'application/json' });
   await page.getByRole('tab', { name: /^Positions \(\d+\)$/ }).focus(); await page.keyboard.press('ArrowRight');
@@ -43,7 +43,7 @@ test('activity tabs match observed positions and support keyboard navigation', a
 });
 for (const [width, height] of [[1440, 900], [390, 844]]) {
   test(`named chart and order groups preserve button keyboard behavior at ${width}px`, async ({ page }) => {
-    const state = await terminalFixture(page); await page.setViewportSize({ width, height }); await page.goto('/');
+    const state = await terminalFixture(page); await page.setViewportSize({ width, height }); await page.goto('/app');
     for (const name of ['Chart timeframes', 'Chart price scale', 'Candle prices', 'Chart price references']) {
       const group = page.getByRole('group', { name, exact: true }); await expect(group).toHaveCount(1); await expect(group).toBeVisible();
       expect(await group.evaluate(el => el.tabIndex)).toBe(-1);
@@ -60,7 +60,7 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
   });
 }
 test('keyboard chart inspection exposes candle OHLC and UTC time', async ({ page }) => {
-  const state = await terminalFixture(page); await page.goto('/');
+  const state = await terminalFixture(page); await page.goto('/app');
   const time = page.locator('.chart-ohlc time'); await expect(time).toBeVisible(); const latest = await time.getAttribute('datetime');
   await page.getByRole('group', { name: 'BTC execution candlesticks', exact: true }).focus(); await page.keyboard.press('ArrowLeft');
   await expect(time).not.toHaveAttribute('datetime', latest!); await page.keyboard.press('End'); await expect(time).toHaveAttribute('datetime', latest!);
@@ -68,7 +68,7 @@ test('keyboard chart inspection exposes candle OHLC and UTC time', async ({ page
 });
 for (const [width, height] of [[1440, 900], [1280, 800], [390, 844], [768, 1024], [1024, 800]]) {
   test(`responsive workspace ${width}×${height}`, async ({ page }, testInfo) => {
-    const state = await terminalFixture(page); await page.emulateMedia({ reducedMotion: 'reduce' }); await page.setViewportSize({ width, height }); await page.goto('/');
+    const state = await terminalFixture(page); await page.emulateMedia({ reducedMotion: 'reduce' }); await page.setViewportSize({ width, height }); await page.goto('/app');
     await expect(page.getByText('Indexed executions · refresh 15s', { exact: true })).toBeVisible();
     const snapshot = await assertObservedPortfolio(page, state, width >= 1024);
     await testInfo.attach('observed-pinned-portfolio', { body: JSON.stringify(snapshot, null, 2), contentType: 'application/json' });
@@ -89,14 +89,14 @@ for (const [width, height] of [[1440, 900], [1280, 800], [390, 844], [768, 1024]
   });
 }
 test('standalone liquidation works without a position and follows side, leverage and input validity', async ({ page }) => {
-  const state = await terminalFixture(page); await page.goto('/'); const value = page.getByTestId('liquidation-preview');
+  const state = await terminalFixture(page); await page.goto('/app'); const value = page.getByTestId('liquidation-preview');
   await expect(value.getByRole('img')).toBeVisible(); const before = await value.getByRole('img').getAttribute('aria-label');
   await page.getByRole('button', { name: '10×', exact: true }).click(); await expect(value.getByRole('img')).not.toHaveAttribute('aria-label', before!);
   await page.getByLabel('Quantity', { exact: false }).fill(''); await expect(value).toHaveText('—');
   await assertReadOnly(state);
 });
 test('robust scale discloses candle outliers, full range is reversible and original OHLC survives', async ({ page }) => {
-  const state = await terminalFixture(page); await page.goto('/'); const ohlc = page.locator('.chart-ohlc'); await expect(ohlc.locator('time')).toBeVisible();
+  const state = await terminalFixture(page); await page.goto('/app'); const ohlc = page.locator('.chart-ohlc'); await expect(ohlc.locator('time')).toBeVisible();
   const original = await ohlc.textContent(); await page.getByRole('button', { name: 'Full range', exact: true }).click(); await expect(ohlc).toHaveText(original!);
   await page.getByRole('button', { name: 'Robust scale', exact: true }).click(); await expect(ohlc).toHaveText(original!);
   await assertReadOnly(state);

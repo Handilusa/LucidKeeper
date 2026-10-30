@@ -26,6 +26,7 @@ import {
 import { Modal } from '@/components/Modal';
 import { TokenLogo } from '@/components/TokenLogo';
 import { LoadingState } from '@/components/LoadingState';
+import { AnimatedValue } from '@/components/AnimatedValue';
 
 export interface PositionItem {
   id: string;
@@ -280,7 +281,7 @@ export function PositionsTable({
                         </div>
                       </td>
                       <td className={pnl == null ? 'muted' : pnl >= 0 ? 'positive' : 'negative'}>
-                        {pnl == null ? '—' : `${pnl >= 0 ? '+' : '−'}${Math.abs(pnl).toFixed(4)}`}
+                        {pnl == null ? '—' : <>{pnl >= 0 ? '+' : ''}<AnimatedValue value={pnl} digits={4} flash /></>}
                         <div className="muted mt-1">USDso</div>
                       </td>
                       <td>

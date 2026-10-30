@@ -18,6 +18,14 @@ Motion mini word/reveal sequences, receipt digit reels with permanent accessible
 
 Build/lint/typecheck pass. `pass-b/`: sixteen axe/overflow/console/write-clean states. `pass-b-fixed-motion/`: four-width normal-motion screenshots, transform/opacity-only running effects, pause/resume, Lenis teardown and live reduced-motion switching pass. **Critique:** hero now carries the identity clearly; the portfolio deserves a more direct landing entry and app feedback should share this visual language.
 
+### C — terminal and portfolio interactions
+
+Reused the existing bounded NumberFlow component for actual position PnL and portfolio metrics; signed PnL and payment-cost colors retain numeric signs/labels. Added loading tracks, transform-based tab underlines, row focus/hover feedback, brief content transitions and modal entry/exit. Toasts and portfolio PNGs use the shared palette. Existing wallet/trading handlers and SDK calls are unchanged.
+
+Visual review caught a cramped mobile identity card; a two-column grid now keeps the avatar, address and copy action readable. Preserved initial screenshots in `pass-c/`; corrected portfolio renders in `pass-c-profile-fixed/`. Normal-motion audit: 16 route/width states + four corrected profile states, zero axe violations/overflow/console/page errors/writes. Four-width `pass-c-interactions-final/` verifies keyboard tabs, real collateral dialog focus/Escape/return, actual public-position PNG/toast and live reduced-motion disabling. `pass-c-profile/` verifies aliases, windows, sortable 15-fill CSV, PNG and aborted-transport recovery.
+
+Build/lint/typecheck pass. Existing terminal suite updated only for `/app`/brand navigation: **15 passed / 16 preserved skips**, including chart disposal, real pinned portfolio comparisons and keyboard inspection. Initial browser-suite port conflict and two audit-script timing/mobile-pane mistakes are preserved, corrected and rerun. Offline subset: **57 passed / 20 skipped / 0 failed**. No live transaction tests. **Critique:** app feedback is now coherent and mobile identity readable; the landing still needs a direct portfolio invitation.
+
 ## Method — 30 October 2026
 
 Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `chore/frontend-self-improve`, starting clean at `4e55157`. Each iteration has 3–5 atomic improvements, build/lint/typecheck, the **13-file offline subset** (excluding `dreamdex.test.mjs`), and real-service read-only browser checks at 375, 768, 1280 and 1920px. Local screenshots/JSON/logs: `.git/lucidkeeper-audit/frontend/`. Scores are reviewer judgments, not usability study results. No publication or live transactions.

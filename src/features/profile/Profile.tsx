@@ -7,6 +7,7 @@ import { PROJECT } from '@/content/project';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { ProfileTable } from './ProfileTable';
 import { ProfileChart } from './ProfileChart';
+import { AnimatedValue } from '@/components/AnimatedValue';
 import {
   aliasError,
   downloadBlob,
@@ -329,17 +330,22 @@ function ProfileAccount({
       canvas.height = 630;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas unavailable');
-      ctx.fillStyle = '#070707';
+      const tokens = getComputedStyle(document.documentElement);
+      const color = (name: string) => tokens.getPropertyValue(name).trim();
+      const backdrop = ctx.createLinearGradient(0, 0, 1200, 630);
+      backdrop.addColorStop(0, color('--bg-deep'));
+      backdrop.addColorStop(1, color('--bg-panel'));
+      ctx.fillStyle = backdrop;
       ctx.fillRect(0, 0, 1200, 630);
-      ctx.fillStyle = '#771be8';
+      ctx.fillStyle = color('--color-violet');
       ctx.fillRect(0, 0, 12, 630);
-      ctx.fillStyle = '#bc93f3';
+      ctx.fillStyle = color('--color-cyan');
       ctx.font = '22px "JetBrains Mono"';
       ctx.fillText('LUCIDKEEPER / PORTFOLIO SNAPSHOT', 60, 65);
-      ctx.fillStyle = '#e6e6e6';
+      ctx.fillStyle = color('--text');
       ctx.font = 'bold 48px Syne';
       ctx.fillText(alias || 'Tokyo portfolio', 60, 150);
-      ctx.fillStyle = '#a8a8a8';
+      ctx.fillStyle = color('--muted');
       ctx.font = '18px "JetBrains Mono"';
       ctx.fillText(account, 60, 194);
       [
@@ -348,22 +354,23 @@ function ProfileAccount({
         [`${windowKey} indexed volume`, volume],
       ].forEach(([label, value], index) => {
         const x = 60 + index * 375;
-        ctx.fillStyle = '#111111';
+        ctx.fillStyle = color('--bg-surface');
         ctx.fillRect(x, 265, 345, 145);
-        ctx.fillStyle = '#a8a8a8';
+        ctx.fillStyle = color('--muted');
         ctx.font = '17px "Plus Jakarta Sans"';
         ctx.fillText(String(label), x + 20, 300);
-        ctx.fillStyle = '#e6e6e6';
+        ctx.fillStyle = color(index === 1 && typeof value === 'number' && value !== 0
+          ? value > 0 ? '--color-emerald' : '--color-rose' : '--text');
         ctx.font = '30px "JetBrains Mono"';
         ctx.fillText(numberText(value as number | null), x + 20, 351);
-        ctx.fillStyle = '#a8a8a8';
+        ctx.fillStyle = color('--muted');
         ctx.font = '14px "JetBrains Mono"';
         ctx.fillText('USDso', x + 20, 385);
       });
-      ctx.fillStyle = '#bc93f3';
+      ctx.fillStyle = color('--color-cyan');
       ctx.font = '18px "JetBrains Mono"';
       ctx.fillText('Testnet – no real funds · Tokyo 50383', 60, 465);
-      ctx.fillStyle = '#a8a8a8';
+      ctx.fillStyle = color('--muted');
       ctx.font = '16px "Plus Jakarta Sans"';
       ctx.fillText(
         `${connected ? 'Connected address' : 'Public watch view; not proof of ownership'} · Block ${live.margin.asOfBlock}`,
@@ -480,7 +487,7 @@ function ProfileAccount({
         </p>
       </form>
       <p role="status" className="profile-feedback">
-        {message}
+        {message && <span key={message}>{message}</span>}
       </p>
       <div className="profile-section-title">
         <h2>Account now</h2>
@@ -507,21 +514,25 @@ function ProfileAccount({
       <div className="account-metrics">
         <Metric
           label="Account equity"
+          pending={snapshot.isPending}
           value={live ? units(live.margin.equity) : null}
           note="MarginBank equity, not wallet balance"
         />
         <Metric
           label="Free collateral"
+          pending={snapshot.isPending}
           value={live ? Math.max(0, units(live.margin.equity - live.margin.imReq)) : null}
           note="max(0, equity − initial requirement)"
         />
         <Metric
           label="Unlocked collateral"
+          pending={snapshot.isPending}
           value={live ? units(live.margin.unlockedCollateralBalance) : null}
           note="Unreserved collateral; not free margin"
         />
         <Metric
           label="Maintenance required"
+          pending={snapshot.isPending}
           value={live ? units(live.margin.mmReq) : null}
           note={live ? `Current health: ${live.margin.marginStatus}` : 'Health unavailable'}
         />
@@ -561,20 +572,25 @@ function ProfileAccount({
         <div className="history-metrics">
           <Metric
             label="Realized price PnL"
+            tone="pnl"
+            pending={changes.isPending}
             value={realized}
             note="Sum of indexed position updates; excludes fees/funding"
           />
           <Metric
             label="Filled volume"
+            pending={fills.isPending}
             value={volume}
             note="Sum of indexed quote notional; not deposits"
           />
           <Metric
             label="Settled funding"
+            tone="cost"
+            pending={funding.isPending}
             value={settledFunding}
             note="Positive = paid; negative = received"
           />
-          <Metric label="Net fees" value={netFees} note="Charges minus rebates; no STT gas" />
+          <Metric label="Net fees" value={netFees} tone="cost" pending={fees.isPending} note="Charges minus rebates; no STT gas" />
           <Metric
             label="ROI"
             value={null}
@@ -615,6 +631,7 @@ function ProfileAccount({
             </div>
           ) : (chart === 'pnl' ? changes : fills).isPending ? (
             <div className="profile-empty chart-empty" role="status">
+              <span className="loading-track" aria-hidden="true" />
               Loading chart observations…
             </div>
           ) : (chart === 'pnl' ? changes : fills).isError ? (
@@ -625,7 +642,7 @@ function ProfileAccount({
               </button>
             </div>
           ) : (
-            <ProfileChart points={points} mode={chart} start={chartStart} end={end} />
+            <ProfileChart key={chart} points={points} mode={chart} start={chartStart} end={end} />
           )}
           <p className="chart-footnote">
             USDso ·{' '}
@@ -703,17 +720,23 @@ function Metric({
   value,
   note,
   unit = 'USDso',
+  tone,
+  pending = false,
 }: {
   label: string;
   value: number | null;
   note: string;
   unit?: string;
+  tone?: 'pnl' | 'cost';
+  pending?: boolean;
 }) {
+  const available = value !== null && Number.isFinite(value);
+  const positive = available && (tone === 'cost' ? value < 0 : value > 0);
   return (
-    <article className="profile-metric">
+    <article className="profile-metric" aria-busy={pending} data-tone={tone && available && value !== 0 ? positive ? 'positive' : 'negative' : undefined}>
       <h3>{label}</h3>
       <p className="metric-value numeric">
-        {numberText(value)} <small>{unit}</small>
+        {pending ? <span className="metric-pending">Reading…</span> : available ? <AnimatedValue value={value} digits={4} flash={tone === 'pnl'} /> : '—'} <small>{unit}</small>
       </p>
       <p className="metric-note">{note}</p>
     </article>

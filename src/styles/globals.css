@@ -941,7 +941,7 @@ input[type='range'] {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: #0009;
+  background: #030611c9;
   z-index: 70;
 }
 .modal-content {
@@ -951,7 +951,7 @@ input[type='range'] {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--bg-panel);
+  background: var(--gradient-panel);
   border: 1px solid var(--border-highlight);
   border-radius: 8px;
   width: min(520px, calc(100% - 32px));
@@ -1395,6 +1395,27 @@ input[type='range'] {
 .preset-row button { flex-basis: 44px; }
 .guardian-controls .space-x-1 { flex-wrap: wrap; }
 .select-content { max-height: min(360px, var(--radix-select-content-available-height)); }
+
+.tab-list button { position: relative; }
+.tab-list button[data-state='active'] { box-shadow: none; }
+.tab-list button::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: var(--gradient-accent); transform: scaleX(0); transform-origin: left;
+}
+.tab-list button[data-state='active']::after { transform: scaleX(1); }
+.trading-table tbody tr:is(:hover, :focus-within) { background: var(--bg-surface); }
+.loading-track::after { background: var(--gradient-accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .tab-list button::after { transition: transform 180ms var(--ease-out); }
+  .positions-area [role='tabpanel'][data-state='active'] { animation: content-arrive 180ms var(--ease-out); }
+  .modal-overlay[data-state='open'] { animation: overlay-arrive 180ms var(--ease-out); }
+  .modal-overlay[data-state='closed'] { animation: overlay-arrive 120ms ease-in reverse; }
+  .modal-content[data-state='open'] { animation: dialog-arrive 200ms var(--ease-out); }
+  .modal-content[data-state='closed'] { animation: dialog-arrive 120ms ease-in reverse; }
+}
+@keyframes content-arrive { from { opacity: .5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes overlay-arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialog-arrive { from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(.985); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
   *,
