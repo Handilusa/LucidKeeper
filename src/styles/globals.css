@@ -105,6 +105,7 @@ input[type='range'] {
   color: var(--color-amber);
 }
 .skip-link {
+  min-height: 44px;
   position: fixed;
   top: -80px;
   left: 16px;
@@ -977,7 +978,7 @@ input[type='range'] {
 .guardian-arm { width: 100%; white-space: normal; }
 .guardian-controls input[type='number'] { font-size: 14px; background: var(--bg-surface); }
 .guardian-controls .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.guardian-controls .space-x-1 button { min-height: 28px; min-width: 30px; }
+.guardian-controls .space-x-1 button { min-height: 44px; min-width: 44px; }
 .guardian-triggers > .space-y-2 { border-top: 1px solid var(--border-color); padding-top: 14px; }
 .freshness { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; white-space: nowrap; }
 .freshness i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
@@ -1065,7 +1066,7 @@ input[type='range'] {
   .guardian-controls { grid-template-columns: 1fr; gap: 12px; }
   .guardian-controls .grid { grid-template-columns: 1fr; }
   .guardian-controls input[type='number'] { font-size: 16px; }
-  .guardian-controls .space-x-1 button { min-height: 40px; min-width: 40px; }
+  .guardian-controls .space-x-1 button { min-height: 44px; min-width: 44px; }
   .app-header {
     padding: 0 16px;
     height: 62px;
@@ -1325,6 +1326,25 @@ input[type='range'] {
     font-size: 11px;
   }
 }
+/* One pointer-target floor across the terminal, including compact desktop controls. */
+:is(.app-header, .terminal, .app-footer, .modal-content) :is(button, input, select, summary, a),
+.select-item {
+  min-width: 44px;
+  min-height: 44px;
+}
+:is(.app-footer, .chart-caption, .history-row, .trading-table) a {
+  display: inline-flex;
+  align-items: center;
+}
+.collateral-action { display: grid; place-items: center; }
+.market-stat dt { min-height: 36px; white-space: normal; gap: 0; }
+.timeframes { flex-wrap: wrap; }
+.chart-toolbar { flex-wrap: wrap; }
+.preset-row { flex-wrap: wrap; }
+.preset-row button { flex-basis: 44px; }
+.guardian-controls .space-x-1 { flex-wrap: wrap; }
+.select-content { max-height: min(360px, var(--radix-select-content-available-height)); }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

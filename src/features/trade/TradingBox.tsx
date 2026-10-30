@@ -368,6 +368,8 @@ export function TradingBox({
             {orderType === 'market' ? 'IOC · 2% price buffer' : 'Good until expiry · 5m'}
           </span>
         </div>
+      </div>
+      <div className="order-fields">
         <div className="field leverage-field">
           <div className="field-label">
             <label htmlFor="leverage">Sizing leverage</label>
@@ -379,8 +381,6 @@ export function TradingBox({
             {[1, 2, 5, 10, 20].filter(value => value <= maxLeverage).map(value => <button key={value} aria-pressed={leverage === value} onClick={() => changeLeverage(value)}>{value}×</button>)}
           </div>
         </div>
-      </div>
-      <div className="order-fields">
         {orderType === 'limit' && (
           <div className="field">
             <label className="field-label" htmlFor="limit-price">
