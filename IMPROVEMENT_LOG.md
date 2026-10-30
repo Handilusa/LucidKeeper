@@ -10,6 +10,14 @@ Deep ink/navy surfaces, violet primary actions, cyan evidence accents, magenta s
 
 Verification: build/lint pass; `pass-a/` contains sixteen states across four routes/four widths, zero axe violations, overflow, console/page errors or writes. Inspected all four landing renders and desktop portfolio. **Critique:** hierarchy and depth are materially stronger; the historical screenshot remains monochrome by design and dominates a long page. Motion needs a disciplined focus and a pause control rather than every element continuously moving.
 
+### B — landing choreography and measured corrections
+
+Motion mini word/reveal sequences, receipt digit reels with permanent accessible final values, drifting gradient auroras, Guardian float, lifecycle traces, feature marquee, hover sheen, desktop cursor highlights/product tilt and Lenis scrolling. Pause/resume and runtime system reduced-motion changes tear down optional effects. Content is visible before enhancement; mobile skips Lenis/tilt/highlights. No pinned section justified GSAP.
+
+**Caught by visual review:** normal-motion composited words disappeared under a parent text gradient despite passing DOM checks. Clipping now lives on each animated word; all four fixed hero screenshots were inspected. Preserved the failed `pass-b-motion/` captures. Initial Lighthouse 83/100 performance/accessibility missed the target; responsive WebP derivatives of the original screenshot reduced image transfer, and a valid robots file corrected SEO. Final B local mobile Lighthouse **87/100/100/100** (performance/accessibility/best practices/SEO), LCP **3.3s**, CLS **0.022**, TBT **0ms**, measured 30 October 23:07 UTC. Lab result, not a production claim.
+
+Build/lint/typecheck pass. `pass-b/`: sixteen axe/overflow/console/write-clean states. `pass-b-fixed-motion/`: four-width normal-motion screenshots, transform/opacity-only running effects, pause/resume, Lenis teardown and live reduced-motion switching pass. **Critique:** hero now carries the identity clearly; the portfolio deserves a more direct landing entry and app feedback should share this visual language.
+
 ## Method — 30 October 2026
 
 Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `chore/frontend-self-improve`, starting clean at `4e55157`. Each iteration has 3–5 atomic improvements, build/lint/typecheck, the **13-file offline subset** (excluding `dreamdex.test.mjs`), and real-service read-only browser checks at 375, 768, 1280 and 1920px. Local screenshots/JSON/logs: `.git/lucidkeeper-audit/frontend/`. Scores are reviewer judgments, not usability study results. No publication or live transactions.

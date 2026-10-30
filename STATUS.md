@@ -1,6 +1,6 @@
 # Project status
 
-Updated: **30 October 2026**. Update this file whenever the state changes.
+Updated: **31 October 2026**. Update this file whenever the state changes.
 
 ## Landing and portfolio — local feature branch
 
@@ -8,7 +8,7 @@ P0/P1 implemented on `feat/landing-and-profile`: landing `/`, existing terminal 
 
 ## Frontend self-improvement — local branch, 30 October 2026
 
-Visual pass A complete: navy/violet/cyan layers, atmospheric hero and richer terminal/portfolio surfaces. Four-route/four-width audit passes (16 states, zero axe/overflow/errors/writes). Before/pass-A screenshots recorded locally. Landing motion is in progress. [New pass log](IMPROVEMENT_LOG.md#landing--portfolio-visual-passes--30-october-2026).
+Visual passes A/B complete: navy/violet/cyan layers and optional landing choreography, Lenis, pause and reduced-motion support. Fixed a screenshot-detected animated-heading defect. Four-route/four-width audit passes (16 states, zero axe/overflow/errors/writes); four-width motion controls pass. Local mobile Lighthouse, 30 October 23:07 UTC: **87 performance / 100 accessibility**, LCP 3.3s. App interaction polish follows. [New pass log](IMPROVEMENT_LOG.md#landing--portfolio-visual-passes--30-october-2026).
 
 Five iterations complete on `chore/frontend-self-improve`: **16 atomic improvements**, including accessible exports, read-backed portfolio assertions and a reproduced chart-disposal fix. Independently checked 30 October: build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; broader browser **15 passed / 16 skipped / 0 failed**; four-width/recovery audit **8 passed**, plus **2 focused checks**. **45 axe scans report zero violations**; 44px targets, short-window focus, 320px reflow and text spacing verified. Main JS remains **427.39kB gzip**; human screen-reader/device and connected-wallet validation remain pending. [Audit](FRONTEND_AUDIT.md) · [Scores, commits and five deferred ideas](IMPROVEMENT_LOG.md). Stopped at the five-iteration cap; local work only.
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useState } from 'react';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Brand, TestnetBadge } from '@/components/Brand';
 import { PROJECT, PROOF, SOMNIA_SOURCES } from '@/content/project';
+import { ReceiptValue, Reveal, useLandingMotion, useMotionPreference } from './LandingMotion';
 import './landing.css';
 
 const steps = [
@@ -56,50 +57,13 @@ function Launch({ large = false }: { large?: boolean }) {
     </a>
   );
 }
-function Reveal({ children, className = '' }: { children: ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const node = ref.current;
-    const media = matchMedia('(prefers-reduced-motion: reduce)');
-    if (!node || media.matches || !('IntersectionObserver' in window)) return;
-    // Content stays visible if JS/observation fails. Animate once when it enters.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          if (!media.matches)
-            node.animate(
-              [
-                { opacity: 0.4, transform: 'translateY(12px)' },
-                { opacity: 1, transform: 'translateY(0)' },
-              ],
-              { duration: 260, easing: 'cubic-bezier(.23,1,.32,1)' }
-            );
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    observer.observe(node);
-    const cancelMotion = () => {
-      if (media.matches) node.getAnimations().forEach((animation) => animation.cancel());
-    };
-    media.addEventListener('change', cancelMotion);
-    return () => {
-      observer.disconnect();
-      media.removeEventListener('change', cancelMotion);
-      node.getAnimations().forEach((animation) => animation.cancel());
-    };
-  }, []);
-  return (
-    <div ref={ref} className={className}>
-      {children}
-    </div>
-  );
-}
-
 export default function Landing() {
+  const reducedMotion = useMotionPreference();
+  const [paused, setPaused] = useState(false);
+  const root = useLandingMotion(reducedMotion || paused);
+  const features = ['On-chain market reads', 'Cross-margin visibility', 'Reviewable transactions', 'Evidence over promises'];
   return (
-    <div className="landing">
+    <div className="landing" ref={root}>
       <div className="landing-atmosphere" aria-hidden="true">
         <span className="aurora aurora-violet" />
         <span className="aurora aurora-cyan" />
@@ -139,10 +103,13 @@ export default function Landing() {
             <p className="section-kicker">
               <span className="signal-dot" /> DREAMDEX PERPS · BUILT WITH A GUARDIAN
             </p>
-            <h1 id="hero-title">
-              Trade with intent.
-              <br />
-              <span>Keep risk in sight.</span>
+            <h1 id="hero-title" aria-label="Trade with intent. Keep risk in sight.">
+              <span className="hero-line" aria-hidden="true">
+                {'Trade with intent.'.split(' ').map((word) => <span key={word}><span className="hero-word">{word}</span>{' '}</span>)}
+              </span>
+              <span className="hero-line hero-accent" aria-hidden="true">
+                {'Keep risk in sight.'.split(' ').map((word) => <span key={word}><span className="hero-word">{word}</span>{' '}</span>)}
+              </span>
             </h1>
             <p className="hero-description">
               Your perps terminal and risk guardian, on one screen. Review each action, watch your
@@ -158,6 +125,7 @@ export default function Landing() {
               Somnia Tokyo testnet · Browser-local guard · Wallet approval required
             </p>
           </div>
+          <div className="product-stage">
           <figure className="product-window">
             <div className="product-caption">
               <span>
@@ -172,7 +140,9 @@ export default function Landing() {
               aria-label="View full-size historical terminal screenshot"
             >
               <img
-                src="/assets/product/terminal.jpg"
+                src="/assets/product/terminal-1440.webp"
+                srcSet="/assets/product/terminal-480.webp 480w, /assets/product/terminal-960.webp 960w, /assets/product/terminal-1440.webp 1440w"
+                sizes="(max-width: 767px) calc(100vw - 42px), (max-width: 1344px) calc(100vw - 66px), 1278px"
                 width="1440"
                 height="1000"
                 fetchPriority="high"
@@ -187,11 +157,17 @@ export default function Landing() {
               </a>
             </figcaption>
           </figure>
+          </div>
           <div className="hero-strip">
-            <span>On-chain market reads</span>
-            <span>Cross-margin visibility</span>
-            <span>Reviewable transactions</span>
-            <span>Evidence over promises</span>
+            <div className="feature-marquee">
+              <div className="marquee-track">
+                <div className="marquee-group">{features.map((feature) => <span key={feature}>{feature}</span>)}</div>
+                <div className="marquee-group marquee-copy" aria-hidden="true">{features.map((feature) => <span key={feature}>{feature}</span>)}</div>
+              </div>
+            </div>
+            <button className="motion-toggle" disabled={reducedMotion} onClick={() => setPaused(!paused)}>
+              {reducedMotion ? 'Motion off (system)' : paused ? 'Resume motion' : 'Pause motion'}
+            </button>
           </div>
         </section>
 
@@ -540,7 +516,7 @@ export default function Landing() {
               {PROOF.map((proof) => (
                 <article className="proof-card" key={proof.hash}>
                   <p className="technical-label">{proof.label}</p>
-                  <h3>{proof.value}</h3>
+                  <h3><ReceiptValue value={proof.value} /></h3>
                   <p>{proof.detail}</p>
                   <a
                     className="receipt-link numeric"

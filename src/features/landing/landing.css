@@ -163,13 +163,15 @@
   font-size: clamp(44px, 5.8vw, 82px);
   margin: 0;
 }
-.landing h1 span,
+.landing h1 .hero-accent .hero-word,
 .landing h2 span {
   color: var(--accent-bright);
   background: var(--gradient-accent);
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+.hero-line { display: block; }
+.hero-word { display: inline-block; }
 .hero-description {
   max-width: 570px;
   margin: 28px 0;
@@ -1047,39 +1049,49 @@
     font-size: 11px;
   }
 }
+.landing .hero-strip { display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; }
+.feature-marquee { flex: 1; min-width: 0; }
+.marquee-group { display: flex; flex-wrap: wrap; gap: 20px 40px; }
+.marquee-copy { display: none; }
+.motion-toggle { min-height: 44px; padding: 8px; font: 10px var(--font-mono); color: var(--muted); flex-shrink: 0; border: 1px solid var(--border-color); border-radius: 5px; }
+.motion-toggle:disabled { opacity: 1; }
+.receipt-counter { display: inline-flex; align-items: start; white-space: pre; }
+.counter-slot { display: inline-block; height: 1.2em; overflow: hidden; }
+.counter-slot > span { display: block; }
+.counter-slot > span > span { display: block; height: 1.2em; line-height: 1.2; }
+.spotlight-card { position: relative; overflow: hidden; isolation: isolate; }
+.card-light { position: absolute; top: 0; left: 0; width: 320px; height: 320px; border-radius: 50%; pointer-events: none; z-index: -1; opacity: 0; background: radial-gradient(circle, var(--glow-violet), transparent 70%); transition: opacity 200ms var(--ease-out); }
+.spotlight-card:hover .card-light { opacity: 1; }
+.landing .launch-button { position: relative; overflow: hidden; isolation: isolate; }
+.landing .launch-button::before { content: ''; position: absolute; inset: -50% -100%; z-index: -1; background: linear-gradient(100deg, transparent 40%, #ffffff20, transparent 60%); transform: translateX(-50%); }
 @media (prefers-reduced-motion: no-preference) {
-  .landing .launch-button {
-    transition: transform 160ms var(--ease-out);
-  }
-  .landing .launch-button:active {
-    transform: scale(0.97);
-  }
-  .lifecycle:hover .step-node {
-    animation: step-highlight 260ms var(--ease-out) both;
-  }
-  .lifecycle li:nth-child(2) .step-node {
-    animation-delay: 40ms;
-  }
-  .lifecycle li:nth-child(3) .step-node {
-    animation-delay: 80ms;
-  }
-  .lifecycle li:nth-child(4) .step-node {
-    animation-delay: 120ms;
-  }
-  .lifecycle li:nth-child(5) .step-node {
-    animation-delay: 160ms;
-  }
-  .lifecycle li:nth-child(6) .step-node {
-    animation-delay: 200ms;
-  }
+  .landing[data-motion='on'] .aurora { animation: aurora-drift 18s ease-in-out infinite alternate; }
+  .landing[data-motion='on'] .aurora-cyan { animation-delay: -7s; animation-duration: 22s; }
+  .landing[data-motion='on'] .aurora-magenta { animation-delay: -12s; animation-duration: 24s; }
+  .landing[data-motion='on'] .guardian-insignia svg { animation: guardian-float 7s ease-in-out infinite alternate; }
+  .landing[data-motion='on'] .feature-marquee { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 4% 96%, transparent); }
+  .landing[data-motion='on'] .marquee-track { display: flex; width: max-content; animation: feature-stream 32s linear infinite; }
+  .landing[data-motion='on'] .marquee-group { display: flex; flex-wrap: nowrap; gap: 40px; padding-right: 40px; }
+  .landing[data-motion='on'] .feature-marquee:hover .marquee-track { animation-play-state: paused; }
+  .landing[data-motion='on'] .lifecycle[data-traced] li::after { transform-origin: left; animation: trace-line .7s var(--ease-out) both; }
+  .landing[data-motion='on'] .lifecycle li:nth-child(2)::after { animation-delay: .1s; }
+  .landing[data-motion='on'] .lifecycle li:nth-child(3)::after { animation-delay: .2s; }
+  .landing[data-motion='on'] .lifecycle li:nth-child(4)::after { animation-delay: .3s; }
+  .landing[data-motion='on'] .lifecycle li:nth-child(5)::after { animation-delay: .4s; }
+  .landing[data-motion='on'] .launch-button { transition: transform 160ms var(--ease-out); }
+  .landing[data-motion='on'] .launch-button:active { transform: scale(.97); }
+  .landing[data-motion='on'] .launch-button:hover::before { transform: translateX(50%); transition: transform .65s var(--ease-out); }
+  .landing[data-motion='on'] .product-window { transition: transform 220ms var(--ease-out); }
+  .landing[data-motion='on'] .faq-list details[open] p { animation: answer-in 220ms var(--ease-out); }
+  .landing[data-motion='on'] .faq-list summary svg { transition: transform 220ms var(--ease-out); }
 }
-@keyframes step-highlight {
-  from {
-    opacity: 0.45;
-    transform: translateY(3px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes aurora-drift { to { transform: translate(55px, 35px) scale(1.08); opacity: .75; } }
+@keyframes guardian-float { to { transform: translateY(-10px) rotate(2deg); } }
+@keyframes feature-stream { to { transform: translateX(-50%); } }
+@keyframes trace-line { from { transform: scaleX(0); opacity: .3; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes answer-in { from { opacity: .3; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 767px) {
+  .landing .hero-strip { gap: 12px; }
+  .motion-toggle { font-size: 9px; max-width: 90px; }
+  .landing[data-motion='on'] .marquee-group { gap: 24px; padding-right: 24px; }
 }
