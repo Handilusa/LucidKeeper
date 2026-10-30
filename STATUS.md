@@ -2,6 +2,10 @@
 
 Updated: **30 October 2026**. Update this file whenever the state changes.
 
+## Frontend self-improvement — local branch, 30 October 2026
+
+Baseline audited on `chore/frontend-self-improve` before UI edits. Build/lint/typecheck pass; offline tests **57 passed / 20 skipped**. Existing read-only browser suite **8 passed / 6 failed / 16 skipped**: six historical flat-account assumptions conflict with the currently rendered DOGE position. Four-viewport audit passes; 32 axe scans report no violations, with manual accessibility gaps. [Audit](FRONTEND_AUDIT.md). Local work only.
+
 ## Owner-relayed DOGE execution — independently audited 20:39:31–20:39:37 UTC
 
 Transaction: [`0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c`](https://explorer.testnet.somnia.network/tokyo/tx/0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c).
