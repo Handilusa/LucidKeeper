@@ -18,6 +18,7 @@ Actualizado: **30 de octubre de 2026**. Un Markdown por incidencia; distinguir d
 | [009 — IOC price precision](009-ioc-price-precision-loss.md) | Corregido localmente en `613940d`: bigint raw, regresión 1000PEPE y 21 mercados; ninguna orden enviada |
 | [010 — Stale partial-close snapshot](010-stale-partial-close-snapshot-risk.md) | Mitigado localmente en `baeeda5`: snapshot actual, preflight pinned y revalidación; no equivale a reduce-only del protocolo |
 | [011 — Operating policy divergence](011-operating-policy-runtime-divergence.md) | Corregido runtime en `c05b495`; posterior confirmación escrita libera HOLD solo para EOA/Tokyo, integración completa del envelope CLI aún pendiente |
+| [013 — Chart overlay disposal](013-chart-overlay-disposal.md) | Corregido y verificado localmente: regresión con posición real, 15 browser pass / 16 skips; no enviado |
 
 **007–011 son hallazgos de la aplicación LucidKeeper, no bugs acreditados de dreamDEX ni entregas del bounty.** [Triage de dependencias](../docs/DEPENDENCY_TRIAGE.md): 27 entradas runtime afectadas, 0 dev-only, tres advisories; sin solución compatible no forzada ni explotabilidad confirmada. Alcance de entradas wallet/Zod sin resolver; JSON completo local, no publicar payloads de explotación.
 

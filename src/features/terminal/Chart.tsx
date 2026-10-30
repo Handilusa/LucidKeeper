@@ -196,7 +196,11 @@ export function Chart({
       price: position.liquidationPrice, color: '#e5b875', lineWidth: 1,
       lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: 'Est. liq',
     }));
-    return () => { for (const line of lines) series.removePriceLine(line); };
+    return () => {
+      // Chart removal already disposes its lines. Never schedule another draw on that series.
+      if (candles.current !== series) return;
+      for (const line of lines) series.removePriceLine(line);
+    };
   }, [position]);
 
   return (
