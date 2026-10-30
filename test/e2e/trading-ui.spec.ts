@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { terminalFixture, assertReadOnly } from './terminal-fixture';
+import { terminalFixture, assertReadOnly, assertObservedPortfolio } from './terminal-fixture';
 test('rendered product branding is consistently LucidKeeper', async ({ page }) => {
   const state = await terminalFixture(page); await page.goto('/');
   await expect(page).toHaveTitle(/^LucidKeeper/);
@@ -29,11 +29,11 @@ test('collateral modal traps focus, closes with Escape, and restores its trigger
   await page.keyboard.press('Escape'); await expect(dialog).toBeHidden(); await expect(trigger).toBeFocused();
   await assertReadOnly(state);
 });
-test('activity tabs distinguish empty and failed reads and support keyboard navigation', async ({ page }) => {
+test('activity tabs match observed positions and support keyboard navigation', async ({ page }, testInfo) => {
   const state = await terminalFixture(page); await page.goto('/');
-  // Captured account was flat. A changed real state fails instead of inventing emptiness.
-  await expect(page.getByText('No open positions', { exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: 'Positions (0)' }).focus(); await page.keyboard.press('ArrowRight');
+  const snapshot = await assertObservedPortfolio(page, state);
+  await testInfo.attach('observed-pinned-portfolio', { body: JSON.stringify(snapshot, null, 2), contentType: 'application/json' });
+  await page.getByRole('tab', { name: /^Positions \(\d+\)$/ }).focus(); await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab', { name: 'Open orders' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('No resting orders', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Trade history' }).click();
@@ -70,14 +70,19 @@ for (const [width, height] of [[1440, 900], [1280, 800], [390, 844], [768, 1024]
   test(`responsive workspace ${width}×${height}`, async ({ page }, testInfo) => {
     const state = await terminalFixture(page); await page.emulateMedia({ reducedMotion: 'reduce' }); await page.setViewportSize({ width, height }); await page.goto('/');
     await expect(page.getByText('Indexed executions · refresh 15s', { exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'No maintenance exposure' })).toBeVisible();
+    const snapshot = await assertObservedPortfolio(page, state, width >= 1024);
+    await testInfo.attach('observed-pinned-portfolio', { body: JSON.stringify(snapshot, null, 2), contentType: 'application/json' });
     await expect(page.locator('.chart-ohlc time')).toBeVisible();
     if (width < 1024) {
       const nav = page.getByRole('navigation', { name: 'Trading workspace' }); await nav.getByRole('button', { name: 'Trade', exact: true }).click();
       await expect(page.locator('.submit-order')).toHaveText('Connect wallet to trade');
-      await nav.getByRole('button', { name: 'Activity', exact: true }).click(); await expect(page.getByText('No open positions', { exact: true })).toBeVisible();
+      await nav.getByRole('button', { name: 'Activity', exact: true }).click(); await assertObservedPortfolio(page, state);
       await page.getByRole('tab', { name: 'Trade history' }).click(); await expect(page.locator('.history-row').first()).toBeVisible();
-    } else { await expect(page.locator('.submit-order')).toBeInViewport(); }
+    } else {
+      // Short windows deliberately use document scrolling; keyboard focus must reveal the action.
+      if (height <= 820) await page.locator('.submit-order').focus();
+      await expect(page.locator('.submit-order')).toBeInViewport({ ratio: 1 });
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     await page.screenshot({ path: testInfo.outputPath(`real-${width}.png`), fullPage: true });
     await assertReadOnly(state);
