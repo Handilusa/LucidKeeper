@@ -1,6 +1,9 @@
 import { createPublicClient, http, encodeFunctionData, zeroAddress, parseAbi } from 'viem';
 import { hidekiTestnet } from '@somnia-chain/markets-sdk/chains';
 import { perpPoolWriteAbi } from '@somnia-chain/markets-sdk';
+import { assertOnchainActionAllowed } from '../src/lib/operating-policy.mjs';
+
+assertOnchainActionAllowed('order');
 
 const RPC_URL = 'https://api.hideki2.infra.testnet.somnia.network';
 const INDEXER_URL = 'https://hideki-dev.smk.somnia.host/v1/graphql';

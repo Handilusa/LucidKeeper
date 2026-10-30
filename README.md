@@ -17,7 +17,7 @@ Current frontend authority: [STATUS.md](STATUS.md), [checkpoint](docs/CHECKPOINT
 - **Fresh checks:** **66/66 unit tests**, TypeScript, ESLint, production build and **30/30 complete Playwright scenarios** pass. Mock wallet/transaction/armed-Guardian requests are isolated transport fixtures, not real execution evidence.
 - **Implemented:** market/limit order UI, indexed activity, cancel orders, partial close, sequential approval/deposit, withdrawal and browser-local Guardian triggers. These do not have a fresh production transaction smoke test.
 - **Historical execution:** the 27 October approval, deposit and first BTC fill are preserved below. The 0.00013 BTC long is **not a current-position claim**; 29 October read-only QA observed zero positions. No new position/receipt audit was performed in this documentation reconciliation.
-- **Operational blocker:** instructions retain a funding HOLD, while `src/lib/operating-policy.mjs` sets it inactive and signing documents disagree. **No live preparation, signing or broadcasting until the user explicitly resolves funding permission and the signer model in writing.** Code is not authorization; this update does not release HOLD or change policy.
+- **Operational policy, 2026-10-30:** owner authorizes configured-signer project/demo execution within runtime rules. **HOLD remains active and now enforced**; written dreamDEX margin-funds permission is still required. Exact-2-USDso funding and reviewed IOC only; other actions remain outside the allowlist. No live fix-mode transactions.
 
 ---
 
@@ -106,7 +106,7 @@ LucidKeeper/
 ### Data integrity and operating boundaries
 1. **No fabricated financial data:** Live PnL, equity and fills use contracts/indexer data. Hypothetical stress/liquidation scenarios are labeled; tests use isolated fixtures, not live evidence.
 2. **Dedicated Bounty Account:** Exclusively uses EOA `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA` on Somnia Tokyo (Chain 50383).
-3. **No signing authorization in this task:** No keys, wallet connection, arming or transactions. The conflicting historical signer/HOLD descriptions require explicit written user resolution before live work.
+3. **Conditional signing authorization:** Configured signer may sign only runtime-allowed requests after exact unsigned review. HOLD cannot be bypassed. No secret inspection or wallet-to-wallet transfers.
 4. **Funding safeguards:** Exact-amount approval and receipt sequencing are implemented. Historical zero allowance is not a current guarantee; the offline broadcaster checks zero allowance for orders. No new allowance/deposit verification was performed here.
 
 ---

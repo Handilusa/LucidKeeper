@@ -1,10 +1,10 @@
 # Offline signing contract
 
-## Current operational state — 30 October 2026: BLOCKED
+## Current operational state — 30 October 2026: HOLD enforced
 
-Instructions retain **HOLD**, but `src/lib/operating-policy.mjs` currently sets `MARGIN_HOLD.active = false` and describes a 27 October release. Historical documents also disagree on the signer model. **Do not prepare, sign or broadcast any live transaction until the user resolves funding permission and the signer model explicitly in writing.** No policy/runtime change or new signing authorization is made by this documentation correction.
+Written owner authorization on **2026-10-30** permits funding the configured signer and executing project/demo transactions only within runtime rules. **HOLD wins**: this general permission does not confirm that dreamDEX permits these funds as margin. Runtime HOLD is now active across CLI preparation, offline broadcasting and browser trade/margin/close/Guardian paths, with no override. No live transaction executed in fix mode.
 
-The offline roles/transport below describe the existing handoff specification, not a newly unified operational model. The active React frontend now includes RainbowKit/Wagmi browser-wallet integration; the old statement that the entire project has no browser integration is obsolete. Historical approval/deposit/fill receipts exist in the [README](../README.md#-verified-on-chain-execution-evidence); their existence does not release the present operational block.
+The configured signer may be the user's connected browser wallet or their separate offline signer; OpenCode does not inspect signer secrets or configure another wallet. Both transports obey the same sole-EOA/chain/HOLD/allowlist rules. Historical receipts do not release HOLD. Cancel, withdraw, limit orders and claims remain outside the currently reviewed runtime allowlist; adding UI controls does not authorize those actions.
 
 The user must first confirm **in writing** that the dreamDEX team permits these funds to be used as margin. Until then, no approval or deposit is prepared or broadcast. Owner-order preparation is also blocked because it can auto-pull approved wallet collateral into margin. The hold has no CLI/environment bypass.
 
@@ -13,11 +13,11 @@ The earlier `evidence/prepared-*.json` files are **historical, incomplete drafts
 ## Roles
 
 1. **OpenCode — principal:** performs public reads, validates the official contracts and market parameters, and prepares unsigned JSON only after the hold is released.
-2. **User:** reviews every complete unsigned transaction before it goes anywhere and personally hands it to the separate offline local AI.
-3. **Offline local AI — sole signer:** checks the allowlist and signs. It alone has access to signing secrets.
+2. **User:** reviews every exact action/market/size/wallet and complete unsigned JSON before any live execution; approves each action explicitly. First run small; stop on any error/mismatch. Offline handoffs remain user-mediated.
+3. **Configured signer:** signs only runtime-allowed requests after review. Browser transport prints and displays the exact unsigned JSON and requires confirmation before wallet approval; offline transport uses the reviewed file below. No secrets are written or inspected by this workflow.
 4. **User → OpenCode:** returns only the signed raw transaction. OpenCode checks it against the exact reviewed JSON, then broadcasts via the official Tokyo RPC and records the hash and receipt.
 
-This handoff specification does not use signing secrets in OpenCode or add a signing page. Browser-wallet UI is a separate implemented flow, not authorization to use it in this task. The official dapp origin remains `https://app.testnet.dreamdex.io`. Fetching documentation does not prove the URL of a browser tab.
+This specification does not use signing secrets in OpenCode or add a signing page. For agent-led live work, show the complete unsigned JSON in chat and wait for explicit approval. The official dapp origin remains `https://app.testnet.dreamdex.io`; verify the effective browser URL before any official-dapp signature. Fetching documentation does not verify a browser tab. No claims are authorized.
 
 ## Unsigned handoff format
 
@@ -56,7 +56,7 @@ Before broadcasting, recover the sender without a key and compare chain, type, d
 
 Record the locally computed transaction hash and send outcome. An RPC timeout does not prove failure: query that same hash before considering any retry, and never create a replacement transaction without review. Save the canonical receipt even for a revert. A successful approval/deposit is not an order; a confirmed order transaction is not automatically a fill or position.
 
-Unsigned handoffs and signed raw payloads stay outside Git. Publish hashes, receipts and narrowly scoped read evidence only after review. Historical real execution is recorded in the README; no signing/broadcasting occurs in this 30 October read-only QA/documentation task.
+Unsigned handoffs and signed raw payloads stay outside Git. Publish hashes, receipts and narrowly scoped read evidence only after review. No signing/broadcasting occurs while HOLD is active.
 
 ## Implemented offline library
 
@@ -64,9 +64,9 @@ Unsigned handoffs and signed raw payloads stay outside Git. Publish hashes, rece
   - `buildUnsignedEnvelope({ call, nonce, gas, fees, description }, intent)` builds a JSON-safe envelope in memory. The call supplies `chainId/from/to/value/data`; value, gas and fee inputs are bigint. It never fetches values, creates a handoff file or supplies defaults for nonce/fees.
   - `validateUnsignedEnvelope(envelope, intent)` checks the schema fields, numeric bounds and exact canonical allowlisted calldata. Funding intent is `{ action: 'approve' | 'deposit', amount }`, with the amount as a base-unit decimal string. Order intent is `{ action: 'order', pool, isBid, price, quantity, expireTimestampNs }`, with numeric amounts as decimal strings. Orders are IOC, with zero user data and builder fees.
   - `validateSignedTransaction(raw, envelope, intent)` requires canonical signed EIP-1559, valid low-S signature fields, no added access list, the exact reviewed payload/nonce/gas/fees and a cryptographically recovered bounty EOA. It returns only hash, sender and action. Pure validation is not authorization to transmit.
-- `src/lib/broadcast.mjs`: `broadcastSignedTransaction({ raw, envelope, intent, expiresAt })` checks runtime policy as its first action, with no caller-supplied policy or RPC. **The current inactive runtime HOLD does not enforce the instruction-level block; do not invoke it.** `expiresAt` is a reviewed Unix-seconds deadline within five minutes, kept with review evidence outside the envelope schema.
+- `src/lib/broadcast.mjs`: `broadcastSignedTransaction({ raw, envelope, intent, expiresAt })` checks the active runtime policy as its first action, with no caller-supplied policy or RPC. `expiresAt` is a reviewed Unix-seconds deadline within five minutes, kept with review evidence outside the envelope schema.
   - After release, it uses only the official Tokyo RPC with transport retries disabled. It rechecks chain, pending nonce, EOA code, gas balance, fees, bank/collateral, balance/allowance and gas simulation. Orders also require official factory membership, the pool's pinned bank, current grid, deposited margin and zero allowance to prevent auto-pull.
   - It snapshots inputs, records the computed hash before sending, and rechecks HOLD/expiry/nonce immediately before the single send attempt. An uncertain result is queried by that same hash; it is never automatically resent.
   - Returned states distinguish `pending`, `send-uncertain`, `receipt-unverified`, `confirmed` and `reverted`. Canonical receipts, including reverts, are stored locally. Confirmation does not verify fills; order-event verification remains a separate step. RPC failure details and raw payloads are not written to evidence.
 
-`npm test` uses synthetic wire fields, mocked recovery/RPC/filesystem boundaries, and a separate real-recovery rejection test. No test signs, uses signing secrets, writes handoffs or contacts a network. The current CLI regression runs preparation entry points **without required arguments**, failing before RPC creation or calldata preparation. There is no broadcast CLI; preparation-to-envelope integration and real handoff verification remain pending. Runtime HOLD is inactive, instruction-level live work is blocked pending written resolution; these must not be conflated.
+`npm test` now uses sourced public captures, actual read-only SDK/RPC/mined-transaction recovery and the real filesystem; no mocked responses or signer secrets. CLI regressions verify HOLD before arguments/network/evidence for all three preparation scripts; broadcaster rejects even absent input at the first gate. [Sources and preserved coverage gaps](TEST_DATA_SOURCES.md). Preparation CLIs remain preview-only rather than complete offline envelope integration; they are blocked under HOLD and must not be handed to a signer as complete requests.

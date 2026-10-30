@@ -17,6 +17,7 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 - Fix 1, 2026-10-30: compatibility HTML now starts unavailable/loading and consumes real `/api/status` values without numeric fallbacks. Synthetic positions, book sizes, risk calculations and trade cards removed; historical evidence explicitly dated. Compatibility and updated branding regressions pass (2/2).
 - Fix 2: inherited mock-removal work reviewed/completed. Public Tokyo captures label source/block/time; actual SDK/RPC and browser checks replace fabricated responses. Unit run: **48 passed, 22 explicitly skipped, 0 failed**. No mock APIs/provider injection/fulfillment/secret generation found. [Sources and coverage gaps](docs/TEST_DATA_SOURCES.md); browser verification pending.
 - Fix 3: trade/close/Guardian share raw-bigint IOC arithmetic; market orders refresh the mark before simulation. Real 1000PEPE block 37084078 and all 21 captured-market regressions added. No live order prepared or sent.
+- Fix 4: runtime HOLD restored as a hard stop in all preparation/broadcast/browser write paths. Configured signer must be the sole bounty EOA on Tokyo; complete browser JSON review added. Exact 2 USDso funding/reviewed IOC only; cancel/withdraw/limit/claims remain disallowed, not implicitly authorized by UI. Written team-margin permission still missing.
 
 - Existing redesign committed in eight logical increments through `da2301e`; inherited staged docs preserved and clean Git status verified.
 - Guardian-first violet workspace, visible leverage/liquidation scenarios, retained stale balances and reversible chart scale are implemented locally.
@@ -49,7 +50,7 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 - [Feedback 006](feedback/006-generic-container-accessible-labels.md) **verified locally and in production**; real screen reader remains pending. Fresh axe contrast incomplete nodes **28 desktop / 8 phone Chart / 28 phone Trade**, not confirmed contrast failures. Historical local counts 34/14/28 are separate; modal-focus manual review not repeated. Not full accessibility certification.
 - Build dependency/large-chunk warnings, dense labels/small targets and full manual accessibility/performance audit remain open. Live error/stale recovery and nonempty portfolio paths were not exercised; prior fixtures cover them.
 - Fixture results are not real wallet/fill evidence. Historical balances/deployment claims are not current observations; prior receipt evidence remains in README. No signing-policy changes or on-chain authorization.
-- **Operational contradiction unresolved:** instructions/signing docs retain funding HOLD; runtime policy says inactive and signer descriptions conflict. No live preparation, signing or broadcasting until explicit written user resolution. Policy/source unchanged.
+- **Operational gate:** policy/runtime now agree on active HOLD. Owner execution authorization is conditional; explicit written dreamDEX margin-funds permission remains outstanding. No live preparation/signing/broadcasting.
 
 ## Human-only — agent must not attempt
 

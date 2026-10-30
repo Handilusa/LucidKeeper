@@ -25,7 +25,10 @@ One explicitly approved signer/funding policy, enforced consistently before ever
 - Network: Somnia Tokyo testnet, chain 50383
 - Public bounty account: `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`; reads only
 - Runtime / OS: Node 24.19.0 / Windows
-- Status: Open operational blocker; local app finding, not submitted
+- Status: Runtime divergence fixed locally 2026-10-30; funding HOLD and offline CLI envelope integration remain blockers; not submitted
 
 ## Recommended next action
 User resolves funding permission and signer model in writing; then align runtime enforcement and handoff integration without bypass flags. The review does not release HOLD or authorize any wallet operation.
+
+## Fix — 2026-10-30
+The owner's conditional authorization is recorded in STATUS. HOLD remains active because general execution permission is not written team-margin permission. Shared gates now protect browser trade/margin/close/Guardian, all three preparation CLIs and offline broadcasting. Only the authorized EOA/50383 may request reviewed exact-2-USDso funding or IOC; cancel/withdraw/limit/claims are not added to the allowlist. Browser requests show full unsigned JSON before wallet approval. Real first-gate broadcaster/CLI regressions require no mocks or transactions. Offline CLI complete-envelope integration remains unfinished and held.

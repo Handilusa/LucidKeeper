@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShieldAlert, Volume2, VolumeX, ShieldCheck, ShieldOff, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseUnits, zeroAddress } from 'viem';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { formatUnits, parseUnits, zeroAddress } from 'viem';
 import { perpPoolAbi } from '@/chain/abis';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
+import { assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
+import { reviewBrowserWrite } from '@/lib/browser-policy';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
 import { TokenLogo } from '@/components/TokenLogo';
@@ -65,7 +67,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   canExecute = false,
   onPanicExit,
 }) => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
+  const publicClient = usePublicClient({ chainId: 50383 });
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [inspectedSymbol, setInspectedSymbol] = useState<string>('');
 
@@ -263,6 +266,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
     }
 
     try {
+      if (!address || !publicClient) throw new Error('Configured signer unavailable');
+      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
       setActivePanicPercent(percent);
       const actionName = activePosition.isLong ? 'Sell IOC' : 'Buy IOC';
       toast.info(
@@ -299,7 +304,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       if (activePosition.markPriceRaw === null) throw new Error('Current raw mark unavailable');
       const rawPrice = iocPrice(activePosition.markPriceRaw, tickSize, !activePosition.isLong);
 
-      const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
+      const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n;
 
       lastOrderRef.current = {
         symbol: effectiveSymbol,
@@ -309,7 +314,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         percent,
       };
 
-      await writeContractAsync({
+      const request = {
         chainId: 50383,
         address: activePosition.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
@@ -326,7 +331,10 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
           0n,
         ],
         gas: 5_000_000n,
-      });
+      } as const;
+      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${effectiveSymbol}-PERP`, size: formatUnits(targetExitQuantity, baseDecimals), description: `Request ${percent}% Guardian reduction by IOC; requires wallet approval, not autonomous signing.` });
+      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
+      await writeContractAsync({ ...request, ...reviewed });
 
       toast.info(
         `De-risk order submitted (${percent}% requested). Awaiting transaction confirmation…`

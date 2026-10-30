@@ -19,6 +19,7 @@ import { readDisplay } from '@/lib/data/readDisplay';
 import { normalizedFunding8h } from '@/lib/math/preview';
 import { computeLiquidationPrice } from '@/lib/math/liquidation';
 import { GuardianOverview } from '@/features/sentinel/GuardianOverview';
+import { AUTHORIZED_SIGNER, MARGIN_HOLD } from '@/lib/operating-policy.mjs';
 
 export const App: React.FC = () => {
   const { address, isConnected, chainId } = useAccount();
@@ -269,7 +270,7 @@ export const App: React.FC = () => {
     positionQuery.isError ||
     (!stateQuery.isPending && now - stateQuery.dataUpdatedAt > 30000) ||
     (!positionQuery.isPending && now - positionQuery.dataUpdatedAt > 30000);
-  const canManage = isConnected && chainId === 50383 && !positionsError && !!positionQuery.data;
+  const canManage = isConnected && address?.toLowerCase() === AUTHORIZED_SIGNER.toLowerCase() && chainId === 50383 && !MARGIN_HOLD.active && !positionsError && !!positionQuery.data;
   const refreshAccount = React.useCallback(() => {
     void stateQuery.refetch();
     void healthQuery.refetch();

@@ -7,6 +7,8 @@ import { perpPoolAbi } from '@/chain/abis';
 import type { MarketInfo } from '@/lib/data/indexer';
 import { quantizeToGrid } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
+import { AUTHORIZED_SIGNER, MARGIN_HOLD, assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
+import { reviewBrowserWrite } from '@/lib/browser-policy';
 import { positiveDecimal, validateOrderInput } from '@/lib/math/orderInput';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
@@ -252,6 +254,7 @@ export function TradingBox({
     setSubmitError('');
     let stage = 'preparation';
     try {
+      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
       const rawTickSize =
         orderBookParams?.tickSize ?? parseUnits(market.tickSize, market.quoteDecimals);
       const rawLotSize =
@@ -315,7 +318,9 @@ export function TradingBox({
       setSimulating(false);
       stage = 'wallet';
       toast.info('Review the order transaction in your wallet');
-      await writeContractAsync(request);
+      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${market.baseSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Place ${side} IOC order on the official Tokyo pool; confirmation is not a fill.` });
+      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
+      await writeContractAsync({ ...request, ...reviewed });
       toast.info('Transaction submitted · awaiting confirmation');
     } catch (error) {
       const detail =
@@ -560,7 +565,7 @@ export function TradingBox({
         <button
           className="submit-order"
           data-side={side}
-          disabled={simulating || isPending || isConfirming || (isConnected && (!!blocked || chainId !== 50383))}
+          disabled={simulating || isPending || isConfirming || (isConnected && (!!blocked || chainId !== 50383 || MARGIN_HOLD.active || address?.toLowerCase() !== AUTHORIZED_SIGNER.toLowerCase() || orderType !== 'market'))}
           onClick={handleExecuteOrder}
         >
           {(simulating || isPending || isConfirming) && <LoaderCircle size={16} className="state-spinner" aria-hidden="true" />}
@@ -576,6 +581,8 @@ export function TradingBox({
                  : `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} ${market.baseSymbol}`}
         </button>
         <p className="form-note">
+          {MARGIN_HOLD.active && `HOLD: ${MARGIN_HOLD.reason} `}
+          {orderType === 'limit' && 'Live limit signing is outside the reviewed IOC runtime allowlist. '}
           {orderType === 'market'
             ? 'Immediate-or-cancel. Unfilled quantity is cancelled.'
             : 'Limit orders may rest, partially fill, or expire.'}{' '}

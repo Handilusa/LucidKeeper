@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import * as Tabs from '@radix-ui/react-tabs';
-import { parseUnits, zeroAddress } from 'viem';
+import { formatUnits, parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
 import { RefreshCw, ChartNoAxesCombined, ListOrdered, History } from 'lucide-react';
 import { perpPoolAbi } from '@/chain/abis';
 import { formatDynamicPrice, quantizeToGrid } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
+import { assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
+import { reviewBrowserWrite } from '@/lib/browser-policy';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import {
   fetchUserTradeHistory,
@@ -135,6 +137,7 @@ export function PositionsTable({
   async function executeClose(pos: PositionItem, value: number) {
     if (!canManage || busy || pos.markPrice <= 0) return;
     try {
+      assertOnchainActionAllowed('order', { chainId: 50383, wallet: account });
       lastClose.current = { pos, percent: value };
       if (pos.markPriceRaw === null) throw new Error('Current raw mark unavailable');
       const market = ALL_VERIFIED_PERP_MARKETS.find(
@@ -152,15 +155,19 @@ export function PositionsTable({
         toast.error('Position is too small to split. Choose a larger percentage.');
         return;
       }
-      const expiry = BigInt(Math.floor(Date.now() / 1000) + 600) * 1_000_000_000n;
-      await writeContractAsync({
+      const expiry = BigInt(Math.floor(Date.now() / 1000) + 300) * 1_000_000_000n;
+      const request = {
         chainId: 50383,
         address: pos.poolAddress as `0x${string}`,
         abi: perpPoolAbi,
         functionName: 'placeOrder',
         args: [!pos.isLong, 0n, rawPrice, rawQuantity, expiry, 2, 0, zeroAddress, 0n],
         gas: 5_000_000n,
-      });
+      } as const;
+      if (!publicClient) throw new Error('Tokyo client unavailable');
+      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', account as `0x${string}`, { market: `${pos.marketSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Request ${value}% position reduction with opposite-side IOC; fill is not guaranteed.` });
+      assertOnchainActionAllowed('order', { chainId: 50383, wallet: account });
+      await writeContractAsync({ ...request, ...reviewed });
       toast.info('Close order submitted · awaiting confirmation');
     } catch (e) {
       toast.error('Close order rejected or failed', {
@@ -172,15 +179,8 @@ export function PositionsTable({
     if (!canManage || busy) return;
     lastClose.current = null;
     try {
-      await writeContractAsync({
-        chainId: 50383,
-        address: order.poolAddress as `0x${string}`,
-        abi: perpPoolAbi,
-        functionName: 'cancelOrder',
-        args: [BigInt(order.orderId)],
-        gas: 3_000_000n,
-      });
-      toast.info('Cancellation submitted · awaiting confirmation');
+      assertOnchainActionAllowed('cancel', { chainId: 50383, wallet: account });
+      throw new Error(`Cancellation #${order.orderId} requires a separately approved runtime allowlist change`);
     } catch (e) {
       toast.error('Cancellation rejected or failed', {
         description: (e as { shortMessage?: string }).shortMessage || (e as Error).message,
@@ -371,7 +371,8 @@ export function PositionsTable({
                     <td>
                       <button
                         className="button text-rose-400"
-                        disabled={!canManage || busy}
+                        disabled
+                        title="Cancellation is outside the runtime bounty allowlist"
                         onClick={() => void cancelOrder(order)}
                       >
                         Cancel

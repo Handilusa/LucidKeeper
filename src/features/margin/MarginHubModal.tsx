@@ -6,6 +6,8 @@ import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi } from '@/chain/abis';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
 import { positiveDecimal } from '@/lib/math/orderInput';
 import { Modal } from '@/components/Modal';
+import { AUTHORIZED_SIGNER, MARGIN_HOLD, assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
+import { reviewBrowserWrite } from '@/lib/browser-policy';
 
 export function MarginHubModal({
   isOpen,
@@ -60,6 +62,7 @@ export function MarginHubModal({
     setHash(null);
     setStep('checking');
     try {
+      assertOnchainActionAllowed(activeTab, { chainId, wallet: address });
       const parsedAmount = parseUnits(amount, 18);
       if (activeTab === 'deposit') {
         const allowance = await publicClient.readContract({
@@ -71,13 +74,16 @@ export function MarginHubModal({
         if (allowance < parsedAmount) {
           setStep('approving');
           setStatus('Step 1 of 2 · review exact-amount approval in your wallet.');
-          const approval = await writeContractAsync({
+          const request = {
             chainId: 50383,
             address: CONTRACT_ADDRESSES.COLLATERAL_USDSO,
             abi: erc20Abi,
             functionName: 'approve',
             args: [CONTRACT_ADDRESSES.MARGIN_BANK, parsedAmount],
-          });
+          } as const;
+          const reviewed = await reviewBrowserWrite(publicClient, request, 'approve', address, { market: 'USDso collateral', size: amount, description: 'Approve exactly 2 USDso to the official Tokyo MarginBank.' });
+          assertOnchainActionAllowed('approve', { chainId, wallet: address });
+          const approval = await writeContractAsync({ ...request, ...reviewed });
           setHash(approval);
           setStatus('Approval submitted · awaiting receipt.');
           const receipt = await publicClient.waitForTransactionReceipt({ hash: approval });
@@ -92,20 +98,19 @@ export function MarginHubModal({
       }
       const tx =
         activeTab === 'deposit'
-          ? await writeContractAsync({
+          ? await (async () => {
+            const request = {
               chainId: 50383,
               address: CONTRACT_ADDRESSES.MARGIN_BANK,
               abi: marginBankAbi,
               functionName: 'deposit',
               args: [parsedAmount],
-            })
-          : await writeContractAsync({
-              chainId: 50383,
-              address: CONTRACT_ADDRESSES.MARGIN_BANK,
-              abi: marginBankAbi,
-              functionName: 'withdraw',
-              args: [parsedAmount],
-            });
+            } as const;
+            const reviewed = await reviewBrowserWrite(publicClient, request, 'deposit', address, { market: 'USDso collateral', size: amount, description: 'Deposit exactly 2 USDso to the authorized EOA MarginBank account.' });
+            assertOnchainActionAllowed('deposit', { chainId, wallet: address });
+            return writeContractAsync({ ...request, ...reviewed });
+          })()
+          : await Promise.reject(new Error('Withdrawal is outside the runtime bounty allowlist'));
       setHash(tx);
       setStatus('Transaction submitted · awaiting receipt.');
       const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
@@ -189,6 +194,8 @@ export function MarginHubModal({
         </div>
       </div>
       <p id="collateral-help" className="form-note mb-4">
+        {MARGIN_HOLD.active && `HOLD: ${MARGIN_HOLD.reason} `}
+        {activeTab === 'withdraw' && 'Withdrawal is outside the runtime bounty allowlist. '}
         {activeTab === 'deposit'
           ? 'If needed, approve this exact amount first. The deposit waits for a successful approval receipt.'
           : 'Active positions may restrict withdrawals. Bank collateral is not a guarantee of withdrawable funds.'}
@@ -207,6 +214,9 @@ export function MarginHubModal({
         className="button button-primary w-full"
         disabled={
           busy ||
+          MARGIN_HOLD.active ||
+          activeTab === 'withdraw' ||
+          address?.toLowerCase() !== AUTHORIZED_SIGNER.toLowerCase() ||
           !isConnected ||
           chainId !== 50383 ||
           !!invalid ||
