@@ -3,6 +3,8 @@
 Severity: High — confirmed runtime data-integrity failure on a retained startup path; not a dreamDEX protocol defect.
 Area: App / compatibility HTML / startup
 
+The Reproduction/Actual sections preserve the pre-fix finding; local resolution below supersedes them. Newer code is not certified deployed.
+
 ## Reproduction
 1. Inspect `public/index.html:135-235,464-495,592-624`.
 2. Inspect `scripts/ui-server.mjs:14,169-176` and the `dev` / `ui` scripts in `package.json`.
@@ -27,4 +29,4 @@ The active built/deployed entry is the React SPA: this review did **not** observ
 - Status: Fixed locally on 2026-10-30; not submitted
 
 ## Recommended next action
-The compatibility view now consumes real `/api/status` strings, starts with unavailable/loading values and clears failed reads. Fixed position, PnL, book sizes, risk and card code removed; historical evidence linked with an explicit date. `test/compatibility.test.mjs` guards the empty initial state. Full browser verification follows the ordered fixes.
+The compatibility view now consumes real `/api/status` strings, starts with unavailable/loading values and clears failed reads. Fixed position, PnL, book sizes, risk and card code removed; historical evidence linked with an explicit date. `test/compatibility.test.mjs` guards the empty initial state. Latest local suite 56 pass / 21 skip and real-service Chromium 14 pass / 16 skip, zero failures; this browser suite exercises the React SPA, not a separate compatibility-browser lifecycle. No live transaction.

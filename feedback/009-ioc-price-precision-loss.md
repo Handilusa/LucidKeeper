@@ -3,6 +3,8 @@
 Severity: Medium — reproduced price-encoding error affecting execution bounds; no live trade was attempted.
 Area: App / order math / close / Guardian
 
+The Reproduction/Actual sections preserve the pre-fix arithmetic finding. The raw-bigint fix/regressions below supersede that implementation; no live order or newer deployment is certified.
+
 ## Reproduction
 1. Read official 1000PEPE pool `0xfa9b9e50cc1745113d57893991af200a74c86b6f` at Tokyo block `37084078`.
 2. `tryGetMarkPrice` returns raw mark `5205531797000000`; tick size is `100000000000` (18 quote decimals).

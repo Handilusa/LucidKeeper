@@ -1,11 +1,34 @@
 # Frontend checkpoint
 
-- **Updated:** 30 October 2026 — production group verification and complete isolated suite finished; documentation reconciliation.
-- **Repository:** This directory is the Git root; branch `main`, this task's independently observed starting HEAD `8a378f4`, clean and one ahead of public `origin/main` at `3ff1433`.
-- **Authority:** Current user handoff authorizes read-only deployment/group verification, then the full local fixture suite and stale-document reconciliation. It supersedes earlier NEXT/deployment gates. No real wallet connection, arming, signing, transactions, cloud changes or push.
+- **Updated:** 30 October 2026 — six ordered local fixes completed; final documentation/read-only deployment reconciliation.
+- **Repository:** This directory is the Git root; branch `main`. Final continuation started clean at `a88cf26`, nine ahead of `origin/main` at `3ff1433`; inherited commits preserved. Current final hash is obtained with `git rev-parse HEAD`.
+- **Authority:** Earlier owner permission covered per-fix local commits and publication. Latest supplied local instructions reserve push to the user; no agent login/push, keys, wallet connection, arming, signatures, transactions or cloud changes. Active HOLD still needs written dreamDEX margin-funds permission.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
 
-## Ordered steps
+## Current completion — six fixes
+
+| Fix | Local commit | Verification |
+| --- | --- | --- |
+| Compatibility financial integrity | `b187b28` | Real `/api/status` or unavailable; compatibility/branding regression |
+| Remove fabricated test services | `3813647` | Public timestamp/block/query captures, actual read-only SDK/RPC/filesystem/browser checks; former controlled scenarios explicitly skipped |
+| Raw IOC precision | `613940d` | Shared bigint helper/fresh mark; real 1000PEPE and all 21 captured markets |
+| Shared policy enforcement | `c05b495` | Active HOLD first, authorized EOA/50383, full browser unsigned review; no allowlist expansion |
+| Partial-close freshness | `baeeda5` | Identity-only dialog, fresh pinned raw size/mark/grid/post-review check; historical changed/flat/flipped regressions |
+| Non-forced dependency remediation | `a88cf26` | No dependency changes; 27 runtime/0 dev-only affected entries, three advisories, exploitability unresolved |
+
+Latest fix checks: typecheck/lint/build PASS, build46.25s; **56 unit/integration passed / 21 skipped / 0 failed**, **14 local real-service Chromium passed / 16 skipped / 0 failed**, no retries, five sizes. All five responsive screenshots now visually inspected. Existing annotation/chunk warnings and [coverage gaps](TEST_DATA_SOURCES.md) remain. No live write evidence or networked unit rerun in this final docs continuation.
+
+**NEXT:** user publication and exact deployed-content parity; written team-margin permission before any live work; complete offline CLI envelope integration, manual accessibility, demo video, published X URLs, original feedback delivery and whitelist/submission by1November23:59UTC. Agent publication remains forbidden by latest supplied instructions. Fresh final production status/desktop/mobile observations are recorded in STATUS/validation, independently of these local test totals.
+
+Final public main/Vercel still `3ff1433` (status/assets 13:29–13:30 UTC); local parity FAIL, 77/166 HTML/JS/CSS match. Browser 13:36:05–13:36:14 UTC: 12/12 smoke observations PASS at 1440×900 / 390×844, zero page/console/HTTP errors/blocked writes; four renders inspected, desktop post-switch loading is not screenshot-only settled-health evidence. No newer local deployment or full production Playwright certification. Evidence local under `.git/lucidkeeper-audit/final-deployment-2026-10-30T13-36-05-104Z/`; earlier auditor-selector failures retained separately.
+
+Final docs verification: 14 reviewed public paths / 55 tracked links/headings / 11 report fields PASS; fresh offline branding/compatibility 2/2 PASS. Publication scan 13:44:30 UTC: 133 files / 57 history commits / 355 blobs, 533 raw alerts classified from exact public token/hash/event values or historical served-asset digests, zero unresolved. Scanner exit2/raw findings retained; not a zero-findings pass. Review `.git/lucidkeeper-audit/public-scan-review-history-2026-10-30.json` stays local; no scanner-rule suppression. This separate verification/docs increment contains only the 14 reviewed public documentation paths; its commit hash and clean-worktree readback are reported separately, without a self-referential hash here.
+
+## Historical redesign record — superseded by current completion above
+
+All following sections preserve earlier handoffs, mocks, test counts and dated deployment evidence. They are not current acceptance evidence or permission; their NEXT clauses do not supersede the current NEXT above.
+
+## Historical ordered steps
 
 1. [x] Commit existing work with explicit staging; inherited staged docs preserved; clean Git status verified.
 2. [x] Regenerate `docs/design.tokens.json` from the built violet palette; lint `docs/DESIGN.md`.
@@ -55,11 +78,11 @@ Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tok
 - Worktree and each staged commit's whitespace checks: **PASS**.
 - `rtk` unavailable; native commands used, nothing installed to replace it.
 
-## NEXT
+## Historical NEXT
 
 QA and documentation reconciliation complete; final documentation/link/secret/whitespace checks recorded below. Await explicit written funding/signer-policy resolution before any live preparation/sign/broadcast. Production verification of the later local branding, real screen-reader/manual audit and human bounty submission remain separate. No wallet/cloud actions or push.
 
-## Current handoff completion — 30 October 2026
+## Historical pre-fix handoff completion — 30 October 2026
 
 1. **Git correction:** inspected clean `8a378f43d5c1ccda4f0c0543b0118ef235f23b67`, 1 ahead/0 behind `origin/main`; unauthenticated public `git ls-remote` confirms remote `3ff143357dffb616e859103a1c21256ab162854c`. Existing branding increment preserved; no fetch/login/push/cloud change.
 2. **Deployment first:** public GitHub Vercel status HTTP200 reports success for `3ff1433` at **10:56:02 UTC**, deployment `BBwJ9NVnpDjAjfXwNDaH14xevZqg`. Reconstructed tracked-source snapshot under local Git metadata, built using existing dependencies without environment-file copying. Production HTTP200 HTML, entry JS and CSS are SHA-256-identical to that reference. No claim of independently exposed production-alias metadata or deployment of newer local `8a378f4`.

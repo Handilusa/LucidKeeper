@@ -3,6 +3,8 @@
 Severity: High — source-confirmed safeguard divergence; not a reproduced unauthorized transaction or protocol exploit.
 Area: App / operating policy / signing documentation
 
+The Reproduction/Actual sections preserve the pre-fix divergence. Current runtime HOLD enforcement is recorded below; offline CLI complete-envelope integration remains unfinished. Latest local instructions reserve agent signing handoffs to the user's offline signer and publication to the user.
+
 ## Reproduction
 1. Compare current local instructions and `docs/OFFLINE_SIGNING.md:3-20` with `src/lib/operating-policy.mjs:1-17`.
 2. Inspect `App.tsx:42,270`, the write handlers in `TradingBox.tsx`, `PositionsTable.tsx`, `RiskGuardian.tsx` and `MarginHubModal.tsx`.

@@ -3,6 +3,8 @@
 Severity: High potential financial impact — source-confirmed missing revalidation; harmful live outcome not reproduced.
 Area: App / positions / partial close
 
+The Reproduction/Actual sections preserve the pre-fix source risk. Fresh-size mitigation/regressions below supersede that implementation; no harmful live outcome or protocol reduce-only protection is claimed.
+
 ## Reproduction
 1. Inspect `PositionsTable.tsx:69,294-296`: opening Partial stores the entire `PositionItem` in component state.
 2. Inspect `App.tsx:158-251`: portfolio polling supplies new position objects.

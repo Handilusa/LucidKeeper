@@ -11,13 +11,14 @@ LucidKeeper provides real-time market telemetry, verifiable on-chain execution, 
 Current frontend authority: [STATUS.md](STATUS.md), [checkpoint](docs/CHECKPOINT.md) and [validation](docs/LUCIDKEEPER_REDESIGN_VALIDATION.md).
 
 - **Official SDK 0.32.1** installed; **21 perp markets** indexed and cross-checked on-chain.
-- **Production:** https://lucid-keeper.vercel.app/ returns HTTP 200. On 30 October, public Vercel status reports successful deployment of `3ff1433`; served HTML, entry JS and CSS exactly match a tracked-source build of that commit. Production-alias metadata is not independently exposed.
+- **Production:** https://lucid-keeper.vercel.app/ . Final 30 October public `main`/Vercel status remains `3ff1433`; **not the newer local fixes**. Desktop/phone read-only smoke 12/12 passes; local build parity fails (77/166 match). Publication is user-owned. [Details](STATUS.md#deployment).
 - **Feedback 006 verified in production:** all six named chart/order groups appear in desktop and phone accessibility trees; scoped axe naming checks pass. Actual screen-reader testing remains pending.
-- **Local source:** `8a378f4` adds canonical branding after `3ff1433`; it is not published. Production verification above does not certify this later increment.
-- **Fresh checks:** **66/66 unit tests**, TypeScript, ESLint, production build and **30/30 complete Playwright scenarios** pass. Mock wallet/transaction/armed-Guardian requests are isolated transport fixtures, not real execution evidence.
+- **Local source:** six ordered fixes committed through `a88cf26`, preserving earlier branding/authorization. Latest supplied local instructions reserve push to the user; no agent push.
+- **Latest fix checks:** TypeScript, ESLint and production build pass; **56 unit/integration passed / 21 skipped**, **14 real-service Playwright passed / 16 skipped**, zero failures. Five viewport screenshots inspected. Former controlled mock cases remain explicit skips, not coverage claims. [Sources and gaps](docs/TEST_DATA_SOURCES.md).
 - **Implemented:** market/limit order UI, indexed activity, cancel orders, partial close, sequential approval/deposit, withdrawal and browser-local Guardian triggers. These do not have a fresh production transaction smoke test.
 - **Historical execution:** the 27 October approval, deposit and first BTC fill are preserved below. The 0.00013 BTC long is **not a current-position claim**; 29 October read-only QA observed zero positions. No new position/receipt audit was performed in this documentation reconciliation.
 - **Operational policy, 2026-10-30:** owner authorizes configured-signer project/demo execution within runtime rules. **HOLD remains active and now enforced**; written dreamDEX margin-funds permission is still required. Exact-2-USDso funding and reviewed IOC only; other actions remain outside the allowlist. No live fix-mode transactions.
+- **Residual dependencies:** 27 runtime affected entries, 0 dev-only, three advisories; non-forced remediation made no dependency changes. Wallet-input reachability remains unresolved, not declared harmless. [Triage](docs/DEPENDENCY_TRIAGE.md).
 
 ---
 
@@ -45,7 +46,7 @@ npm ci
 ```
 
 ### 2. Run Test Suite
-Runs the current offline unit suite (66 tests at this checkpoint):
+Runs pure/captured tests plus actual read-only SDK/RPC integration checks; requires public-service access. Latest result: 56 passed, 21 explicit skips. No signing or sending:
 ```bash
 npm test
 ```
@@ -62,7 +63,7 @@ Build and serve the production preview:
 npm run build
 npm run preview -- --host 127.0.0.1 --port 4174 --strictPort
 ```
-Open **`http://127.0.0.1:4174`**. For the complete isolated browser suite, run `npm run test:e2e` with that port free; Playwright builds and starts its own preview.
+Open **`http://127.0.0.1:4174`**. For the real-service read-only browser suite, run `npm run test:e2e` with that port free; Playwright builds and starts its own preview. No injected wallet or response replacements; unavailable services fail checks rather than produce invented data.
 
 `npm run ui` / `npm run dev` start the retained compatibility HTTP terminal, not the active React/Vite frontend.
 
@@ -90,8 +91,8 @@ LucidKeeper/
 │   └── broadcast.mjs           # RPC preflight checks, non-retryable broadcast, receipt canonicalization
 ├── scripts/
 │   ├── connectivity.mjs         # Public read-only market and account inspector
-│   ├── prepare-margin.mjs       # CLI for margin deposit envelope generation
-│   ├── prepare-order.mjs        # CLI for IOC order envelope generation
+│   ├── prepare-margin.mjs       # HOLD-gated preview; complete envelope integration pending
+│   ├── prepare-order.mjs        # HOLD-gated IOC preview; not a signing handoff
 │   ├── verify-order.mjs         # Verification of canonical on-chain receipt and fills
 │   └── ui-server.mjs            # Retained compatibility HTTP terminal
 ├── public/
@@ -100,11 +101,11 @@ LucidKeeper/
 ├── evidence/public/             # Reviewed, verifiable public execution records
 │   ├── connectivity-2026-10-26.json
 │   └── execution-2026-10-27.json
-└── test/                        # Offline unit tests and isolated Playwright transport fixtures
+└── test/                        # Sourced captures, pure tests and real read-only service checks
 ```
 
 ### Data integrity and operating boundaries
-1. **No fabricated financial data:** Live PnL, equity and fills use contracts/indexer data. Hypothetical stress/liquidation scenarios are labeled; tests use isolated fixtures, not live evidence.
+1. **No fabricated financial data:** Live PnL, equity and fills use contracts/indexer data. Hypothetical stress/liquidation scenarios are labeled; test captures retain source/time/block and are historical, not current balances. Controlled outcomes without real evidence stay skipped.
 2. **Dedicated Bounty Account:** Exclusively uses EOA `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA` on Somnia Tokyo (Chain 50383).
 3. **Conditional signing authorization:** Configured signer may sign only runtime-allowed requests after exact unsigned review. HOLD cannot be bypassed. No secret inspection or wallet-to-wallet transfers.
 4. **Funding safeguards:** Exact-amount approval and receipt sequencing are implemented. Historical zero allowance is not a current guarantee; the offline broadcaster checks zero allowance for orders. No new allowance/deposit verification was performed here.

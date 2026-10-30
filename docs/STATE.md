@@ -2,17 +2,17 @@
 
 **Last Updated:** 30 October 2026
 **Active Repository:** `LucidKeeper` (Git origin: `https://github.com/Handilusa/LucidKeeper.git`, branch `main`)
-**Current Phase:** Read-only production accessibility verification complete; current local fixture-suite/documentation reconciliation. Frontend authority: [STATUS](../STATUS.md) and [CHECKPOINT](CHECKPOINT.md).
+**Current Phase:** Six local fixes completed; final documentation/read-only deployment verification. Frontend authority: [STATUS](../STATUS.md) and [CHECKPOINT](CHECKPOINT.md).
 
 ## Current snapshot — 30 October 2026
 
-- Starting HEAD independently observed: **`8a378f4`**, clean `main`, **1 ahead / 0 behind** `origin/main`; public remote still **`3ff1433`**. This corrects the supplied handoff without discarding the existing branding commit.
-- Production https://lucid-keeper.vercel.app/ is HTTP200. Public Vercel commit status reports `3ff1433` deployment completed at **10:56:02 UTC**; on **11:18–11:19 UTC**, served HTML, entry JS and CSS exactly match a reference build from that commit's tracked source. Production-alias metadata is not independently exposed; the newer local branding increment is not certified deployed.
-- All six supported chart/order groups are non-ignored named AX groups at desktop/phone (**12 observations**); scoped axe naming checks pass with no violations/incomplete results. No injected wallet, connection, Guardian arming, signatures, simulations or writes; zero page/console errors and blocked write attempts. [Feedback006](../feedback/006-generic-container-accessible-labels.md).
-- Fresh **66/66 units**, typecheck, ESLint and build pass; complete **30/30 Chromium fixture scenarios PASS**, no retries, build47.75s/browser2.1m, completed11:22UTC. Includes connected/write/armed-Guardian transport doubles only, not real wallet/transaction proof; older27/27 totals are historical.
-- Deposit/cancel/partial close/withdrawal/Guardian are implemented, not newly production-transaction-certified. Current code preserves execution candles separately from mark; Guardian does not verify actual fills on receipt; share cards are snapshots, not realized-PnL proof. [Current requirements](REQUIREMENTS.md#current-reconciliation--30-october-2026).
-- **Operational block unchanged:** instructions retain HOLD while runtime policy sets it inactive; signer models conflict. Await explicit written user resolution before all live preparation/signing/broadcasting. No policy/source/cloud change or push here.
-- Remaining: screen-reader/manual contrast/focus/target review, live connection/relay, error recovery and nonempty portfolio, fresh authorized transaction smoke test, optional hardening/OG metadata. Human-owned video/X posts/feedback delivery/submission remain due **1 November 23:59 UTC** (user-provided).
+- Final continuation started at clean **`a88cf26`**, nine ahead of `origin/main` at **`3ff1433`**; all six ordered fix commits and earlier work preserved. Current final HEAD is obtained with Git; latest supplied instructions reserve push to the user.
+- Latest local fix checks: typecheck/lint/build PASS(build46.25s); **56 unit/integration passed /21skipped/0failed**, **14 real-service Chromium passed /16skipped/0failed**, five sizes/no retries. Five responsive screenshots inspected. No mocks/provider injection/response fulfillment; [preserved gaps](TEST_DATA_SOURCES.md). Earlier66/66 and30/30 double-based totals are historical.
+- Fixes: honest compatibility terminal, sourced service tests, shared raw IOC arithmetic, shared HOLD/review/EOA gates, current pinned partial-close/Guardian checks and non-forced dependency remediation. [Commit record](CHECKPOINT.md#current-completion--six-fixes).
+- Public production/branding/fix parity remains separate from local success; previously verified `3ff1433` deployment does not certify these newer commits. Latest read-only HTTP/assets/desktop/phone observations are in STATUS/validation.
+- **Operational HOLD enforced:** written dreamDEX margin-funds permission still absent. Sole EOA/50383, exact2USDso funding/reviewed IOC only; cancel/withdraw/limit/claims not allowed. Agent-led signing handoff remains user-mediated/offline under latest local instructions. No live preparation/signing/broadcast.
+- Offline CLI complete-envelope integration, actual fill/remaining verification, manual accessibility, nonempty/live write/error paths and wallet relay are not certified. Fresh raw size checks are not protocol reduce-only protection. [Current requirements](REQUIREMENTS.md#current-reconciliation--30-october-2026).
+- Security:27runtime/0dev-only affected entries/three advisories persist; no confirmed exploit path, wallet/Zod input reachability unresolved. Human-owned publication/video/XURLs/feedback/whitelist/submission remain due **1November23:59UTC** (user-provided).
 
 ---
 

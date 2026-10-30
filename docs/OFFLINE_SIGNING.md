@@ -6,6 +6,8 @@ Written owner authorization on **2026-10-30** permits funding the configured sig
 
 The configured signer may be the user's connected browser wallet or their separate offline signer; OpenCode does not inspect signer secrets or configure another wallet. Both transports obey the same sole-EOA/chain/HOLD/allowlist rules. Historical receipts do not release HOLD. Cancel, withdraw, limit orders and claims remain outside the currently reviewed runtime allowlist; adding UI controls does not authorize those actions.
 
+**Latest local instruction supplied during final reconciliation:** agent-led signing remains a user-mediated offline handoff, with the user's separate signer; OpenCode does not use a signing key or operate a browser wallet. The implemented browser review/gates above describe application capability, not authorization for agent browser signing. Publication is user-owned; no agent push/login. HOLD is unchanged.
+
 The user must first confirm **in writing** that the dreamDEX team permits these funds to be used as margin. Until then, no approval or deposit is prepared or broadcast. Owner-order preparation is also blocked because it can auto-pull approved wallet collateral into margin. The hold has no CLI/environment bypass.
 
 The earlier `evidence/prepared-*.json` files are **historical, incomplete drafts**. They lack the complete nonce/gas/fee envelope, and the order drafts expire. They are not approved signing requests. They remain local and are excluded from Git.

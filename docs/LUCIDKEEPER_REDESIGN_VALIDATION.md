@@ -2,9 +2,22 @@
 
 **Updated:** 30 October 2026. **Scope:** local React/Vite source and production preview, plus separately dated deployed read-only QA. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `LucidKeeper`, branch `main`.
 
-**Current outcome:** **66/66 units, typecheck, lint, build and 30/30 complete isolated Chromium scenarios PASS** on30October. Production `3ff1433` HTML/entry-JS/CSS parity and all six named accessibility groups pass in fresh read-only checks. Actual screen reader, wallet connection/relay and fresh live transactions remain unverified; no real wallet, arming, signatures, on-chain writes, cloud changes or push. Earlier27/27 and40/40 records below remain dated historical evidence.
+**Current outcome after six fixes:** Typecheck/lint/build PASS (46.25s); **56 unit/integration passed / 21 skipped / 0 failed**, **14 local real-service Chromium passed / 16 skipped / 0 failed**, no retries/fabricated responses. Five responsive screenshots inspected. HOLD is active/shared across browser/CLI/broadcast; no live wallet connection/arming/preparation/signing/sending. Local fixes through `a88cf26` are not certified deployed. Latest supplied instructions reserve push to the user.
 
-## Current verification — 30 October 2026
+## Current verification boundaries — final fix completion
+
+- Sourced Tokyo snapshot:2026-10-30T12:47:20.747Z, block37111800,21markets, canonical historical receipts and BTC changed/flat/flipped positions. Raw IOC regressions include1000PEPE mark5205531797000000/tick100000000000 at37084078. Display rounding never feeds IOC execution.
+- Real-service tests use observer/write firewall, no provider injection, fulfillment or fabricated financial results. All former controlled wallet/failure scenarios remain explicit skips. [Sources and gaps](TEST_DATA_SOURCES.md).
+- Runtime HOLD/EOA/chain review and fresh-position checks are locally verified; complete offline CLI handoff integration and live downstream send/fill branches remain unverified. Size preflight is not protocol reduce-only protection.
+- All five local responsive renders inspected:1440×900,1280×800,390×844,768×1024,1024×800. Desktop Last/Mark/leverage/HOLD and mobile Activity/history rendered; these are dated real reads, not present balances or full manual accessibility certification.
+- [Dependency triage](DEPENDENCY_TRIAGE.md):27runtime/0dev-only affected entries,17high/8moderate/2low,three advisories. Non-forced remediation changes no dependencies; third-party wallet/Zod input reachability remains unresolved.
+- Final public status/assets: 13:29–13:30 UTC, public GitHub main `3ff143357dffb616e859103a1c21256ab162854c`, Vercel success 10:56:02 UTC; 166 local HTML/JS/CSS compared, 77 match / 89 mismatch, including HTML/entry JS/CSS. Missing newer local-hashed paths return SPA HTML200, not JavaScript/CSS. **Local/deployed parity FAIL**, not a demonstrated broken request in current production.
+- Final production browser: 13:36:05–13:36:14 UTC, 1440×900 / 390×844, **12/12 smoke observations pass** across two fresh contexts. Real BTC/DOGE/native candles, 21 options, six named groups/keyboard, flat positions/empty orders, 15 indexed history rows, view-only collateral/no overflow; zero page/console/HTTP errors/blocked writes, no wallet/arming/sim/prep/sign/send. Four Chart/Trade renders inspected: desktop captured truthful post-switch account/position loading; subsequent assertions settled, so do not present those screenshots alone as settled account evidence. Scoped smoke, not full production Playwright/manual accessibility.
+- Evidence: `.git/lucidkeeper-audit/final-deployment-2026-10-30T13-36-05-104Z/report.json` and four PNGs. Assets/public status explicitly reused from 13:29–13:30 UTC via `assetObservationSource`; browser observations fresh 13:36 UTC. Earlier auditor-selector-error runs retained, not app defects. No push/cloud settings; historical `3ff1433` reference parity below cannot certify newer local fixes.
+
+## Historical pre-fix verification — 30 October 2026
+
+The following earlier records retain their original scope/results. Their double-based66/66 and30/30 totals, inactive-policy statements and NEXT clauses are historical, superseded by the current fix summary above; they are not current coverage or operating permission.
 
 | Check | Fresh result / boundary |
 | --- | --- |
@@ -53,9 +66,9 @@ Application/design results below were recorded earlier on 29 October; they were 
 
 The scanner's generic 32-byte pattern does not distinguish transaction hashes from keys. The audit labels `0x25321747…26fd7b6` as an indexed-fill transaction; that historical observation was not independently reverified here. Subsequent inherited commit `abce76c` added that hash to the scanner allowlist; inherited release `e755984` records a zero-findings rerun. This QA session did not change the scanner or signing policy.
 
-## Browser coverage and rendered inspection
+## Historical double-based browser coverage and rendered inspection
 
-All browser scenarios use `test/e2e/terminal-fixture.ts`: external RPC/indexer/font/analytics requests are intercepted, the injected wallet is a transport double, and simulated transaction requests never reach a real wallet or network.
+At this historical pre-fix checkpoint, browser scenarios used transport doubles through `test/e2e/terminal-fixture.ts`, injected wallets and replaced RPC/indexer/font/analytics responses. Fix2 subsequently replaced this implementation with actual services and a read-only observer/firewall; the table below is historical coverage, not current passing coverage.
 
 | Area | Verified locally |
 | --- | --- |
