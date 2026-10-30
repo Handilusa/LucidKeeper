@@ -2,7 +2,7 @@
 
 **Last Updated:** 30 October 2026
 **Active Repository:** `LucidKeeper` (Git origin: `https://github.com/Handilusa/LucidKeeper.git`, branch `main`)
-**Current Phase:** Six fixes, scoped release and additive HOLD regressions published; dated deployment/CI verified. **2 USDso approval confirmed; old deposit review expired/rejected. Fresh exact 2 USDso unsigned deposit prepared 18:06:39.995 UTC, expires 18:21:39 UTC /1793384499 (15-minute review), nonce18; awaits separate explicit user review.** No signing/deposit broadcast/IOC preparation. Current envelope/checks: [STATUS](../STATUS.md#remaining-blockers--limitations). Frontend authority: [CHECKPOINT](CHECKPOINT.md).
+**Current Phase:** Six fixes, scoped release and additive HOLD regressions published; dated deployment/CI verified. **2 USDso approval confirmed; all earlier deposit reviews superseded (17:07:07 explicitly rejected), files unchanged. Final fresh exact 2 USDso unsigned deposit prepared 19:49:22.706 UTC, expires 20:04:22 UTC /1793390662 (15-minute review), nonce18; awaits separate explicit user review.** History refreshed19:34:19UTC, same exact reconciliation. No signing/deposit broadcast/IOC preparation. Current envelope/checks: [STATUS](../STATUS.md#remaining-blockers--limitations). Frontend authority: [CHECKPOINT](CHECKPOINT.md).
 
 ## Current snapshot — 30 October 2026
 

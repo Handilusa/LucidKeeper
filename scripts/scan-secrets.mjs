@@ -21,6 +21,12 @@ const KNOWN_SAFE_HASHES = new Set([
   '0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6'.toLowerCase(),
   // Public transaction referenced in audit
   '0x2532174707449130883afd68d0dca5dbd9afca5db380e37116b06e01126fd7b6'.toLowerCase(),
+  // Public bounty transactions (Approve, Deposit, DOGE Short) and block hashes
+  '0xba3598c0cd1460327c31564b3756a0ad2e537008e1ad44d462e8d9b80e8a9509'.toLowerCase(),
+  '0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9'.toLowerCase(),
+  '0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c'.toLowerCase(),
+  '0x80a4b1b009f1f88650311973abdb109c20ddf78df63e19c06257ad497387eb14'.toLowerCase(),
+  '0x0160c213facebb7e00a2d2c680427098d127ba4aa04c0867d3d4e8bfdb2edb6d'.toLowerCase(),
   // Somnia Tokyo genesis hash
   '0x2b2ebef7db781fc01d1fa75ff13dbba2e6cfa3fbc865d4fa394df183bdca36fb'.toLowerCase(),
 ]);

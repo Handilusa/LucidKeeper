@@ -9,6 +9,7 @@ Actualizado: **30 de octubre de 2026**. Un Markdown por incidencia; distinguir d
 | [Unsigned perp builder requires a signer](unsigned-perp-builder-requires-signer.md) | Fricción SDK reproducida; sin envío |
 | [Hideki explorer missing from chain metadata](hideki-explorer-missing.md) | Inconsistencia documental/configuración reproducida; sin envío |
 | [Intermittent read connectivity](intermittent-read-connectivity.md) | Diagnóstico intermitente; causa no confirmada, posible red local |
+| [Missing IOC alias on ORDER_TYPE enum](order-type-ioc-enum-missing.md) | Fricción SDK/Doc reproducida: `ORDER_TYPE` carece de clave `IOC` o `IMMEDIATE_OR_CANCEL` (solo define `MARKET: 2`); sin envío |
 | [004 — Mixed candle intervals](004-mixed-candle-intervals.md) | Resuelto: intervalos nativos, OHLC/unidades validados; evidencia en auditoría/validación |
 | [005 — Reown production allowlist](005-production-reown-origin-allowlist.md) | Configuración resuelta en producción el 29 de octubre: HTTP200/202, 5/5; conexión/relay/firma real pendientes |
 | [006 — Accessible group semantics](006-generic-container-accessible-labels.md) | Fix local y producción verificados el 30 de octubre; seis grupos AX en escritorio/móvil; lector de pantalla pendiente |
