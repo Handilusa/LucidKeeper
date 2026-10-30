@@ -1,30 +1,29 @@
 # LucidKeeper
 
-**Verified perps execution terminal & autonomous risk sentinel for dreamDEX Perps on Somnia Tokyo testnet.**
+**Perps execution terminal & browser-local risk guardian for dreamDEX on Somnia Tokyo testnet.**
 
 LucidKeeper provides real-time market telemetry, verifiable on-chain execution, interactive risk sentinels, and cryptographic execution evidence for the dreamDEX Perps Builder Bounty on Somnia Tokyo testnet (Chain ID 50383).
 
 ---
 
-## ⚡ Current Status — 27 October 2026
+## Current status — 30 October 2026
 
-**Live on-chain execution verified with real Somnia Tokyo testnet transaction hashes and active BTC perp position.**
+Current frontend authority: [STATUS.md](STATUS.md), [checkpoint](docs/CHECKPOINT.md) and [validation](docs/LUCIDKEEPER_REDESIGN_VALIDATION.md).
 
 - **Official SDK 0.32.1** installed; **21 perp markets** indexed and cross-checked on-chain.
-- **HOLD released** following explicit written confirmation that testnet bounty funds are authorized for perps margin.
-- **Collateral Approve & Deposit executed:** 2.0 USDso approved and deposited to MarginBank.
-- **First Real IOC Order & Fill confirmed on-chain:**
-  - Bought **0.00013 BTC** @ **79,946.0 USDso** limit fill.
-  - Taker Order ID `8061227160211082042424` matched against Maker `15587498742284579101740`.
-  - Active long position recorded in MarginBank and pool `0x4181dd08e73bbcdd1ba3e615a18f6abd941b94c0`.
-- **Interactive UI Terminal (`npm run ui`)** implemented with live telemetry, risk stress-testing, and X PnL card generator.
-- **38 offline tests pass** covering envelope validation, cryptographic recovery, allowlist, and RPC preflight checks.
+- **Production:** https://lucid-keeper.vercel.app/ returns HTTP 200. On 30 October, public Vercel status reports successful deployment of `3ff1433`; served HTML, entry JS and CSS exactly match a tracked-source build of that commit. Production-alias metadata is not independently exposed.
+- **Feedback 006 verified in production:** all six named chart/order groups appear in desktop and phone accessibility trees; scoped axe naming checks pass. Actual screen-reader testing remains pending.
+- **Local source:** `8a378f4` adds canonical branding after `3ff1433`; it is not published. Production verification above does not certify this later increment.
+- **Fresh checks:** **66/66 unit tests**, TypeScript, ESLint, production build and **30/30 complete Playwright scenarios** pass. Mock wallet/transaction/armed-Guardian requests are isolated transport fixtures, not real execution evidence.
+- **Implemented:** market/limit order UI, indexed activity, cancel orders, partial close, sequential approval/deposit, withdrawal and browser-local Guardian triggers. These do not have a fresh production transaction smoke test.
+- **Historical execution:** the 27 October approval, deposit and first BTC fill are preserved below. The 0.00013 BTC long is **not a current-position claim**; 29 October read-only QA observed zero positions. No new position/receipt audit was performed in this documentation reconciliation.
+- **Operational blocker:** instructions retain a funding HOLD, while `src/lib/operating-policy.mjs` sets it inactive and signing documents disagree. **No live preparation, signing or broadcasting until the user explicitly resolves funding permission and the signer model in writing.** Code is not authorization; this update does not release HOLD or change policy.
 
 ---
 
 ## 🔍 Verified On-Chain Execution Evidence
 
-All transactions were executed using the authorized bounty EOA on Somnia Tokyo (Chain ID 50383). Every receipt and event log has been verified against canonical blocks on the official Somnia Tokyo explorer:
+Historical evidence recorded on 27 October for the authorized bounty EOA on Somnia Tokyo (Chain ID 50383). These receipts are not new permission to transact or evidence of a currently open position:
 
 | Action | Transaction Hash | Block | Status | Verified Outcome |
 | :--- | :--- | :--- | :--- | :--- |
@@ -46,7 +45,7 @@ npm ci
 ```
 
 ### 2. Run Test Suite
-Runs all 38 offline cryptographic and transaction policy tests:
+Runs the current offline unit suite (66 tests at this checkpoint):
 ```bash
 npm test
 ```
@@ -57,18 +56,23 @@ Performs read-only inspection of Somnia Tokyo testnet, 21 perp markets, and curr
 npm run check -- --address 0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA
 ```
 
-### 4. Launch the LucidKeeper Interactive UI
-Starts the local Web3 terminal server on port 3000:
+### 4. Launch the active React/Vite frontend
+Build and serve the production preview:
 ```bash
-npm run ui
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4174 --strictPort
 ```
-Open **`http://localhost:3000`** in any browser to access:
+Open **`http://127.0.0.1:4174`**. For the complete isolated browser suite, run `npm run test:e2e` with that port free; Playwright builds and starts its own preview.
+
+`npm run ui` / `npm run dev` start the retained compatibility HTTP terminal, not the active React/Vite frontend.
+
+The active frontend provides:
 - **Live HUD:** Native STT gas balance, USDso wallet collateral, and MarginBank unlocked margin.
-- **Active Position Monitor:** Real-time PnL tracking for the 0.00013 BTC long position against live mark price.
-- **Interactive Risk Sentinel:** Drag the price stress-test slider to simulate liquidation risk, margin ratios, and reactive trigger thresholds.
-- **CLOB Book:** Top-of-book bids, asks, and spreads for Tokyo perp pools.
-- **Audit Panel:** Clickable links to Somnia Tokyo Explorer for all 3 execution receipts.
-- **Viral X PnL Card Generator:** High-resolution HTML5 Canvas trade card ready for export and sharing with `@DreamDEXSomnia`.
+- **Position Monitor:** Account-scoped positions and PnL from real reads, or explicit empty/unavailable/stale states.
+- **Risk Guardian:** Labeled stress/liquidation scenarios and client-side triggers. An active browser tab and wallet approval are required; execution and fills are not guaranteed.
+- **Execution Chart:** Native OHLCV candles, separate Last/Mark references, reversible robust scale and explicit read states.
+- **Activity:** Indexed orders/history and transaction links; confirmation remains distinct from fill and position.
+- **Share Card:** Canvas position snapshot, explicitly not proof of realized PnL or independent transaction verification.
 
 ---
 
@@ -76,6 +80,8 @@ Open **`http://localhost:3000`** in any browser to access:
 
 ```text
 LucidKeeper/
+├── src/app/                     # Active React application and portfolio reads
+├── src/features/                # Terminal, trade, portfolio, margin, Guardian and share UI
 ├── src/lib/
 │   ├── dreamdex.mjs             # Network clients, 21 market reads, ABI definitions, event parsers
 │   ├── funding.mjs              # Exact-amount funding calldata builders (approve / deposit)
@@ -87,20 +93,21 @@ LucidKeeper/
 │   ├── prepare-margin.mjs       # CLI for margin deposit envelope generation
 │   ├── prepare-order.mjs        # CLI for IOC order envelope generation
 │   ├── verify-order.mjs         # Verification of canonical on-chain receipt and fills
-│   └── ui-server.mjs            # Production HTTP server for the LucidKeeper Terminal
+│   └── ui-server.mjs            # Retained compatibility HTTP terminal
 ├── public/
-│   └── index.html               # Cyberpunk-styled interactive trader terminal & PnL card generator
+│   ├── assets/                  # Local licensed token assets
+│   └── index.html               # Compatibility terminal; active SPA entry is root index.html
 ├── evidence/public/             # Reviewed, verifiable public execution records
 │   ├── connectivity-2026-10-26.json
 │   └── execution-2026-10-27.json
-└── test/                        # 38 isolated offline tests (100% passing)
+└── test/                        # Offline unit tests and isolated Playwright transport fixtures
 ```
 
-### Golden Rules Followed (Judges' Directives)
-1. **Zero Simulation:** All PnL, margin equity, and fills originate strictly from on-chain contracts and official indexers.
+### Data integrity and operating boundaries
+1. **No fabricated financial data:** Live PnL, equity and fills use contracts/indexer data. Hypothetical stress/liquidation scenarios are labeled; tests use isolated fixtures, not live evidence.
 2. **Dedicated Bounty Account:** Exclusively uses EOA `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA` on Somnia Tokyo (Chain 50383).
-3. **No Key Persistence:** Private keys are handled strictly in memory during approved signing sessions and never written to disk, Git, logs, or evidence.
-4. **Auto-Pull Protection:** Allowances are strictly capped at exact deposit amounts and reset to 0 to prevent unauthorized protocol pulls.
+3. **No signing authorization in this task:** No keys, wallet connection, arming or transactions. The conflicting historical signer/HOLD descriptions require explicit written user resolution before live work.
+4. **Funding safeguards:** Exact-amount approval and receipt sequencing are implemented. Historical zero allowance is not a current guarantee; the offline broadcaster checks zero allowance for orders. No new allowance/deposit verification was performed here.
 
 ---
 
@@ -122,11 +129,13 @@ LucidKeeper/
 
 Required mentions of **`@DreamDEXSomnia`** and **`@Somnia_Network`**:
 
+**Drafts only; no published post URLs recorded.** The user must publish 2–3 posts with real evidence, record the 2–3 minute video, deliver feedback and complete the bounty/DoraHacks submission before **1 November 2026, 23:59 UTC** (user-provided deadline).
+
 | # | Topic | Proposed Post Copy | Evidence Link |
 | :- | :--- | :--- | :--- |
-| **1** | **Build Introduction** | *"Building #LucidKeeper for the @DreamDEXSomnia Perps Builder Bounty on @Somnia_Network Tokyo! An autonomous risk sentinel & execution terminal with zero simulation and 100% verified on-chain accounting. Check out the open-source repo: https://github.com/Handilusa/LucidKeeper 🚀 #dreamDEX #Somnia"* | [GitHub Repo](https://github.com/Handilusa/LucidKeeper) |
-| **2** | **First Real Execution** | *"First real perps execution on @DreamDEXSomnia Tokyo testnet confirmed! ⚡ Approved collateral, deposited 2 USDso margin, and filled 0.00013 BTC long @ 79,946 USDso. Check the on-chain fill receipt: https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a 🛡️ #LucidKeeper #SomniaTokyo"* | [Tx 0x8e5f...a47a](https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a) |
-| **3** | **MVP Terminal & Demo** | *"Explore the LucidKeeper terminal for @DreamDEXSomnia! Live CLOB depths, automated risk health factor, price stress testing, and viral shareable PnL cards. Test orders, protect your margin, and trade verified on @Somnia_Network. Run `npm run ui`! 📈 #LucidKeeper #DeFi #dreamDEX"* | [Terminal Public Record](evidence/public/execution-2026-10-27.json) |
+| **1** | **Build Introduction** | *"Building #LucidKeeper for the @DreamDEXSomnia Perps Builder Bounty on @Somnia_Network Tokyo: a perps terminal with real market/account reads and labeled risk scenarios. Source: https://github.com/Handilusa/LucidKeeper #dreamDEX #Somnia"* | [GitHub Repo](https://github.com/Handilusa/LucidKeeper) |
+| **2** | **Historical Real Execution** | *"On 27 October, #LucidKeeper filled 0.00013 BTC long at 79,946 USDso on @DreamDEXSomnia / @Somnia_Network Tokyo testnet after a 2 USDso deposit. Historical fill, not a current-position claim. Receipt: https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a"* | [Tx 0x8e5f...a47a](https://explorer.testnet.somnia.network/tokyo/tx/0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a) |
+| **3** | **MVP Terminal & Demo** | *"Explore #LucidKeeper for @DreamDEXSomnia on @Somnia_Network Tokyo: native execution candles, cross-margin health, labeled stress scenarios and shareable position snapshots. Browser-local Guardian requests wallet approval; fills depend on liquidity. https://lucid-keeper.vercel.app/"* | [Public Terminal](https://lucid-keeper.vercel.app/) |
 
 ---
 

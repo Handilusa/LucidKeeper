@@ -8,7 +8,7 @@
 
 ## 1. Phase 0 Production Baseline Audit (15-Minute Clean Wallet Test)
 
-Audit conducted against the deployed production terminal (`https://lucid-keeper.vercel.app/`) with a clean browser profile / new wallet:
+**Historical baseline, 28 October 2026 — not current application status or permission to reproduce write flows.** Earlier recorded audit against `https://lucid-keeper.vercel.app/` follows unchanged. The authoritative reconciliation is below; later implementation supersedes missing-feature claims, but fixtures do not certify production transactions.
 
 | Step | Action & Flow | Expected Result | Production Status | Failure Root Cause / Gap |
 | :--- | :--- | :--- | :--- | :--- |
@@ -45,7 +45,7 @@ Audit conducted against the deployed production terminal (`https://lucid-keeper.
 
 ---
 
-## 3. Product Modules & Frontend UI Requirements
+## 3. Historical Product Modules & Frontend UI Requirements — 28 October
 
 | ID | Module / Feature | Status | Acceptance Criteria & Evidence |
 | :--- | :--- | :--- | :--- |
@@ -61,7 +61,7 @@ Audit conducted against the deployed production terminal (`https://lucid-keeper.
 
 ---
 
-## 4. Engineering Quality Gates
+## 4. Historical Engineering Quality Gates — 28 October
 
 | ID | Gate | Tool | Target | Status & Evidence |
 | :--- | :--- | :--- | :--- | :--- |
@@ -77,7 +77,7 @@ Audit conducted against the deployed production terminal (`https://lucid-keeper.
 
 ---
 
-## 5. Bounty Deliverables Checklist
+## 5. Historical Bounty Deliverables Checklist — 28 October
 
 | ID | Deliverable | Status | Location / Details |
 | :--- | :--- | :--- | :--- |
@@ -141,3 +141,25 @@ Baseline check: `npm run typecheck` PASS on inherited source, 29 October 2026. R
 - **Requirement:** Every public/project-name reference uses exact `LucidKeeper` branding. This includes application metadata, Reown app name, server output, fallback UI, card/download text, README, documentation and proposed X copy.
 - **Implemented locally:** Former-name strings removed from all active-project text; fallback initials changed to `LK`; lowercase npm/localStorage identifiers retained as technical namespaces; established local directory unchanged.
 - **Acceptance evidence:** tracked-text branding regression PASS in the **66/66** unit suite; active-project and built-output searches find zero former-name or incorrect-casing matches; typecheck, ESLint, build and isolated rendered title/header/footer Chromium check PASS. Deployment verification remains separate.
+
+## Current reconciliation — 30 October 2026
+
+This section supersedes historical status tables above. [STATUS](../STATUS.md), [CHECKPOINT](CHECKPOINT.md) and [validation](LUCIDKEEPER_REDESIGN_VALIDATION.md) are current frontend authority. No runtime, signer or operating-policy change is part of this reconciliation.
+
+| Requirement / module | Current status and evidence | Still unverified |
+| --- | --- | --- |
+| Wallet / REQ-UI-01 | RainbowKit/Wagmi implemented; Reown configuration 5/5 production checks passed on 29 October, [005](../feedback/005-production-reown-origin-allowlist.md) | Actual connection/relay/signing since the Reown change |
+| Markets / REQ-UI-02 | 21 verified markets; local switching/native-interval tests and dated deployed read checks in validation | No new all-market production audit |
+| Chart / REQ-UI-03 | Native interval/units validation, preserved OHLC, separate Mark line, reversible robust scale, keyboard/time/read states; [004 resolved](../feedback/004-mixed-candle-intervals.md), `src/features/terminal/Chart.tsx` | Full manual accessibility/performance; no mark-price substitution into execution candles is required |
+| Trading / REQ-UI-04 | IOC/limit, validation, live fee/health gates, requested/submitted/confirmed distinct from fills; `src/features/trade/TradingBox.tsx` | Fresh production transaction/fill smoke test |
+| Positions / REQ-UI-05 | Multi-market portfolio and lot-quantized partial/full close implemented; `src/features/portfolio/PositionsTable.tsx`; fixture checks in validation | Nonempty live portfolio and partial-close transaction smoke test |
+| Orders/history / REQ-UI-06 | Indexed `Order`/`Fill`/`MarginEvent`, cancel action, pagination, RPC/cache fallback; `src/lib/data/indexer.ts` and PositionsTable | Cancel with a nonempty live order book is not freshly exercised; current fixture does not supply a resting order |
+| Collateral / REQ-UI-07 | Exact-amount approval, successful approval receipt awaited before deposit, withdrawal implemented; `src/features/margin/MarginHubModal.tsx`; sequencing/revert fixtures | Fresh production deposit/withdrawal; do not claim a new post-approval allowance re-read or universal zero-allowance reset |
+| Guardian / REQ-UI-08 | Pinned-block portfolio health, protocol maintenance input, active-tab/wallet-approval disclosure, account/network isolation and reload-disarmed settings; `src/features/sentinel/RiskGuardian.tsx` | Live execution, verified actual fill/remaining quantity and automated retry are not certified; receipt confirmation explicitly says actual fill not yet verified |
+| Share / REQ-UI-09 | LucidKeeper canvas/PNG, related tx/pool labeling, explicit snapshot-not-realized-PnL disclaimer; `src/features/share/TradeCardModal.tsx` | Fresh live nonempty-position card path; hash syntax alone is not independent execution verification |
+| Accessible groups | [006 production verified](../feedback/006-generic-container-accessible-labels.md): six named AX groups at desktop/phone, zero scoped naming violations/incomplete results | Real screen reader, manual contrast/modal-focus review, dense labels/small targets |
+| Operational permission | **BLOCKED:** instructions/signing docs retain HOLD; runtime policy says inactive | Written user resolution of funding and signer-model contradiction before any live preparation/sign/broadcast; no code bypass |
+
+Fresh 30 October unit suite: **66/66 PASS**; TypeScript, ESLint and build **PASS**; complete **30/30 Playwright Chromium PASS**, all current transport fixtures included, no retries (build47.75s/browser2.1m). Prior **27/27**, **6/6**, **65/65** and Lighthouse performance **70** results remain dated historical results, not current totals or fresh performance evidence. DESIGN lint remains **0 errors / 9 documented orphan-token warnings**, not a new run. RPC fallback/contract-error decoding are possible hardening; build annotation/large-chunk warnings remain nonfatal.
+
+**Submission status:** public repository and historical execution evidence exist; public URL responds with `3ff1433` HTML/entry-JS/CSS parity plus successful public Vercel commit status (production-alias metadata not exposed). Six feedback files exist, but the three older SDK/docs/connectivity reports remain prepared and unsubmitted; local app fixes 004–006 are not proof of upstream acceptance. X copy is draft only. Video, 2–3 published X posts, feedback delivery, final public-URL confirmation and DoraHacks/bounty submission remain human-owned. OG/Twitter metadata is optional and not completed by this task.

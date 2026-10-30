@@ -1,8 +1,8 @@
 # Frontend checkpoint
 
-- **Updated:** 30 October 2026 — project-wide LucidKeeper brand normalization implemented and locally verified.
-- **Repository:** This directory is the Git root; branch `main`, brand-task starting HEAD `3ff1433`.
-- **Authority:** The user's latest four-step order supersedes the previous NEXT. Do not re-summarize, push, or run deployed-site QA before deployment confirmation.
+- **Updated:** 30 October 2026 — production group verification and complete isolated suite finished; documentation reconciliation.
+- **Repository:** This directory is the Git root; branch `main`, this task's independently observed starting HEAD `8a378f4`, clean and one ahead of public `origin/main` at `3ff1433`.
+- **Authority:** Current user handoff authorizes read-only deployment/group verification, then the full local fixture suite and stale-document reconciliation. It supersedes earlier NEXT/deployment gates. No real wallet connection, arming, signing, transactions, cloud changes or push.
 - **Brief:** `../prompt_frontend.txt` remains unchanged and outside Git.
 
 ## Ordered steps
@@ -57,7 +57,17 @@ Step 2 committed as **`aa3a24b`** with explicit staging of DESIGN, generated tok
 
 ## NEXT
 
-Await deployment confirmation before production branding/accessibility QA. The reviewed branding increment is committed locally and post-commit status is clean; its hash is reported separately. No wallet action, transaction, cloud change or push.
+QA and documentation reconciliation complete; final documentation/link/secret/whitespace checks recorded below. Await explicit written funding/signer-policy resolution before any live preparation/sign/broadcast. Production verification of the later local branding, real screen-reader/manual audit and human bounty submission remain separate. No wallet/cloud actions or push.
+
+## Current handoff completion — 30 October 2026
+
+1. **Git correction:** inspected clean `8a378f43d5c1ccda4f0c0543b0118ef235f23b67`, 1 ahead/0 behind `origin/main`; unauthenticated public `git ls-remote` confirms remote `3ff143357dffb616e859103a1c21256ab162854c`. Existing branding increment preserved; no fetch/login/push/cloud change.
+2. **Deployment first:** public GitHub Vercel status HTTP200 reports success for `3ff1433` at **10:56:02 UTC**, deployment `BBwJ9NVnpDjAjfXwNDaH14xevZqg`. Reconstructed tracked-source snapshot under local Git metadata, built using existing dependencies without environment-file copying. Production HTTP200 HTML, entry JS and CSS are SHA-256-identical to that reference. No claim of independently exposed production-alias metadata or deployment of newer local `8a378f4`.
+3. **Read-only production 006:** **11:18–11:19 UTC**, fresh Chromium156.0.8078.4 at1440×900/390×844 (phone Chart/Trade separate). Twelve non-ignored AX observations cover six exact supported names; no group focus stops, ordinary Tab/Shift+Tab/Enter/single-pressed-state and OHLC live-off pass. Axe4.11.0 scoped naming violations/incomplete zero; WCAG automatic violations zero; contrast incomplete28/8/28. Zero injected wallets, connection, arming, simulation/sign/send, page/console errors or blocked write attempts. Three fresh production renders inspected. Evidence `.git/lucidkeeper-audit/handoff-production-2026-10-30T11-18-16-231Z/report.json` and screenshots.
+4. **Complete current suite:** `npm run test:e2e` builds successfully **47.75s**, then **30/30 Chromium PASS (2.1m)**, no retries, finished **11:22:36 UTC**. Includes all connected/write/armed-Guardian **isolated transport doubles**, the two accessibility regressions and the additional branding test. No real keys/signatures or external transaction requests. Fresh `npm test`66/66, typecheck and ESLint PASS. Evidence `.git/lucidkeeper-audit/handoff-full-e2e-2026-10-30.{json,log}`. Build dependency annotation/>500kB warnings remain.
+5. **Documentation:** reconciled README active frontend/commands/test totals/current-versus-historical positions; REQUIREMENTS current module evidence with historical tables retained; STATE current snapshot and explicitly non-authorized historical write plan; all six feedback entries/006 production resolution; offline signing runtime-versus-instruction HOLD and historical browser/receipt claims. STATUS/validation/local memory refreshed. Parent workspace, application source, tests, policy and cloud configuration unchanged. Actual fill verification/auto-retry is not claimed from Guardian receipt confirmation.
+6. **Still blocked/untested:** written funding and signer-model resolution, actual wallet connection/relay, fresh production write lifecycle, live error/nonempty portfolio paths, real screen reader, manual contrast/modal-focus/target review. DESIGN lint9 warnings and Lighthouse70 remain historical. Video/X posts/feedback delivery/DoraHacks submission are human-owned; deadline1November23:59UTC, user-provided.
+7. **Final documentation checks, 11:28 UTC:** verifier PASS for exactly nine documentation paths, 39 tracked local links/headings, production/deployment evidence and complete fixture result; branding regression PASS; unchanged supplemental secret scanner exits0/zero findings in tracked worktree/latest100commits. Corrected a new trailing-space finding in STATE and repeated whitespace checks. Final explicit staging/commit/readback preserves source/policy and excludes local audit/memory; no push. Commit hash and final clean status are recorded separately to avoid self-reference.
 
 ## Authorized LucidKeeper brand normalization — 30 October 2026
 

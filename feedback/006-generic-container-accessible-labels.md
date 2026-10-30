@@ -1,6 +1,6 @@
 # Named chart/order groups use generic containers
 
-**Status:** Fixed and verified locally, **29 October 2026, 20:46 UTC**. Deployment and screen-reader verification remain pending; historical production observations below are preserved.
+**Status:** Fixed locally and **verified in production, 30 October 2026, 11:19 UTC**. Actual screen-reader verification remains pending. Earlier observations below are historical, not an unresolved current markup defect.
 
 - **Severity:** Low — confirmed markup gap; assistive-technology impact requires manual verification.
 - **Area:** Frontend accessibility / group semantics.
@@ -20,3 +20,11 @@
 - At **20:46:49–20:46:51 UTC**, all six exact names appear as non-ignored `group` nodes in Chromium's accessibility tree on both sizes (phone Chart/Trade views separately). Each affected container explicitly passes `aria-prohibited-attr`; scoped violations and incomplete results are both **zero**. WCAG-tagged document runs have **zero automatic violations**, but contrast incomplete/manual-review nodes remain: **34 desktop, 14 phone Chart, 28 phone Trade**. Modal focus and actual screen-reader announcement were not retested; this is not full accessibility certification.
 - Evidence: local `.git/lucidkeeper-audit/groups-006-1440-2026-10-29T20-46-49-255Z/report.json` and `groups-006-390-2026-10-29T20-46-50-359Z/report.json`, accessibility snapshots and three new screenshots. Inspected desktop and phone Chart/Trade renders; screenshots use isolated fonts and do not claim live font/content parity.
 - Production fix not verified or published by this task. No wallet connection, guard arming, claims, signatures, transactions or push. After user deployment confirmation, a separate read-only production check can verify the served semantics; screen-reader coverage remains separate.
+
+## Read-only production verification — 30 October 2026
+
+- Public GitHub Vercel status for `3ff1433` reports successful deployment at **10:56:02 UTC**. Effective URL `https://lucid-keeper.vercel.app/` returns HTTP200; served HTML, main JS and CSS match a reference build of that commit's tracked source by SHA-256. Production-alias metadata was not independently exposed; this does not certify the later local `8a378f4` branding increment.
+- At **1440×900** and **390×844** (phone Chart/Trade separately), all six exact names are unique, non-ignored AX `group` nodes: **Chart timeframes, Chart price scale, Candle prices, Chart price references, Order side, Order type**. Twelve observations; groups add no focus stops, ordinary button Tab/Shift+Tab/Enter behavior and single pressed state pass, OHLC `aria-live="off"` unchanged.
+- Chromium **156.0.8078.4**, axe **4.11.0**, SDK **0.32.1**, Tokyo **50383**, same public EOA in disconnected read-only mode. Scoped `aria-prohibited-attr` violations/incomplete results **zero**; WCAG-tagged automatic violations **zero**. Current contrast incomplete nodes: **28 desktop / 8 phone Chart / 28 phone Trade**; these are manual-review observations, not proof of contrast failures or improvements. No real screen reader or new modal-focus audit.
+- Live resources/reads were not replaced with fixtures. Fresh browser profiles, service workers disabled, view-selector RPC allowlist and mutation/write blocking; no injected wallet, connection, arming, signing, simulation or sending. Zero page/console errors and blocked write attempts. Three current screenshots inspected separately from fixture renders.
+- Evidence remains local: `.git/lucidkeeper-audit/handoff-production-2026-10-30T11-18-16-231Z/report.json`, three screenshots and the tracked-source reference build. No app/source/policy/cloud change or push. Markup resolution is verified in production; human assistive-technology verification and feedback delivery remain separate.

@@ -1,8 +1,28 @@
 # LucidKeeper redesign validation
 
-**Observed:** 29 October 2026. **Scope:** local React/Vite source and production preview, plus the separately dated deployed read-only QA below. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `LucidKeeper`, branch `main`.
+**Updated:** 30 October 2026. **Scope:** local React/Vite source and production preview, plus separately dated deployed read-only QA. Node 24.19.0, Windows, Chromium, markets SDK 0.32.1, Lightweight Charts 4.2.3. Repository: `LucidKeeper`, branch `main`.
 
-**Outcome:** local unit/type/lint/build and all 27 fixture scenarios pass. After the user's deployment confirmation, **40/40 deployed read-only protocol assertions pass**, with current Reown configuration and accessible-group naming follow-ups recorded below. No wallet connection, guard arming, signatures, on-chain writes or push by this QA session. Publication recorded in inherited `e755984` is separate.
+**Current outcome:** **66/66 units, typecheck, lint, build and 30/30 complete isolated Chromium scenarios PASS** on30October. Production `3ff1433` HTML/entry-JS/CSS parity and all six named accessibility groups pass in fresh read-only checks. Actual screen reader, wallet connection/relay and fresh live transactions remain unverified; no real wallet, arming, signatures, on-chain writes, cloud changes or push. Earlier27/27 and40/40 records below remain dated historical evidence.
+
+## Current verification — 30 October 2026
+
+| Check | Fresh result / boundary |
+| --- | --- |
+| Starting Git | Clean `8a378f4`, 1 ahead/0 behind `origin/main`; public remote `3ff1433`. Supplied handoff was older than preserved local branding increment |
+| Deployment | Public GitHub Vercel status HTTP200, `3ff1433` success at10:56:02UTC; production effective URL HTTP200; HTML, entry JS and CSS exactly match a tracked-source reference build by SHA-256 |
+| Production groups006 | 1440×900/390×844, phone Chart/Trade separately,12 AX observations across six exact names; zero scoped axe naming violations/incomplete, ordinary keyboard/no-new-focus-stop/live-off checks pass |
+| Production browser boundaries | No injected/connected wallet, arming, simulated write call, signatures or transactions; view-selector RPC allowlist/GraphQL mutation blocking; zero page/console errors and blocked write attempts |
+| Unit/type/lint | `npm test`66/66 PASS; `npm run typecheck`/`npm run lint` PASS |
+| Full browser/build | `npm run test:e2e`: build47.75s PASS, **30/30 Chromium PASS**,2.1m, no retries, finished11:22:36UTC; two accessibility regressions plus branding and every existing connected/write/armed-Guardian transport fixture included |
+| Evidence | Local `.git/lucidkeeper-audit/handoff-production-2026-10-30T11-18-16-231Z/report.json` +3 inspected live screenshots/reference build; `.git/lucidkeeper-audit/handoff-full-e2e-2026-10-30.{json,log}` |
+
+Public commit deployment status and exact served content parity support the deployed `3ff1433` content finding; production-alias metadata is not independently exposed. The later local branding commit is not certified deployed. Only HTML and its two directly referenced assets were hash-compared in this fresh check, **not all lazy-loaded assets or a new five-size/40-assertion protocol audit**.
+
+Fresh Chromium156.0.8078.4/axe4.11.0 WCAG-tagged automatic violations zero; contrast incomplete/manual-review nodes **28 desktop,8 phone Chart,28 phone Trade**, not confirmed defects or measured improvements over historical local34/14/28. No real screen-reader session/new manual modal-focus audit. The full fixture suite did rerun modal keyboard containment/Escape/return focus, which is not a production manual accessibility certification.
+
+Application source/tests/policy/cloud unchanged. README/requirements/state/feedback/signing-document facts reconciled without erasing historical observations or releasing HOLD. Instructions and inactive runtime policy still conflict; explicit written user funding/signer-model resolution is required before all live preparation/sign/broadcast. Historical transaction hashes are preserved, not newly recertified. Build annotations/chunk warnings remain; DESIGN9 warnings and Lighthouse performance70 are not fresh runs. Live wallet/relay, write/fill lifecycle, error recovery/nonempty portfolio and human bounty deliverables remain separate.
+
+Final documentation verifier **PASS**: exactly nine changed documentation paths, **39 tracked local links/headings**, unchanged runtime policy and checked production/full-suite evidence. Branding-only regression PASS; unchanged supplemental scanner exits0/zero findings (tracked worktree/latest100commits, ignored memory/audit/secret files excluded). A new STATE trailing-space finding was corrected before repeated final whitespace/staging checks. Local documentation commit only; no push.
 
 ## Commit evidence
 
@@ -10,7 +30,7 @@
 - After `da2301e`, `git status --porcelain=v1 --untracked-files=all` returned empty. No inherited work discarded or unstaged.
 - Violet DTCG export and current DESIGN lint recorded in `aa3a24b`. Current documentation commit is obtained with `git rev-parse HEAD`; no self-referential hash is embedded here.
 
-## Commands actually run
+## Historical commands — 29 October 2026
 
 Application/design results below were recorded earlier on 29 October; they were not rerun for the final documentation-only increment.
 

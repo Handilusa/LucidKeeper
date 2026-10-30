@@ -1,12 +1,24 @@
 # LucidKeeper — Current State (STATE.md)
 
-**Last Updated:** 28 October 2026, 20:15 UTC  
+**Last Updated:** 30 October 2026
 **Active Repository:** `LucidKeeper` (Git origin: `https://github.com/Handilusa/LucidKeeper.git`, branch `main`)
-**Current Phase:** Phase 1 Shipped (commit `00d1852`) · Awaiting Vercel redeploy and production smoke-test
+**Current Phase:** Read-only production accessibility verification complete; current local fixture-suite/documentation reconciliation. Frontend authority: [STATUS](../STATUS.md) and [CHECKPOINT](CHECKPOINT.md).
+
+## Current snapshot — 30 October 2026
+
+- Starting HEAD independently observed: **`8a378f4`**, clean `main`, **1 ahead / 0 behind** `origin/main`; public remote still **`3ff1433`**. This corrects the supplied handoff without discarding the existing branding commit.
+- Production https://lucid-keeper.vercel.app/ is HTTP200. Public Vercel commit status reports `3ff1433` deployment completed at **10:56:02 UTC**; on **11:18–11:19 UTC**, served HTML, entry JS and CSS exactly match a reference build from that commit's tracked source. Production-alias metadata is not independently exposed; the newer local branding increment is not certified deployed.
+- All six supported chart/order groups are non-ignored named AX groups at desktop/phone (**12 observations**); scoped axe naming checks pass with no violations/incomplete results. No injected wallet, connection, Guardian arming, signatures, simulations or writes; zero page/console errors and blocked write attempts. [Feedback006](../feedback/006-generic-container-accessible-labels.md).
+- Fresh **66/66 units**, typecheck, ESLint and build pass; complete **30/30 Chromium fixture scenarios PASS**, no retries, build47.75s/browser2.1m, completed11:22UTC. Includes connected/write/armed-Guardian transport doubles only, not real wallet/transaction proof; older27/27 totals are historical.
+- Deposit/cancel/partial close/withdrawal/Guardian are implemented, not newly production-transaction-certified. Current code preserves execution candles separately from mark; Guardian does not verify actual fills on receipt; share cards are snapshots, not realized-PnL proof. [Current requirements](REQUIREMENTS.md#current-reconciliation--30-october-2026).
+- **Operational block unchanged:** instructions retain HOLD while runtime policy sets it inactive; signer models conflict. Await explicit written user resolution before all live preparation/signing/broadcasting. No policy/source/cloud change or push here.
+- Remaining: screen-reader/manual contrast/focus/target review, live connection/relay, error recovery and nonempty portfolio, fresh authorized transaction smoke test, optional hardening/OG metadata. Human-owned video/X posts/feedback delivery/submission remain due **1 November 23:59 UTC** (user-provided).
 
 ---
 
-## 1. Executive Summary (5-Line Status)
+## 1. Historical Executive Summary — 28 October 2026
+
+The following Phase 1 record and tables are preserved history, not current deployment/test/feature status. The current snapshot above supersedes their NEXT, DONE/QUEUED and old commit references.
 
 1. **Phase 1 Committed & Pushed:** Commit `00d1852` — 9 files changed, 1407 insertions/538 deletions — pushed to `main` on GitHub.
 2. **All Quality Gates Green:** TypeScript 0 errors, 53/53 unit tests PASS, ESLint 0 errors, Build ✓ 9.78s, zero secrets.
@@ -27,7 +39,7 @@
 
 ---
 
-## 3. Work Status by Workstream
+## 3. Historical Work Status by Workstream — 28 October
 
 | Workstream | Status | Details |
 | :--- | :--- | :--- |
@@ -79,7 +91,9 @@ npm run build
 
 ---
 
-## 5. Immediate Next Step
+## 5. Historical Next-Step Proposal — not authorized or current
+
+**Do not execute this old wallet/write plan.** The current task is read-only production QA and local isolated tests/docs. Written operational-policy resolution and separate approvals are prerequisites to any future live work.
 
 **ACTION (User):** Verify Vercel auto-deployed commit `00d1852` at https://lucid-keeper.vercel.app/  
 Open Vercel dashboard → check latest deployment shows commit `00d1852` or "feat: real indexer trade history..."

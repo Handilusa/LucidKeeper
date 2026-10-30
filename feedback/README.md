@@ -1,6 +1,6 @@
 # Feedback del Builder Bounty
 
-Un archivo Markdown por bug, problema de SDK/API o carencia documental reproducida. Los informes actuales están preparados localmente; no se han enviado ni se ha comprobado su aceptación o si son duplicados. La falta de fondos en la EOA es un bloqueo del proyecto, no un bug del protocolo.
+Actualizado: **30 de octubre de 2026**. Un Markdown por incidencia; distinguir defecto reproducido, diagnóstico y verificación pendiente. Los tres informes originales siguen preparados sin envío; resolver un defecto local no prueba entrega, aceptación ni ausencia de duplicados. La falta de fondos no es un bug del protocolo.
 
 ## Informes
 
@@ -9,8 +9,11 @@ Un archivo Markdown por bug, problema de SDK/API o carencia documental reproduci
 | [Unsigned perp builder requires a signer](unsigned-perp-builder-requires-signer.md) | Fricción SDK reproducida; sin envío |
 | [Hideki explorer missing from chain metadata](hideki-explorer-missing.md) | Inconsistencia documental/configuración reproducida; sin envío |
 | [Intermittent read connectivity](intermittent-read-connectivity.md) | Diagnóstico intermitente; causa no confirmada, posible red local |
+| [004 — Mixed candle intervals](004-mixed-candle-intervals.md) | Resuelto: intervalos nativos, OHLC/unidades validados; evidencia en auditoría/validación |
+| [005 — Reown production allowlist](005-production-reown-origin-allowlist.md) | Configuración resuelta en producción el 29 de octubre: HTTP200/202, 5/5; conexión/relay/firma real pendientes |
+| [006 — Accessible group semantics](006-generic-container-accessible-labels.md) | Fix local y producción verificados el 30 de octubre; seis grupos AX en escritorio/móvil; lector de pantalla pendiente |
 
-**HOLD:** no repetir preparaciones de approve/depósito ni generar órdenes para reproducir incidencias mientras esté vigente. Usar lecturas aisladas. Los borradores sin firma y los raw firmados no se publican con los informes.
+**Bloqueo operativo vigente para este trabajo:** instrucciones/signing docs mantienen HOLD, pero `src/lib/operating-policy.mjs` lo declara inactivo. El usuario debe resolver por escrito permiso de margen y modelo de firma; no preparar, firmar ni transmitir para reproducir incidencias antes de esa resolución. Usar lecturas o fixtures aislados; estos no son evidencia on-chain. No se cambió la política. Borradores y raw firmados permanecen fuera de Git. La entrega de feedback es del usuario.
 
 ## Formato
 
