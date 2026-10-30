@@ -18,13 +18,24 @@ test('approval review rejects expired, invalid and over-one-hour deadlines', () 
     assert.throws(() => assertReviewFresh(expiresAt, { action: 'approve' }, reviewTimestamp), /Review expired or outside/);
 });
 
-test('deposit and order reviews keep their five-minute maximum', () => {
-  for (const action of ['deposit', 'order']) {
-    const intent = { action, expireTimestampNs: ((reviewTimestamp + 300n) * 1_000_000_000n).toString() };
-    assert.doesNotThrow(() => assertReviewFresh(Number(reviewTimestamp + 300n), intent, reviewTimestamp));
-    for (const seconds of [301n, 1800n, 2700n])
-      assert.throws(() => assertReviewFresh(Number(reviewTimestamp + seconds), intent, reviewTimestamp), /Review expired or outside/);
-  }
+test('deposit review accepts five and fifteen minutes but never more than fifteen', () => {
+  for (const seconds of [300n, 900n])
+    assert.doesNotThrow(() => assertReviewFresh(Number(reviewTimestamp + seconds), { action: 'deposit' }, reviewTimestamp));
+  for (const seconds of [901n, 1800n, 2700n])
+    assert.throws(() => assertReviewFresh(Number(reviewTimestamp + seconds), { action: 'deposit' }, reviewTimestamp), /Review expired or outside/);
+});
+
+test('order review keeps its five-minute maximum after the deposit extension', () => {
+  const intent = { action: 'order', expireTimestampNs: ((reviewTimestamp + 300n) * 1_000_000_000n).toString() };
+  assert.doesNotThrow(() => assertReviewFresh(Number(reviewTimestamp + 300n), intent, reviewTimestamp));
+  for (const seconds of [301n, 900n, 1800n, 2700n])
+    assert.throws(() => assertReviewFresh(Number(reviewTimestamp + seconds), intent, reviewTimestamp), /Review expired or outside/);
+});
+
+test('the original five-minute deposit deadline still expires without extension', () => {
+  const expiresAt = Number(reviewTimestamp + 300n);
+  assert.doesNotThrow(() => assertReviewFresh(expiresAt, { action: 'deposit' }, reviewTimestamp + 299n));
+  assert.throws(() => assertReviewFresh(expiresAt, { action: 'deposit' }, reviewTimestamp + 300n), /Review expired or outside/);
 });
 
 test('order calldata expiry remains live and no more than five minutes', () => {

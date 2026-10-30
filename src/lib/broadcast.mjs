@@ -21,9 +21,9 @@ const poolReadAbi = parseAbi([
 ]);
 
 export function assertReviewFresh(expiresAt, intent, timestamp = BigInt(Math.floor(Date.now() / 1000))) {
-  // Owner requested a longer offline approval review on 30 October. Only
-  // approvals get up to one hour; deposit/IOC windows and live checks stay strict.
-  const maximumWindow = intent.action === 'approve' ? 3600n : 300n;
+  // Owner requested longer human review on 30 October: approvals up to one
+  // hour, deposits fifteen minutes. IOC calldata/review remains five minutes.
+  const maximumWindow = intent.action === 'approve' ? 3600n : intent.action === 'deposit' ? 900n : 300n;
   assert(Number.isSafeInteger(expiresAt) && BigInt(expiresAt) > timestamp && BigInt(expiresAt) <= timestamp + maximumWindow, 'Review expired or outside the action validity window');
   if (intent.action === 'order') {
     const expiry = BigInt(intent.expireTimestampNs);
