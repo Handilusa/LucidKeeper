@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { MARGIN_HOLD, AUTHORIZED_SIGNER, assertOnchainActionAllowed } from '../src/lib/operating-policy.mjs';
 import { capture } from './fixtures/captured.mjs';
+import { runPolicyBoundaryProbe } from './helpers/run-policy-boundary-probe.mjs';
 
 test('written margin release permits only explicit bounty EOA/Tokyo context', () => {
   assert.equal(MARGIN_HOLD.active, false);
@@ -48,4 +49,9 @@ test('incomplete preparation CLIs remain fail-closed before network or evidence 
     assert.match(result.stderr, /Only the authorized bounty EOA/);
   }
   assert.deepEqual(readdirSync(directory).sort(), before);
+});
+
+test('restored HOLD rejects preparation CLIs with bounty EOA arguments before transport or evidence writes', () => {
+  for (const script of ['prepare-margin.mjs', 'prepare-order.mjs', 'prepare-close-order.mjs'])
+    runPolicyBoundaryProbe('cli-hold', script);
 });

@@ -13,7 +13,7 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 - **Owner-reported provenance:** MVP/Builder track only; personal EOA, not in Perps Arena; the owner reports no transfers to/from Arena smart wallets and USDso obtained from the SomniaHacks Telegram faucet after whitelisting. These statements are not independently verified wallet-history or team evidence. The supplied `[screenshot/date]` was a placeholder, not an attached screenshot; earlier records are preserved, not silently rewritten. The explicit follow-up answer **“Yes, permission confirmed”** is the written margin-use confirmation relied upon for the scoped release.
 - Allowlist unchanged: **exactly 2 USDso approve** to the verified MarginBank, **exactly 2 USDso deposit** for this EOA, and separately reviewed **IOC orders** to verified official PerpPools. No Arena funding, wallet-to-wallet transfers, claims, cancel, withdrawal, limit signing, unlimited approval or unexpected native value. First live run small; show action/market/size/wallet and complete unsigned JSON before each separate approval; stop on any error or mismatch. Agent signing remains a user-mediated offline handoff.
 - **Scoped-policy checks, 30 October:** 13 offline test files, **47 passed / 20 skipped / 0 failed**; typecheck, lint and build **PASS** (45.71s, existing warnings). Missing/foreign context, disallowed actions, changed funding amount/spender and unlimited approval are rejected. Real-service SDK/recovery and browser suites were not rerun; live send/fill branches remain unverified. Complete CLI envelope integration remains pending/fail-closed.
-- Earlier owner authorization covered ordered fixes, one local commit per fix, then push/deployment verification. **Latest supplied local instructions reserve publication to the user: no agent push.** No credential/secret inspection or signer setup.
+- **Latest direct owner instruction, 30 October:** run the full suite, add separate HOLD/boundary regressions, commit separately, push `main` and verify production against local `dist/`, then prepare only the next complete unsigned funding request. This supersedes the earlier user-owned-push restriction for this task. No login, credential inspection, signer setup, signing or broadcast is authorized by publication.
 
 ## Six local fixes completed
 
@@ -26,9 +26,17 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 | 5 | `baeeda5` | Identity-only partial dialog; fresh pinned position/mark/grid and post-review size check; changed/flat/flipped historical regressions |
 | 6 | `a88cf26` | Non-forced `npm audit fix`; no compatible dependency change; residual risk documented |
 
-Inherited authorization/branding commits were preserved. Fixes are local, not verified deployed. Current hash/status: `git rev-parse HEAD`, `git status --short --branch`.
+Inherited authorization/branding commits were preserved. Deployment observations below are dated, not a certification of newer commits. Current hash/status: `git rev-parse HEAD`, `git status --short --branch`.
 
-## Latest local verification — 30 October
+## Full-suite and HOLD regressions — 30 October
+
+- Full `npm test` at clean **`c49bdec`**, before edits: **56 passed / 21 skipped / 0 failed**, 77 registrations in 14 files, including `test/dreamdex.test.mjs` and its actual read-only service/recovery checks. The earlier **47/20** run was only a 13-file offline subset.
+- After three added regressions: full 14-file suite **59 passed / 21 skipped / 0 failed**, 80 registrations. All scoped-release tests and historical skips retained; no executable case removed or converted to skip. Typecheck/lint/build **PASS** (50.70s; existing warnings).
+- Isolated child-process module loading injects only the policy's `active: true` state; production policy/gates/transport/filesystem are unchanged. Restored HOLD rejects authorized EOA/Tokyo approve/deposit/order contexts and all three preparation CLIs with the bounty EOA supplied as arguments.
+- Native debugger function-entry observers independently measure **zero** real `http`, `createPublicClient`, `saveEvidence`, filesystem `mkdir`/`writeFile` and `sendRawTransaction` calls during absent/foreign-context and restored-HOLD rejection. Local positive controls calibrate creation/writing observers; no signing or network send. Send entry is observed but never positively invoked.
+- **Limit:** this proves first-gate blocking, not HOLD restoration during downstream asynchronous preflight/send races; those scenarios remain skipped. Current CLI checks reject before parsing wallet arguments and do not certify completed offline envelope integration. [Method and gaps](docs/TEST_DATA_SOURCES.md).
+
+## Historical fix verification — 30 October
 
 - Typecheck, ESLint and production build **PASS** (build **46.25s**; annotation/large-chunk warnings remain).
 - Unit/integration suite: **56 passed, 21 explicitly skipped, 0 failed**. Local real-service Playwright: **14 passed, 16 explicitly skipped, 0 failed**, no retries, five viewport sizes.
@@ -56,4 +64,4 @@ Inherited authorization/branding commits were preserved. Fixes are local, not ve
 
 ## User-owned delivery
 
-Publish any new local commits and verify deployment parity; finish the complete offline envelope integration and configure the sole-EOA offline signer; separately review/approve small live actions; record the demo video; publish **2–3 X posts** with both required mentions and save URLs in README; deliver feedback; confirm whitelist and complete bounty/DoraHacks submission before **1 November, 23:59 UTC**. Agent does not log in, push, operate wallets, contact Discord or submit on the user's behalf.
+Agent commit/push/deployment verification is authorized for this task; no login or credential inspection. Complete general offline CLI integration remains pending; any separately prepared envelope must pass the exact library policy and current public-state checks. The user configures the sole-EOA offline signer, approves every live step, records the video, publishes **2–3 X posts**, delivers feedback and completes whitelist/bounty/DoraHacks submission before **1 November, 23:59 UTC**. Agent does not operate signing wallets, contact Discord or submit on the user's behalf.

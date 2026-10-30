@@ -2,12 +2,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { broadcastSignedTransaction } from '../src/lib/broadcast.mjs';
 import { capture, historicalEnvelope } from './fixtures/captured.mjs';
+import { runPolicyBoundaryProbe } from './helpers/run-policy-boundary-probe.mjs';
 test('absent or foreign wallet context prevents broadcaster transport creation', async () => {
   // No raw transaction/recovery/transport: actual first-action scope gate rejects.
   await assert.rejects(broadcastSignedTransaction(undefined), /Only the authorized bounty EOA/);
   const envelope = historicalEnvelope();
   for (const invalid of [{ ...envelope, from: capture.system.marginBank }, { ...envelope, chainId: 0 }, { ...envelope, from: undefined }])
     await assert.rejects(broadcastSignedTransaction({ envelope: invalid }), /Only the authorized bounty EOA/);
+});
+
+test('absent or foreign context makes zero real transport, evidence-write and send calls', () => {
+  runPolicyBoundaryProbe('absent-foreign');
+});
+
+test('restored HOLD blocks authorized EOA/Tokyo before real transport, evidence writes or sends', () => {
+  runPolicyBoundaryProbe('hold');
 });
 
 // Preserved test inventory: no synthetic recovery, RPC, receipt, time or filesystem.

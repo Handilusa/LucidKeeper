@@ -13,8 +13,8 @@ Current frontend authority: [STATUS.md](STATUS.md), [checkpoint](docs/CHECKPOINT
 - **Official SDK 0.32.1** installed; **21 perp markets** indexed and cross-checked on-chain.
 - **Production:** https://lucid-keeper.vercel.app/ . Final 30 October public `main`/Vercel status remains `3ff1433`; **not the newer local fixes**. Desktop/phone read-only smoke 12/12 passes; local build parity fails (77/166 match). Publication is user-owned. [Details](STATUS.md#deployment).
 - **Feedback 006 verified in production:** all six named chart/order groups appear in desktop and phone accessibility trees; scoped axe naming checks pass. Actual screen-reader testing remains pending.
-- **Local source:** six ordered fixes committed through `a88cf26`, preserving earlier branding/authorization. Latest supplied local instructions reserve push to the user; no agent push.
-- **Latest fix checks:** TypeScript, ESLint and production build pass; **56 unit/integration passed / 21 skipped**, **14 real-service Playwright passed / 16 skipped**, zero failures. Five viewport screenshots inspected. Former controlled mock cases remain explicit skips, not coverage claims. [Sources and gaps](docs/TEST_DATA_SOURCES.md).
+- **Local source:** six ordered fixes through `a88cf26`, scoped margin release `c49bdec`, followed by separately committed HOLD/boundary regressions. Latest direct instruction authorizes agent push/deployment verification for this task, without login or credential inspection.
+- **Latest unit checks:** full suite at `c49bdec` **56 passed / 21 skipped / 0 failed**; with three new first-gate HOLD/boundary regressions **59 passed / 21 skipped / 0 failed**. Typecheck/lint/build pass. Previous real-service Playwright **14 passed / 16 skipped** is not a fresh browser result. [Sources and gaps](docs/TEST_DATA_SOURCES.md).
 - **Implemented:** market/limit order UI, indexed activity, cancel orders, partial close, sequential approval/deposit, withdrawal and browser-local Guardian triggers. These do not have a fresh production transaction smoke test.
 - **Historical execution:** the 27 October approval, deposit and first BTC fill are preserved below. The 0.00013 BTC long is **not a current-position claim**; 29 October read-only QA observed zero positions. No new position/receipt audit was performed in this documentation reconciliation.
 - **Operational policy, 2026-10-30:** subsequent explicit written owner confirmation releases margin HOLD **only for the bounty EOA on Tokyo 50383**, with mandatory wallet/network context. Owner-reported provenance, not independently verified team/wallet-history evidence. Exact-2-USDso funding and separately reviewed IOC only; every live action still requires full unsigned review/approval. No live transactions in this policy update. [Confirmation and safeguards](STATUS.md#owner-authorization--2026-10-30).
@@ -46,7 +46,7 @@ npm ci
 ```
 
 ### 2. Run Test Suite
-Runs pure/captured tests plus actual read-only SDK/RPC integration checks; requires public-service access. Latest result: 56 passed, 21 explicit skips. No signing or sending:
+Runs pure/captured tests, isolated policy-state regressions and actual read-only SDK/RPC checks; requires Node 22.15+ or 24+ and public-service access. Latest full result: 59 passed, 21 explicit skips, zero failures. No signing or sending:
 ```bash
 npm test
 ```
