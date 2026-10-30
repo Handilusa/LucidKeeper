@@ -24,7 +24,7 @@ The active built/deployed entry is the React SPA: this review did **not** observ
 - Network: Somnia Tokyo testnet, chain 50383
 - Public bounty account: `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`; read-only, no connected wallet
 - Runtime / OS: Node 24.19.0 / Windows
-- Status: Open; local app finding, not submitted
+- Status: Fixed locally on 2026-10-30; not submitted
 
 ## Recommended next action
-Remove this executable fallback from startup or convert it to genuine reads with explicit missing/error states. Preserve historical evidence separately. No source was deleted or corrected in this review.
+The compatibility view now consumes real `/api/status` strings, starts with unavailable/loading values and clears failed reads. Fixed position, PnL, book sizes, risk and card code removed; historical evidence linked with an explicit date. `test/compatibility.test.mjs` guards the empty initial state. Full browser verification follows the ordered fixes.

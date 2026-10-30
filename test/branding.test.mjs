@@ -23,9 +23,8 @@ test('tracked product branding is consistently LucidKeeper', () => {
     'index.html': ['<title>LucidKeeper —'],
     'public/index.html': [
       '<title>LucidKeeper |',
-      '>LucidKeeper</span>',
-      "ctx.fillText('LucidKeeper'",
-      "link.download = 'LucidKeeper-dreamDEX-Perp-Trade.png'",
+      '<h1>LucidKeeper</h1>',
+      'Read-only compatibility terminal',
     ],
     'src/chain/wagmiConfig.ts': ["appName: 'LucidKeeper'"],
     'scripts/ui-server.mjs': ['LucidKeeper Terminal server running'],

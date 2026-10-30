@@ -14,6 +14,8 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 
 ## Local completion
 
+- Fix 1, 2026-10-30: compatibility HTML now starts unavailable/loading and consumes real `/api/status` values without numeric fallbacks. Synthetic positions, book sizes, risk calculations and trade cards removed; historical evidence explicitly dated. Compatibility and updated branding regressions pass (2/2).
+
 - Existing redesign committed in eight logical increments through `da2301e`; inherited staged docs preserved and clean Git status verified.
 - Guardian-first violet workspace, visible leverage/liquidation scenarios, retained stale balances and reversible chart scale are implemented locally.
 - **65/65 unit tests, typecheck, ESLint, production build and 27/27 Chromium fixture scenarios PASS** on 29 October. Five desktop/tablet/phone sizes tested; local rendered screenshots inspected.
