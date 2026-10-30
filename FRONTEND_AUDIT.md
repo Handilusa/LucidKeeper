@@ -74,4 +74,4 @@ Up to five iterations of 3–5 separately committed, evidence-backed improvement
 
 ## Progress
 
-Iterations 1–3 verified: F1–F9 and the stable-number-config part of F14 addressed. See [scores, commits and self-critique](IMPROVEMENT_LOG.md). Baseline observations above are preserved for comparison.
+Iterations 1–4 verified: F1–F12 and the stable-number-config part of F14 addressed. See [scores, commits and self-critique](IMPROVEMENT_LOG.md). Baseline observations above are preserved for comparison.

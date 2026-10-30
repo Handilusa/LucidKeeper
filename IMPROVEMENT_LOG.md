@@ -6,18 +6,18 @@ Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `ch
 
 ## Scores / 10
 
-| Area | Before | Iteration 1 | Iteration 2 | Iteration 3 |
-| --- | ---: | ---: | ---: | ---: |
-| Visual system | 8 | 8 | 8 | 8.5 |
-| Originality | 8 | 8 | 8 | 8 |
-| UX psychology | 7.5 | 8 | 8 | 8.5 |
-| Motion | 6.5 | 6.5 | 8.5 | 8.5 |
-| Responsiveness | 8 | 8 | 8 | 8.5 |
-| Accessibility | 7 | 8.5 | 8.5 | 8.5 |
-| UI states | 8 | 8.5 | 8.5 | 8.5 |
-| Performance | 6.5 | 6.5 | 7 | 7 |
-| Code quality | 7.5 | 7.5 | 8 | 8 |
-| Robustness | 7 | 7.5 | 7.5 | 8 |
+| Area | Before | Iteration 1 | Iteration 2 | Iteration 3 | Iteration 4 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Visual system | 8 | 8 | 8 | 8.5 | 8.5 |
+| Originality | 8 | 8 | 8 | 8 | 8 |
+| UX psychology | 7.5 | 8 | 8 | 8.5 | 9 |
+| Motion | 6.5 | 6.5 | 8.5 | 8.5 | 8.5 |
+| Responsiveness | 8 | 8 | 8 | 8.5 | 8.5 |
+| Accessibility | 7 | 8.5 | 8.5 | 8.5 | 8.5 |
+| UI states | 8 | 8.5 | 8.5 | 8.5 | 9 |
+| Performance | 6.5 | 6.5 | 7 | 7 | 7 |
+| Code quality | 7.5 | 7.5 | 8 | 8 | 8 |
+| Robustness | 7 | 7.5 | 7.5 | 8 | 8 |
 
 ## Iteration 1 — reachable controls and input feedback
 
@@ -48,3 +48,13 @@ Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `ch
 **Verification:** `iteration-3`: build/lint/typecheck pass; offline **57/20/0**; four-width browser **4 passed**, **32 axe scans / zero violations**, zero small targets/page overflow. All order inputs are fully visible when focused at **1280×600**, including after expanding margin breakdown. Guardian summary receives focus, is fully in the viewport and clears mobile navigation at both touch widths. Wallet label is one line at every width; screenshots inspected at all four widths and the additional short window.
 
 **Self-critique:** a two-row 375px header uses 50px more vertical space; it improves legibility rather than hiding branding or network context. Long numeric entry remains horizontally scrollable inside its input. Programmatic focus/geometry checks are not a substitute for screen-reader testing; zoom/text-spacing stress remains for final verification. Meaningful gain: reachable short-window fields and unobscured destination focus.
+
+## Iteration 4 — truthful recovery and useful semantics
+
+- `9c5d142` — F10: browser-local metadata replaces unsupported autonomous/institutional claims. Recovery uses existing brand tokens, English instructions, a normal reload action and expandable/wrapping diagnostic details.
+- `6b5f67d` — F11: named collateral/theme/leverage/budget groups; “Use mark” is a sibling of the Limit price label, preserving its handler and exact input name.
+- `a53aed2` — F12: full-purpose transaction link names, explicit semantic UTC history times and expanded accessible OHLC labels.
+
+**Verification:** `iteration-4`: build/lint/typecheck pass; offline **57/20/0**; browser **8 passed** (four real-service audits plus four isolated recovery checks). **36 axe scans, zero violations**. Production ErrorBoundary was bundled alone with a deliberately throwing UI child: expandable long diagnostics, no overflow and actual reload/navigation verified at four widths; this is an isolated software-crash fixture, not a live-service failure or financial response replacement. Names/groups/UTC attributes checked in real terminal; four-width screenshots inspected.
+
+**Self-critique:** recovery diagnostic typography uses the system fallback in the offline isolated harness. No actual screen-reader or transaction outcome certification. The semantic improvements reduce ambiguity but do not establish user-research-backed originality. Meaningful gain: truthful product/recovery language and independently understandable controls/records.
