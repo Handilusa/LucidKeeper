@@ -4,7 +4,7 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 
 ## Frontend self-improvement — local branch, 30 October 2026
 
-Iterations 1–2 verified on `chore/frontend-self-improve`: touch help, 44px controls, linked collateral errors and transform/opacity motion. Build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; latest four-viewport browser audit **4 passed**, 32 axe scans report no violations. Existing broader browser suite still has six baseline flat-account assumptions to reconcile. [Audit](FRONTEND_AUDIT.md) · [Scores and commits](IMPROVEMENT_LOG.md). Local work only.
+Iterations 1–3 verified on `chore/frontend-self-improve`: touch help, 44px controls, linked errors, cheaper motion and responsive/focus fixes. Build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; latest four-viewport browser audit **4 passed**, 32 axe scans report no violations; 1280×600 order-field access passes. Existing broader browser suite still has six baseline flat-account assumptions to reconcile. [Audit](FRONTEND_AUDIT.md) · [Scores and commits](IMPROVEMENT_LOG.md). Local work only.
 
 ## Owner-relayed DOGE execution — independently audited 20:39:31–20:39:37 UTC
 

@@ -6,18 +6,18 @@ Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `ch
 
 ## Scores / 10
 
-| Area | Before | Iteration 1 | Iteration 2 |
-| --- | ---: | ---: | ---: |
-| Visual system | 8 | 8 | 8 |
-| Originality | 8 | 8 | 8 |
-| UX psychology | 7.5 | 8 | 8 |
-| Motion | 6.5 | 6.5 | 8.5 |
-| Responsiveness | 8 | 8 | 8 |
-| Accessibility | 7 | 8.5 | 8.5 |
-| UI states | 8 | 8.5 | 8.5 |
-| Performance | 6.5 | 6.5 | 7 |
-| Code quality | 7.5 | 7.5 | 8 |
-| Robustness | 7 | 7.5 | 7.5 |
+| Area | Before | Iteration 1 | Iteration 2 | Iteration 3 |
+| --- | ---: | ---: | ---: | ---: |
+| Visual system | 8 | 8 | 8 | 8.5 |
+| Originality | 8 | 8 | 8 | 8 |
+| UX psychology | 7.5 | 8 | 8 | 8.5 |
+| Motion | 6.5 | 6.5 | 8.5 | 8.5 |
+| Responsiveness | 8 | 8 | 8 | 8.5 |
+| Accessibility | 7 | 8.5 | 8.5 | 8.5 |
+| UI states | 8 | 8.5 | 8.5 | 8.5 |
+| Performance | 6.5 | 6.5 | 7 | 7 |
+| Code quality | 7.5 | 7.5 | 8 | 8 |
+| Robustness | 7 | 7.5 | 7.5 | 8 |
 
 ## Iteration 1 — reachable controls and input feedback
 
@@ -38,3 +38,13 @@ Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `ch
 **Verification:** `iteration-2`: build/lint/typecheck pass; offline **57/20/0**; browser **4 passed**, all 36 states meet measured 44px targets/no overflow, **32 axe scans with zero violations**. Computed stress/gauge transition properties are `transform`; reduced-motion settles to zero running document animations at every width. Four-width screenshots inspected, including Trade, chart, margin and expanded Guardian.
 
 **Self-critique:** removal of layout/paint animation is verified in source and computed styles; screenshots cannot prove frame rate. A real mid-range phone/GPU recording and third-party shadow-animation audit remain needed. The large initial bundle still dominates the performance score. Meaningful gain: less per-frame layout/paint work and deliberate interruption/reduced-motion behavior.
+
+## Iteration 3 — responsive reading and focus
+
+- `656a121` — F7: narrow header wraps its two groups naturally; wallet text remains one line and all actions remain present.
+- `82a0454` — F8: scroll clearance accounts for sticky mobile navigation, inset focus rings in clipping regions, and Guardian navigation focuses its summary. Short desktop windows and expanded margin breakdown use document scrolling, preventing a zero-height fields region.
+- `b3f4861` — F9: shrinkable account grids and wrapping summary/history/Guardian labels preserve long-content readability.
+
+**Verification:** `iteration-3`: build/lint/typecheck pass; offline **57/20/0**; four-width browser **4 passed**, **32 axe scans / zero violations**, zero small targets/page overflow. All order inputs are fully visible when focused at **1280×600**, including after expanding margin breakdown. Guardian summary receives focus, is fully in the viewport and clears mobile navigation at both touch widths. Wallet label is one line at every width; screenshots inspected at all four widths and the additional short window.
+
+**Self-critique:** a two-row 375px header uses 50px more vertical space; it improves legibility rather than hiding branding or network context. Long numeric entry remains horizontally scrollable inside its input. Programmatic focus/geometry checks are not a substitute for screen-reader testing; zoom/text-spacing stress remains for final verification. Meaningful gain: reachable short-window fields and unobscured destination focus.
