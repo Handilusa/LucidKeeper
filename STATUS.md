@@ -8,6 +8,8 @@ P0/P1 implemented on `feat/landing-and-profile`: landing `/`, existing terminal 
 
 ## Frontend self-improvement — local branch, 30 October 2026
 
+Visual pass A complete: navy/violet/cyan layers, atmospheric hero and richer terminal/portfolio surfaces. Four-route/four-width audit passes (16 states, zero axe/overflow/errors/writes). Before/pass-A screenshots recorded locally. Landing motion is in progress. [New pass log](IMPROVEMENT_LOG.md#landing--portfolio-visual-passes--30-october-2026).
+
 Five iterations complete on `chore/frontend-self-improve`: **16 atomic improvements**, including accessible exports, read-backed portfolio assertions and a reproduced chart-disposal fix. Independently checked 30 October: build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; broader browser **15 passed / 16 skipped / 0 failed**; four-width/recovery audit **8 passed**, plus **2 focused checks**. **45 axe scans report zero violations**; 44px targets, short-window focus, 320px reflow and text spacing verified. Main JS remains **427.39kB gzip**; human screen-reader/device and connected-wallet validation remain pending. [Audit](FRONTEND_AUDIT.md) · [Scores, commits and five deferred ideas](IMPROVEMENT_LOG.md). Stopped at the five-iteration cap; local work only.
 
 Final frontend reads around **21:58–21:59 UTC** included BTC and DOGE shorts. These are dated read-only UI observations, not new receipt verification or execution attribution. Historical execution records below retain their original timestamps.

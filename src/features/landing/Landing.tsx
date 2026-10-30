@@ -100,6 +100,11 @@ function Reveal({ children, className = '' }: { children: ReactNode; className?:
 export default function Landing() {
   return (
     <div className="landing">
+      <div className="landing-atmosphere" aria-hidden="true">
+        <span className="aurora aurora-violet" />
+        <span className="aurora aurora-cyan" />
+        <span className="aurora aurora-magenta" />
+      </div>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -121,6 +126,16 @@ export default function Landing() {
       <main id="main" tabIndex={-1}>
         <section className="hero wrap" aria-labelledby="hero-title">
           <div className="hero-copy">
+            <div className="guardian-insignia" aria-hidden="true">
+              <svg viewBox="0 0 320 320" fill="none">
+                <circle className="insignia-orbit" cx="160" cy="160" r="145" />
+                <circle cx="160" cy="160" r="114" strokeDasharray="2 12" />
+                <path className="insignia-crosshair" d="M160 0v30m0 260v30M0 160h30m260 0h30" />
+                <path className="insignia-shield" d="M103 96l57-20 57 20v70c0 34-32 64-57 83-25-19-57-49-57-83V96Z" />
+                <path className="insignia-monogram" d="M137 120v73h52m-27-73v47h27" />
+              </svg>
+              <span>HUMAN INTENT. ON-CHAIN EVIDENCE.</span>
+            </div>
             <p className="section-kicker">
               <span className="signal-dot" /> DREAMDEX PERPS · BUILT WITH A GUARDIAN
             </p>

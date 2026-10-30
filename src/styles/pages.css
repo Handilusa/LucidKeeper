@@ -18,7 +18,8 @@
   z-index: 40;
   min-height: 76px;
   height: auto;
-  background: var(--bg-base);
+  background: var(--bg-deep);
+  box-shadow: 0 5px 24px #02051135;
   padding-block: 8px;
   gap: 18px;
 }

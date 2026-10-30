@@ -1,5 +1,15 @@
 # Frontend improvement log
 
+## Landing / portfolio visual passes — 30 October 2026
+
+Branch `feat/landing-and-profile`, following landing `c11faba` and sourced portfolio `7a21676`. Before images at `.git/lucidkeeper-audit/landing-profile/before-vivid/` (375/768/1280/1920); original profile at `p1-fixed/`. The new brief supersedes the monochrome direction of the earlier five-iteration task below.
+
+### A — color, atmosphere and hierarchy
+
+Deep ink/navy surfaces, violet primary actions, cyan evidence accents, magenta secondary details, PnL green/red and shared tokens. Static aurora gradients, faded grid, a brand-derived Guardian insignia, alternating sections, outlined product frame and layered profile cards. Kept the existing narrative and terminal structure. Gradients do not require blur filters.
+
+Verification: build/lint pass; `pass-a/` contains sixteen states across four routes/four widths, zero axe violations, overflow, console/page errors or writes. Inspected all four landing renders and desktop portfolio. **Critique:** hierarchy and depth are materially stronger; the historical screenshot remains monochrome by design and dominates a long page. Motion needs a disciplined focus and a pause control rather than every element continuously moving.
+
 ## Method — 30 October 2026
 
 Baseline and ranked findings: [FRONTEND_AUDIT.md](FRONTEND_AUDIT.md). Branch `chore/frontend-self-improve`, starting clean at `4e55157`. Each iteration has 3–5 atomic improvements, build/lint/typecheck, the **13-file offline subset** (excluding `dreamdex.test.mjs`), and real-service read-only browser checks at 375, 768, 1280 and 1920px. Local screenshots/JSON/logs: `.git/lucidkeeper-audit/frontend/`. Scores are reviewer judgments, not usability study results. No publication or live transactions.
