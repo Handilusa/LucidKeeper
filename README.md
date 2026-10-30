@@ -11,9 +11,9 @@ LucidKeeper provides real-time market telemetry, verifiable on-chain execution, 
 Current frontend authority: [STATUS.md](STATUS.md), [checkpoint](docs/CHECKPOINT.md) and [validation](docs/LUCIDKEEPER_REDESIGN_VALIDATION.md).
 
 - **Official SDK 0.32.1** installed; **21 perp markets** indexed and cross-checked on-chain.
-- **Production:** https://lucid-keeper.vercel.app/ . Final 30 October public `main`/Vercel status remains `3ff1433`; **not the newer local fixes**. Desktop/phone read-only smoke 12/12 passes; local build parity fails (77/166 match). Publication is user-owned. [Details](STATUS.md#deployment).
+- **Production, checked 30 October 15:43 UTC:** https://lucid-keeper.vercel.app/ . Public `main`/Vercel **`0dce074`**, cloud unit job successful; **180/180 local `dist/` files match production bytes**. Desktop/phone read-only smoke passed; no new live transactions or full production Playwright certification. [Details](STATUS.md#deployment).
 - **Feedback 006 verified in production:** all six named chart/order groups appear in desktop and phone accessibility trees; scoped axe naming checks pass. Actual screen-reader testing remains pending.
-- **Local source:** six ordered fixes through `a88cf26`, scoped margin release `c49bdec`, followed by separately committed HOLD/boundary regressions. Latest direct instruction authorizes agent push/deployment verification for this task, without login or credential inspection.
+- **Source:** six ordered fixes through `a88cf26`, scoped margin release `c49bdec`, and additive HOLD/boundary regressions `0dce074` published under earlier explicit authorization. Newly supplied local instructions reserve further publication to the user; no agent push/login or credential inspection.
 - **Latest unit checks:** full suite at `c49bdec` **56 passed / 21 skipped / 0 failed**; with three new first-gate HOLD/boundary regressions **59 passed / 21 skipped / 0 failed**. Typecheck/lint/build pass. Previous real-service Playwright **14 passed / 16 skipped** is not a fresh browser result. [Sources and gaps](docs/TEST_DATA_SOURCES.md).
 - **Implemented:** market/limit order UI, indexed activity, cancel orders, partial close, sequential approval/deposit, withdrawal and browser-local Guardian triggers. These do not have a fresh production transaction smoke test.
 - **Historical execution:** the 27 October approval, deposit and first BTC fill are preserved below. The 0.00013 BTC long is **not a current-position claim**; 29 October read-only QA observed zero positions. No new position/receipt audit was performed in this documentation reconciliation.
@@ -108,7 +108,7 @@ LucidKeeper/
 1. **No fabricated financial data:** Live PnL, equity and fills use contracts/indexer data. Hypothetical stress/liquidation scenarios are labeled; test captures retain source/time/block and are historical, not current balances. Controlled outcomes without real evidence stay skipped.
 2. **Dedicated Bounty Account:** Exclusively uses EOA `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA` on Somnia Tokyo (Chain 50383).
 3. **Scoped signing authorization:** Margin HOLD is released only for the authorized EOA/Tokyo after written owner confirmation. Missing/foreign wallet/network contexts remain rejected; any restored HOLD cannot be bypassed. Every action requires exact unsigned review. No secret inspection, Arena funding or wallet-to-wallet transfers.
-4. **Funding safeguards:** Exact-amount approval and receipt sequencing are implemented. Historical zero allowance is not a current guarantee; the offline broadcaster checks zero allowance for orders. No new allowance/deposit verification was performed here.
+4. **Funding safeguards:** Exact-amount approval and receipt sequencing are implemented. A complete unsigned2USDso approval was prepared from real reads/simulation at15:59UTC; allowance0 was observed, not guaranteed indefinitely. No signing/deposit occurred. [Review/expiry](STATUS.md#remaining-blockers--limitations). The offline broadcaster requires zero allowance for orders to prevent auto-pull.
 
 ---
 
