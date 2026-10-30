@@ -1335,10 +1335,16 @@ input[type='range'] {
   .app-header {
     padding-inline: 12px;
     gap: 8px;
+    height: auto;
+    min-height: 62px;
+    padding-block: 8px;
+    flex-wrap: wrap;
   }
+  .header-actions { margin-left: auto; flex-shrink: 0; }
   .header-actions .button {
     padding-inline: 9px;
     font-size: 11px;
+    white-space: nowrap;
   }
 }
 /* One pointer-target floor across the terminal, including compact desktop controls. */
