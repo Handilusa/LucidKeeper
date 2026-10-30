@@ -976,7 +976,7 @@ input[type='range'] {
 .guardian-controls > .transaction-status { grid-column: 1 / -1; }
 .guardian-control-section { padding: 16px 0; border-top: 1px solid var(--border-color); }
 .guardian-stress, .guardian-triggers { min-width: 0; }
-.guardian-stress-bar { height: 100%; background: var(--color-violet); transition: width 200ms ease-out; }
+.guardian-stress-bar { width: 100%; flex-shrink: 0; height: 100%; background: var(--color-violet); transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
 .guardian-stress-bar[data-warning='true'] { background: var(--color-amber); }
 .guardian-notice { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; color: var(--color-amber); background: #e5b87515; padding: 12px; font-size: 12px; }
 .guardian-arm { width: 100%; white-space: normal; }

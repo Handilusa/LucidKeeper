@@ -596,7 +596,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
           <div
             className="guardian-stress-bar"
             data-warning={healthFactor <= 1.5}
-            style={{ width: `${hasActiveRisk && poolParams ? gaugePercent : 0}%` }}
+            style={{ transform: `translateX(${(hasActiveRisk && poolParams ? gaugePercent : 0) - 100}%)` }}
           ></div>
         </div>
 
