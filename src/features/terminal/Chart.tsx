@@ -242,7 +242,8 @@ export function Chart({
       <div className="chart-ohlc" role="group" aria-label="Candle prices" aria-live="off">
         {(['open', 'high', 'low', 'close'] as const).map((key) => (
           <span key={key}>
-            <b>{key[0].toUpperCase()}</b>
+            <b aria-hidden="true">{key[0].toUpperCase()}</b>
+            <span className="sr-only">{key[0].toUpperCase() + key.slice(1)} </span>
             {inspected ? formatDynamicPrice(inspected[key]) : '—'}
           </span>
         ))}

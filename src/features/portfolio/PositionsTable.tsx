@@ -374,6 +374,7 @@ export function PositionsTable({
                         href={`${explorer}${order.placedTxHash}`}
                         target="_blank"
                         rel="noreferrer"
+                        aria-label={`View ${order.marketSymbol} order ${order.orderId} transaction ${order.placedTxHash} in explorer (opens in a new tab)`}
                       >
                         #{order.orderId.slice(0, 8)}… ↗
                       </a>
@@ -433,7 +434,7 @@ export function PositionsTable({
                       : item.source === 'rpc_fallback'
                         ? 'RPC log · observed'
                         : 'Cached · observed'}{' '}
-                    · {new Date(item.timestamp).toLocaleString()}{' '}
+                    · <time dateTime={new Date(item.timestamp).toISOString()}>{new Date(item.timestamp).toISOString().replace('T', ' ').slice(0, 19)} UTC</time>{' '}
                     {item.blockNumber ? `· Block ${item.blockNumber}` : ''}
                   </span>
                 </div>
@@ -442,6 +443,7 @@ export function PositionsTable({
                   target="_blank"
                   rel="noreferrer"
                   className="numeric"
+                  aria-label={`View ${item.source === 'cache' ? `cached ${item.type}` : item.description} transaction ${item.hash} in explorer (opens in a new tab)`}
                 >
                   {item.hash.slice(0, 8)}…{item.hash.slice(-4)} ↗
                 </a>
@@ -449,7 +451,7 @@ export function PositionsTable({
             ))}
           </div>
         )}
-        <div className="flex items-center justify-between px-4 py-3" aria-label="History pages">
+        <div className="flex items-center justify-between px-4 py-3" role="group" aria-label="History pages">
           <button className="button" disabled={!page} onClick={() => setPage((value) => value - 1)}>
             Previous
           </button>
