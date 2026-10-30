@@ -188,7 +188,7 @@ export function MarginHubModal({
             disabled={busy}
             onChange={(event) => setAmount(event.target.value)}
             aria-invalid={!!invalid}
-            aria-describedby="collateral-help"
+            aria-describedby="collateral-help collateral-error"
           />
           <span>USDso</span>
         </div>
@@ -200,16 +200,18 @@ export function MarginHubModal({
           ? 'If needed, approve this exact amount first. The deposit waits for a successful approval receipt.'
           : 'Active positions may restrict withdrawals. Bank collateral is not a guarantee of withdrawable funds.'}
       </p>
-      {invalid ? (
-        <p className="form-error">Enter a positive amount with at most 18 decimal places.</p>
-      ) : isConnected && reportedBalance == null ? (
-        <p className="form-error">Balance unavailable. Waiting for current account data.</p>
-      ) : isConnected && insufficient ? (
-        <p className="form-error">
-          Amount exceeds the reported{' '}
-          {activeTab === 'deposit' ? 'wallet balance' : 'bank collateral'}.
-        </p>
-      ) : null}
+      <div id="collateral-error" aria-live="polite">
+        {invalid ? (
+          <p className="form-error">Enter a positive amount with at most 18 decimal places.</p>
+        ) : isConnected && reportedBalance == null ? (
+          <p className="form-error">Balance unavailable. Waiting for current account data.</p>
+        ) : isConnected && insufficient ? (
+          <p className="form-error">
+            Amount exceeds the reported{' '}
+            {activeTab === 'deposit' ? 'wallet balance' : 'bank collateral'}.
+          </p>
+        ) : null}
+      </div>
       <button
         className="button button-primary w-full"
         disabled={
