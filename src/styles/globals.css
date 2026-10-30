@@ -481,7 +481,7 @@ input[type='range'] {
 }
 .account-values {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 .account-values dt {
@@ -827,6 +827,14 @@ input[type='range'] {
   color: var(--color-cyan);
   flex-shrink: 0;
 }
+/* Financial labels and long read errors may grow independently of their values. */
+.account-heading, .summary-row { flex-wrap: wrap; }
+.summary-row dd { margin-left: auto; max-width: 100%; }
+.account-values > div, .guardian-overview > *, .history-row > div, .summary-row dt { min-width: 0; }
+.account-values dd, .summary-row dd, .modal-title, .modal-description, .history-row > div { overflow-wrap: anywhere; }
+.guardian-position-picker > .flex,
+.guardian-control-section > .flex,
+.guardian-control-section > .flex > .flex { flex-wrap: wrap; gap: 8px; }
 .risk-disclosure {
   border: 1px solid var(--border-color);
   margin-top: 16px;
@@ -1243,7 +1251,7 @@ input[type='range'] {
     min-height: 44px;
   }
   .account-values {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
   }
   .account-heading {
@@ -1314,7 +1322,7 @@ input[type='range'] {
     grid-row: auto;
   }
   .account-values {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .chart-viewport {
     height: 430px;
