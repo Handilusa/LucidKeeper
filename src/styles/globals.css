@@ -961,6 +961,13 @@ input[type='range'] {
   top: 16px;
   right: 16px;
 }
+.terminal-recovery { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+.recovery-panel { width: min(100%, 520px); padding: 24px; background: var(--bg-panel); border: 1px solid var(--border-highlight); border-radius: 8px; }
+.recovery-panel h1 { font: 700 20px var(--font-display); }
+.recovery-panel :is(button, summary) { min-height: 44px; }
+.recovery-details { margin-block: 20px; color: var(--muted); font-size: 12px; }
+.recovery-details summary { padding-block: 12px; cursor: pointer; }
+.recovery-details p { overflow-wrap: anywhere; font-family: var(--font-mono); }
 
 .brand-text { color: var(--color-cyan); }
 .somnia-mark { flex: none; object-fit: contain; }
