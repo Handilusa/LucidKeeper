@@ -4,7 +4,7 @@ Updated: **30 October 2026**. Update this file whenever the state changes.
 
 ## Frontend self-improvement — local branch, 30 October 2026
 
-Baseline audited on `chore/frontend-self-improve` before UI edits. Build/lint/typecheck pass; offline tests **57 passed / 20 skipped**. Existing read-only browser suite **8 passed / 6 failed / 16 skipped**: six historical flat-account assumptions conflict with the currently rendered DOGE position. Four-viewport audit passes; 32 axe scans report no violations, with manual accessibility gaps. [Audit](FRONTEND_AUDIT.md). Local work only.
+Iteration 1 verified on `chore/frontend-self-improve`: touch help, 44px controls and linked collateral errors. Build/lint/typecheck pass; offline subset **57 passed / 20 skipped**; four-viewport browser audit **4 passed**, 32 axe scans report no violations. Existing broader browser suite still has six baseline flat-account assumptions to reconcile. [Audit](FRONTEND_AUDIT.md) · [Scores and commits](IMPROVEMENT_LOG.md). Local work only.
 
 ## Owner-relayed DOGE execution — independently audited 20:39:31–20:39:37 UTC
 

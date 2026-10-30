@@ -71,3 +71,7 @@ Checked: names/roles/value, contrast automation, keyboard activation, visible fo
 ## Bounded implementation plan
 
 Up to five iterations of 3–5 separately committed, evidence-backed improvements. Each iteration reruns build/lint/typecheck, the offline suite, read-only browser checks and four viewport captures. Record self-critique and all ten scores in `IMPROVEMENT_LOG.md`. Stop at all scores ≥9, two consecutive iterations without meaningful gain, or the five-iteration cap. Preserve the brand and request user direction before any subjective redesign.
+
+## Progress
+
+Iteration 1 verified: F1–F3 addressed. See [scores, commits and self-critique](IMPROVEMENT_LOG.md). Baseline observations above are preserved for comparison.
