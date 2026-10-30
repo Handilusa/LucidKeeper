@@ -3,6 +3,7 @@ import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { Toaster } from 'sonner';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { wagmiConfig } from '@/chain/wagmiConfig';
 import '@rainbow-me/rainbowkit/styles.css';
 
@@ -28,7 +29,7 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
             overlayBlur: 'none',
           })}
         >
-          {children}
+          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
           <Toaster
             position="bottom-right"
             theme="dark"
