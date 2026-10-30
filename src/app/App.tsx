@@ -281,7 +281,10 @@ export const App: React.FC = () => {
   }, [stateQuery.refetch, healthQuery.refetch, positionQuery.refetch, walletQuery.refetch, gasQuery.refetch]);
   const navigate = (view: 'chart' | 'activity' | 'risk') => {
     if (view === 'risk') {
-      if (riskRef.current) riskRef.current.open = true;
+      if (riskRef.current) {
+        riskRef.current.open = true;
+        riskRef.current.querySelector('summary')?.focus({ preventScroll: true });
+      }
     } else setMobileView(view);
   };
 
