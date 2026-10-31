@@ -165,6 +165,16 @@ node scripts/audit-release.mjs
 
 `npm test` includes public read-only service checks, pure/captured cases, controlled **test-only** transport outcomes and explicit historical skips. `test:e2e` builds and starts port **4174**; keep it free. Two injected test wallets and financial/RPC outcomes are isolated to tests; HTTP/WebSocket external paths are intercepted. No keys, raw signing or real transaction sends. `test:load` creates its own capped loopback static server, never targets dreamDEX/Somnia. [Manual QA](docs/MANUAL_QA.md) · [Capacity](docs/SCALABILITY.md). Optional standalone visual scripts use local4175/`AUDIT_URL`; historical lab figures are not refreshed release scores.
 
+### Testing
+
+Automated tests use an isolated wallet/RPC harness under test/; it is not part of the shipped app. [Production data audit](docs/NO_MOCKS_IN_PRODUCTION.md) records the exclusion checks, conditional data/label failures and vendor mock/test utilities that do ship.
+
+Real-chain evidence: deposit, DOGE order and close tx hashes with explorer links. **The close below is historical BTC, not DOGE; no verified DOGE close hash is recorded.** The 30 October deposit and DOGE FOK execution were owner-relayed, not demonstrated execution through this UI.
+
+- **Deposit:** [`0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9`](https://explorer.testnet.somnia.network/tokyo/tx/0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9).
+- **DOGE order/fill:** [`0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c`](https://explorer.testnet.somnia.network/tokyo/tx/0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c).
+- **Historical BTC close:** [`0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6`](https://explorer.testnet.somnia.network/tokyo/tx/0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6).
+
 ### Deploy the exact tested version
 
 Vercel: repository root (blank Root Directory), Node 24.x, Vite, install `npm ci`, build `npm run build`, output `dist`; keep `vercel.json` SPA/cache headers. **No env value is required.** Optional **public** `VITE_WALLETCONNECT_PROJECT_ID` overrides the built-in public Reown ID; configure the effective deployment origin and rebuild. No RPC, signer, allowlist or execution env override exists. Never put secrets into `VITE_*`.
