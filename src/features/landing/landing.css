@@ -321,6 +321,9 @@
   background: var(--gradient-panel);
   box-shadow: var(--shadow-panel);
 }
+.proof-close { margin-top: 24px; padding: 20px 24px; border: 1px solid var(--border-color); border-radius: 8px; }
+.proof-close h3 { margin-top: 0; }
+.proof-close p { margin: 0; color: var(--muted); font-size: 14px; }
 .problem-grid p,
 .trust-grid p,
 .roadmap-grid p {

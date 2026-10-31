@@ -1,5 +1,7 @@
 # Read-only publication / deploy verification
 
+> **Later local docs/UI update — 31 October 2026:** the current funding copy now follows the owner's program-distributed-funds guidance and explicitly excludes Arena funds. The funding-copy failure in this report describes the previous `755e6f3` baseline, not the updated UI. [Current guidance and preserved source findings](FUNDING_VERIFICATION.md) · [Unfunded-judge video checklist](../SUBMISSION_TODO.md). No new independent team confirmation, close, claim, deployment or live-wallet certification is implied. All historical findings below remain preserved.
+
 **31 October 2026**, baseline **`755e6f303f56193757bbd56f54c7f24135f1b289`**, branch **`feat/landing-and-profile`**. New documentation/smoke script only; application, dependencies, financial helpers, existing evidence and ignore rules remain unchanged. No push, deploy, GitHub authentication, signing, transaction preparation, broadcast, claim or fund movement.
 
 ## FAIL / UNVERIFIED gates first

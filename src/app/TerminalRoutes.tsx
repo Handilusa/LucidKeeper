@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Providers } from './Providers';
 import { AppHeader } from '@/features/terminal/AppHeader';
-import { PROJECT } from '@/content/project';
+import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PROJECT } from '@/content/project';
 import '@/styles/pages.css';
 
 const Profile = lazy(() => import('@/features/profile/Profile'));
@@ -63,22 +63,22 @@ function DocsPage() {
             activity remains public; wallet-scoped display is not privacy.
           </p>
           <p>
-            Any connected browser wallet can trade on Tokyo. LucidKeeper holds no keys; review
+            Any funded connected browser wallet can trade on Tokyo. LucidKeeper holds no keys; review
             every transaction before approving it in your wallet.
           </p>
         </section>
         <section id="funding">
           <h2>Funding your wallet</h2>
           <p>
-            You need Tokyo STT for gas and USDso for dreamDEX margin. Use the official dreamDEX app
-            for funding instructions and the one-time paper USDso credit, subject to eligibility and
-            allowed-market restrictions. Verify the receiving address and Tokyo 50383: a generic
-            Somnia faucet may use another network. If funding is unavailable, use official support.
+            {BOUNTY_FUNDING}
           </p>
+          <p>Request missing Tokyo STT and Builder Bounty USDso from the official bounty team in Discord for your own whitelisted wallet. Do not use Arena funds. LucidKeeper does not distribute funds or offer a claim.</p>
+          <p>Read-only profiles, history, public markets and docs do not require funds; data-source failures are shown separately. Guardian stress preview requires a real, freshly read position and never creates a demo exposure. A zero wallet USDso balance does not mean deposited margin or existing positions are absent.</p>
+          <p>Known limitation: independent-wallet trading requires program-distributed funds.</p>
+          <a className="button" href={LIVE_TEST_ACCOUNT_PATH}>Live test account (read-only)</a>
           <a className="button" href={PROJECT.sdk} target="_blank" rel="noreferrer">
             Official dreamDEX testnet guide ↗
           </a>
-          <a className="button" href="https://app.testnet.dreamdex.io/perps" target="_blank" rel="noreferrer">Official funding / paper USDso ↗</a>
         </section>
         <section>
           <h2>From collateral to settlement</h2>

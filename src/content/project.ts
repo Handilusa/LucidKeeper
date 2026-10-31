@@ -9,6 +9,9 @@ export const PROJECT = {
   account: '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA',
 } as const;
 
+export const LIVE_TEST_ACCOUNT_PATH = `/app/profile/${PROJECT.account}`;
+export const BOUNTY_FUNDING = 'Trading on Tokyo testnet needs STT (gas) and USDso collateral distributed by the bounty program to whitelisted wallets. Any wallet holding those funds can connect and trade with LucidKeeper. Wallets without funds can explore in read-only mode.';
+
 export const PROOF = [
   {
     label: 'Collateral deposited',

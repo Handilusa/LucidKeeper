@@ -29,6 +29,7 @@ interface TradingBoxProps {
   availableMargin: number;
   availableRead: ReadDisplay;
   marginReady: boolean;
+  fundingNotice?: string | null;
   totalUnlockedMargin?: number;
   currentPosition?: PositionItem;
   onOrderSuccess?: () => void;
@@ -52,6 +53,7 @@ export function TradingBox({
   availableMargin,
   availableRead,
   marginReady,
+  fundingNotice,
   currentPosition,
   onOrderSuccess,
   onOpenMarginHub,
@@ -210,6 +212,7 @@ export function TradingBox({
     maintenanceBps: poolParams!.maintenanceMarginBps, feeRate: takerFeeRate,
   }) : null;
   const blocked =
+    fundingNotice ||
     inputError?.message ||
     (markPrice <= 0
       ? 'A current mark price is required.'
@@ -560,7 +563,7 @@ export function TradingBox({
         </div>
         <div id="order-validation" aria-live="polite">
           {(inputError || (isConnected && blocked)) && (
-            <p className="form-error">{inputError?.message || blocked}</p>
+            <p className={fundingNotice ? 'form-note' : 'form-error'}>{fundingNotice || inputError?.message || blocked}</p>
           )}
         </div>
         {estimateValid && Number(marginInput) + 0.01 < totalOrderMargin && (
@@ -583,9 +586,11 @@ export function TradingBox({
               ? 'Awaiting confirmation…'
               : !isConnected
                 ? 'Connect wallet to trade'
-                : chainId !== 50383
-                  ? 'Switch to Tokyo to trade'
-                 : `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} ${market.baseSymbol}`}
+                 : chainId !== 50383
+                   ? 'Switch to Tokyo to trade'
+                   : fundingNotice
+                     ? 'Funding needed · read-only'
+                  : `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} ${market.baseSymbol}`}
         </button>
         <p className="form-note">
           {orderType === 'limit' && 'Limit orders expire after the reviewed five-minute window; unfilled amounts may rest until then. '}

@@ -26,12 +26,13 @@ temp/
 
 # Credentials and signing secrets: never publish, regardless of directory.
 .env*
-!.env.example
 .npmrc
 .netrc
 .pypirc
 *.key
 *.pem
+wallet*.json
+*keystore*
 *.keystore
 *.p12
 *.pfx

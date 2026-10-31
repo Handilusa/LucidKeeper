@@ -5,6 +5,9 @@ import test from 'node:test';
 
 const legacyName = new RegExp(['dream', 'sentinel'].join('[ -]?'), 'i');
 const incorrectCase = new RegExp(['Lucid', 'keeper'].join(''));
+// The retained local directory is a path, not the product's retired brand.
+const localDirectory = ['dream', 'sentinel'].join('-');
+const documentedPath = new RegExp('`(?:C:/[^`\\n]+/)?' + localDirectory + '/?`', 'g');
 
 test('tracked product branding is consistently LucidKeeper', () => {
   const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' })
@@ -15,7 +18,7 @@ test('tracked product branding is consistently LucidKeeper', () => {
     const bytes = readFileSync(file);
     if (bytes.includes(0)) continue;
     const content = bytes.toString('utf8');
-    assert.doesNotMatch(content, legacyName, `${file} contains the retired project name`);
+    assert.doesNotMatch(content.replace(documentedPath, '`local repository directory`'), legacyName, `${file} contains the retired project name`);
     assert.doesNotMatch(content, incorrectCase, `${file} uses incorrect LucidKeeper casing`);
   }
 

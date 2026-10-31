@@ -13,7 +13,14 @@ Updated **31 October 2026** · local `feat/landing-and-profile` · **not pushed 
 | 5/P2 resilience | `4419570`: bounded reads, rate-limit cooldown, dedup/cache/batching, lazy trading chunk, capped static load | Not sustained multi-user/RPC/CDN capacity |
 | 6/P0 shipping | Deployment/pre-push documents, reviewed inherited visual files and expanded CI; final local checks complete | Owner publication, deployed parity and submission |
 
-Final release checks: **79 passed / 0 skipped / 0 failed Chromium**, **94 passed / 19 skipped / 0 failed** unit/service (113 cases); typecheck/E2E types/lint/build pass. Publication: **211 tracked paths / 13 documents / 103 local links, zero issues** (not full-history/security certification). Fresh local static check: **240/240**, 12 concurrent, p95 **42.65 ms**; not users/RPC capacity. [Exact results and boundaries](docs/PRE_PUSH_AUDIT.md).
+Earlier six-task release checks (`755e6f3`): **79 passed / 0 skipped / 0 failed Chromium**, **94 passed / 19 skipped / 0 failed** unit/service (113 cases); typecheck/E2E types/lint/build pass. Prior publication: **211 tracked paths / 13 documents / 103 local links, zero issues** (not full-history/security certification). Prior local static check: **240/240**, 12 concurrent, p95 **42.65 ms**; not users/RPC capacity. [Exact results and boundaries](docs/PRE_PUSH_AUDIT.md).
+
+## Funding and unfunded-judge tour — 31 October
+
+- Local UI/docs now explain STT gas and bounty-program USDso distribution to whitelisted wallets. **Known limitation: independent-wallet trading requires program-distributed funds. Do not use Arena funds.** This is the owner's latest product guidance, not a new independently obtained team confirmation.
+- Empty wallets get a prominent neutral read-only state with profile/history/docs and Guardian inspection. Failed reads stay distinct from zero; deposited/locked margin and existing positions are not erased by zero wallet USDso. Guardian stress requires a real fresh position; no exposure is invented.
+- Hero/README link the explicit read-only Live test account (never a default signer) and real deposit/DOGE proof. Historical owner-relayed FOK attribution is preserved. **DOGE close not yet recorded**; no close prepared or executed.
+- Funding-update checks: **88 passed / 0 skipped / 0 failed Chromium**, **99 passed / 19 historical skipped / 0 failed** unit/service (118 cases); app/E2E types, lint/build pass. Includes nine new isolated browser cases and five pure funding-state cases; 375/1440px affected screenshots visually reviewed. Local docs: six documents / 60 local destinations, protected evidence/helpers/dependencies unchanged. Existing dependency build warnings and 38 affected entries remain; no real-wallet, security or deployed acceptance is claimed.
 
 ## Critical boundaries
 
@@ -24,4 +31,4 @@ Final release checks: **79 passed / 0 skipped / 0 failed Chromium**, **94 passed
 
 ## Owner delivery
 
-[Exact shipping instructions](docs/DEPLOYMENT.md). Publish reviewed GitHub branch/build, verify the effective deployed routes/headers, complete independent-wallet QA, record demo, replace README X drafts with real URLs and submit feedback/bounty materials. **Deadline: 1 November 2026, 23:59 UTC** (user-provided). Historical on-chain hashes are linked in README; they do not prove current-UI execution. No new deployment or live transaction is claimed.
+[Submission checklist](SUBMISSION_TODO.md) · [Exact shipping instructions](docs/DEPLOYMENT.md). Main verification path for unfunded judges: **record the full-flow demo video and show tx hashes**. Owner publishes the reviewed branch/build, verifies deployed parity and real-wallet QA, replaces X drafts with real URLs and submits feedback/bounty materials. **Deadline: 1 November 2026, 23:59 UTC** (user-provided). Historical on-chain hashes do not prove current-UI execution. Video, publication and real DOGE close remain pending; no new deployment or live transaction is claimed.

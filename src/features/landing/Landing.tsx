@@ -16,7 +16,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Brand, TestnetBadge } from '@/components/Brand';
-import { PROJECT, PROOF, SOMNIA_SOURCES } from '@/content/project';
+import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PROJECT, PROOF, SOMNIA_SOURCES } from '@/content/project';
 import { ReceiptValue, Reveal, useLandingMotion, useMotionPreference } from './LandingMotion';
 import { WorkflowGraphic } from './WorkflowGraphic';
 import './landing.css';
@@ -40,11 +40,11 @@ const faq = [
   ],
   [
     'Can any wallet trade?',
-    'Yes. Connect your own browser wallet on Somnia Tokyo (50383), obtain STT gas and eligible USDso collateral, and review each action in your wallet. LucidKeeper never holds your keys. Protocol funding and market restrictions still apply.',
+    BOUNTY_FUNDING,
   ],
   [
     'Where do I get test collateral?',
-    'Open the official dreamDEX testnet app for paper USDso and Tokyo STT guidance. Verify the receiving address, chain and credit eligibility. Paper credit has market restrictions; use official support if funding is unavailable. See the funding guide in the app.',
+    'Request Tokyo STT and Builder Bounty USDso from the official bounty team in Discord for your own whitelisted wallet. Do not use Arena funds. If you have no funds, inspect the read-only Live test account, history, docs and real transaction proof instead.',
   ],
   [
     'Does a confirmed order mean I have a position?',
@@ -107,6 +107,7 @@ export default function Landing() {
             <a href="#how-it-works">How it works</a>
             <a href="#different">Why different</a>
             <a href="#somnia">Why Somnia</a>
+            <a href="#proof">Proof</a>
             <a href="#faq">FAQ</a>
           </nav>
           <Launch />
@@ -145,10 +146,12 @@ export default function Landing() {
             </p>
             <div className="hero-actions">
               <Launch large />
-              <a className="text-link" href="/app/profile">
-                Explore portfolio <ArrowRight size={17} aria-hidden="true" />
+              <a className="button" href={LIVE_TEST_ACCOUNT_PATH}>
+                Live test account <ArrowRight size={17} aria-hidden="true" />
               </a>
+              <a className="text-link" href="#proof">Proof <ArrowRight size={17} aria-hidden="true" /></a>
             </div>
+            <p className="hero-footnote">Live account is read-only · No funds or connection required · Never a default signer</p>
             <p className="hero-footnote">
               Somnia Tokyo testnet · Browser-local guard · Wallet approval required
             </p>
@@ -517,7 +520,7 @@ export default function Landing() {
           <Reveal>
             <div className="section-heading">
               <div>
-                <p className="section-kicker">WHY TOKYO TESTNET</p>
+                <p className="section-kicker">PROOF · SOMNIA TOKYO TESTNET</p>
                 <h2 id="proof-title">
                   A sandbox.
                   <br />
@@ -547,6 +550,10 @@ export default function Landing() {
                 </article>
               ))}
             </div>
+            <aside className="proof-close" aria-label="DOGE close evidence">
+              <h3>DOGE close — not yet recorded</h3>
+              <p>No verified close hash is available. The earlier BTC close above is a separate historical action, not the DOGE close. A Tokyo explorer link will be added only after an actual close is verified.</p>
+            </aside>
             <p className="source-note">
               Historical evidence for the bounty EOA. The deposit and DOGE execution were
               owner-relayed and subsequently audited; they are not proof of execution through this
@@ -590,10 +597,10 @@ export default function Landing() {
                   <strong>USDso</strong> funds dreamDEX margin.
                 </p>
                 <p>
-                  Follow official dreamDEX funding guidance. Generic Somnia faucets may target
-                  a different testnet; verify Tokyo 50383. This app does not use USDC or Arena
-                  credit as a substitute.
+                  {BOUNTY_FUNDING}
                 </p>
+                <p>Do not use Arena funds.</p>
+                <p>Known limitation: independent-wallet trading requires program-distributed funds.</p>
                 <a href="/app/docs#funding" className="text-link">
                   Funding guide <ArrowRight size={16} aria-hidden="true" />
                 </a>

@@ -21,6 +21,7 @@ import { computeLiquidationPrice } from '@/lib/math/liquidation';
 import { GuardianOverview } from '@/features/sentinel/GuardianOverview';
 import { NetworkNotice } from '@/features/terminal/NetworkNotice';
 import { FundingGuide } from '@/features/terminal/FundingGuide';
+import { fundingState } from '@/lib/data/fundingState';
 import { toast } from 'sonner';
 import { connectedAccount, accountSessionKey } from '@/lib/data/accountScope';
 
@@ -270,7 +271,14 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
   const portfolio = currentAccount && !positionsError ? positionQuery.data : undefined;
   const positions = portfolio?.items || [];
   const accountLoading = !!currentAccount && (stateQuery.isPending || positionQuery.isPending);
-  const canManage = isConnected && !!currentAccount && chainId === 50383 && !positionsError && !!positionQuery.data;
+  const fundingGas = !gasQuery.isError && now - gasQuery.dataUpdatedAt < 45000 ? gasQuery.data?.value : undefined;
+  const fundingWallet = !walletQuery.isError && now - walletQuery.dataUpdatedAt < 45000 ? walletQuery.data : undefined;
+  const fundingDeposited = accountState && !positionsError && now - stateQuery.dataUpdatedAt < 30000
+    ? accountState.unlockedCollateralBalance + accountState.lockedCollateral : undefined;
+  const fundingMargin = marginReady && !positionsError ? freeCollateral : null;
+  const fundingPositions = portfolio ? positions.length > 0 : undefined;
+  const fundingNotice = currentAccount ? fundingState({ gas: fundingGas, wallet: fundingWallet, deposited: fundingDeposited, margin: fundingMargin, hasPositions: fundingPositions }).notice : null;
+  const canManage = isConnected && !!currentAccount && chainId === 50383 && !positionsError && !!positionQuery.data && fundingGas !== 0n;
   const refreshAccount = React.useCallback(() => {
     if (!currentAccount) return;
     void stateQuery.refetch();
@@ -314,6 +322,7 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
           markStale={staleMark || markPrice <= 0}
           fundingWindow={fundingParamsQuery.data ? Number(fundingParamsQuery.data.fundingCalculationWindowSec) : null}
         />
+        {currentAccount && <FundingGuide account={currentAccount} gas={fundingGas} wallet={fundingWallet} deposited={fundingDeposited} margin={fundingMargin} hasPositions={fundingPositions} onManage={() => setMarginHubOpen(true)} onGuardian={() => { navigate('risk'); riskRef.current?.scrollIntoView({ block: 'start' }); }} />}
         <nav className="mobile-nav" aria-label="Trading workspace">
           {(['chart', 'trade', 'activity'] as const).map((view) => (
             <button
@@ -356,6 +365,7 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
               availableMargin={freeCollateral}
               availableRead={availableRead}
               marginReady={marginReady && !positionsError && !!positionQuery.data}
+              fundingNotice={fundingNotice}
               totalUnlockedMargin={unlockedMargin}
               currentPosition={positions.find(
                 (p) => p.poolAddress.toLowerCase() === selectedMarket.poolAddress.toLowerCase()
@@ -365,7 +375,6 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
             />
           </section>
           <section className="activity-area" id="activity" aria-label="Portfolio activity">
-            {currentAccount && <FundingGuide gas={gasQuery.isError ? undefined : gasQuery.data?.value} wallet={walletQuery.isError ? undefined : walletQuery.data} margin={marginReady ? freeCollateral : null} onManage={() => setMarginHubOpen(true)} />}
             <AccountSummary
               account={currentAccount}
               connected={isConnected}

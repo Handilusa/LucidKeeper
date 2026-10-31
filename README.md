@@ -10,9 +10,17 @@ Opening a position is only the first decision. LucidKeeper keeps market context,
 
 [Public demo](https://lucid-keeper.vercel.app) · [Source](https://github.com/Handilusa/LucidKeeper) · [Project status](STATUS.md) · [Quality report](docs/LANDING_PROFILE_QUALITY.md) · [README prompt](docs/README_PROMPT.md)
 
+**[Live test account — read-only](https://lucid-keeper.vercel.app/app/profile/0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA)** · No funds or wallet connection required; never a default signer. Local route: `/app/profile/0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`. The new link/UI is local until the owner publishes this branch.
+
+Trading on Tokyo testnet needs STT (gas) and USDso collateral distributed by the bounty program to whitelisted wallets. Any wallet holding those funds can connect and trade with LucidKeeper. Wallets without funds can explore in read-only mode.
+
+**Do not use Arena funds.** Request missing Tokyo STT and Builder Bounty USDso from the official bounty team in Discord for your own whitelisted wallet. LucidKeeper does not distribute funds or offer a claim.
+
 > **Delivery status — 31 October 2026:** the landing, dedicated portfolio and visual/motion passes are local on `feat/landing-and-profile`. The last independently checked production version is `0dce074` (30 October 15:43 UTC). New routes/features are not claimed as deployed; publication is owner-managed.
 
-> **Local release checks — 31 October:** independent Tokyo wallets, two-wallet lifecycle tests, address-scoped profiles and bounded read resilience are implemented. **79/79 Chromium**, **94 passed / 19 skipped / 0 failed** unit/service; types, lint and build pass. Publication check: 211 tracked paths, 13 documents, 103 local-link destinations, zero issues (not security certification). Dependencies remain **38 affected entries**; real second-wallet funding/fills and deployed parity require human QA. Static 240-request check is **not multi-user/RPC capacity certification**. [Audit](docs/PRE_PUSH_AUDIT.md) · [Deploy](docs/DEPLOYMENT.md).
+> **Current funding/UI checks — 31 October:** **88/88 Chromium**, **99 passed / 19 historical skipped / 0 failed** unit/service; app/E2E types, lint and build pass. Includes mobile/desktop zero-funds, read-failure, deposited-margin and read-only proof regressions. No push, deploy or live transaction in this update. [Current status](STATUS.md).
+
+> **Earlier six-task release checks — 31 October (`755e6f3`):** independent Tokyo wallets, two-wallet lifecycle tests, address-scoped profiles and bounded read resilience are implemented. **79/79 Chromium**, **94 passed / 19 skipped / 0 failed** unit/service; types, lint and build pass. Prior publication check: 211 tracked paths, 13 documents, 103 local-link destinations, zero issues (not security certification). Dependencies remain **38 affected entries**; real second-wallet funding/fills and deployed parity require human QA. Static 240-request check is **not multi-user/RPC capacity certification**. [Audit](docs/PRE_PUSH_AUDIT.md) · [Deploy](docs/DEPLOYMENT.md).
 
 ![Actual LucidKeeper terminal capture from 30 October 2026](public/assets/product/terminal-1440.webp)
 
@@ -40,11 +48,25 @@ Run the local build below, then visit:
 
 The persistent testnet badge applies to every route. Use **Pause motion** or your system’s reduced-motion preference to stop landing motion.
 
+**No funds?** Use the Live test account, its sourced profile/history, public market reads, docs and the Proof below. Connecting an empty wallet shows exactly what is missing as a normal read-only state, separate from failed reads. Existing deposited margin and positions remain visible even if wallet USDso is zero. Guardian stress preview needs a real, freshly read position; without one, inspect the controls without a fabricated risk scenario or transaction.
+
+## Proof
+
+Real historical Tokyo receipts for `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`:
+
+- **Deposit — 2 USDso**, block **37388613**: [`0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9`](https://explorer.testnet.somnia.network/tokyo/tx/0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9).
+- **DOGE short order — 120 DOGE filled at 0.07525 USDso**, block **37392617**: [`0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c`](https://explorer.testnet.somnia.network/tokyo/tx/0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c).
+- **DOGE close — not yet recorded.** Add the actual close hash/explorer link only after verification. The earlier BTC close in the historical table is not a DOGE close.
+
+The deposit and DOGE order were **owner-relayed and independently audited afterward**. DOGE used **FOK (`orderType=1`)**, not IOC (`2`), and is not proof of execution through the new UI. A confirmed transaction, fill, position and settlement are distinct. [Audit](docs/audit/012-owner-relayed-fok-ioc-mismatch.md).
+
+For judges without funds, the main full-flow verification path is **record the full-flow demo video and show tx hashes**; the video remains pending and must show actual UI actions/receipts rather than relabeling this historical evidence. [Submission checklist](SUBMISSION_TODO.md).
+
 ## The full lifecycle
 
 **Approve → Deposit → Open → Monitor → Close → Settle**
 
-1. Connect your own wallet, switch/add Tokyo 50383 and obtain STT gas plus USDso collateral through the [official dreamDEX app](https://app.testnet.dreamdex.io/perps) / [funding guide](https://app.testnet.dreamdex.io/docs/developers/perps-testnet). Paper credit has eligibility and market restrictions; verify the receiving address.
+1. Connect your own funded wallet and switch/add Tokyo 50383. Trading requires STT gas and program-distributed USDso collateral; verify the receiving address. Missing funds? Request them from the official bounty team, or take the read-only tour above. [Official testnet documentation](https://app.testnet.dreamdex.io/docs/developers/perps-testnet).
 2. Choose and review an exact USDso allowance to the official MarginBank.
 3. Confirm the approval before reviewing a deposit; verify the credited margin.
 4. Review the order, then distinguish its receipt from its actual fill events.
@@ -170,6 +192,7 @@ npm run check -- --address 0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA
 ## Security and current limits
 
 - No app-held keys or LucidKeeper custody vault. Collateral is deposited in dreamDEX MarginBank; activity is public.
+- **Known limitation: independent-wallet trading requires program-distributed funds.** Wallets without funds can explore in read-only mode. Do not use Arena funds.
 - **Any wallet can trade** on Tokyo **50383**: exact-amount approvals/deposits, IOC and limit orders, close requests, Guardian exits, cancellations and protocol-permitted withdrawals. Every action requires unsigned review and the user's browser-wallet approval. No unlimited approvals, claims or wallet-to-wallet transfers in LucidKeeper.
 - Account/network switches reset dialogs, drafts and armed state. Late work from a previous lifetime cannot dispatch another action or display its result in the new account. IOC encoding **2**, limit encoding **0**, grid helpers and the **300-second** expiry are unchanged. Opposite-side close sizing is revalidated, but the direct call has no protocol reduce-only flag.
 - The agent does not sign, broadcast, use keys or move funds. Retained offline/CLI policy is historical agent tooling, not a browser product restriction. [Separation and historical contract](docs/OFFLINE_SIGNING.md).

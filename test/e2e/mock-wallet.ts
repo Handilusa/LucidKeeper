@@ -23,7 +23,7 @@ export async function mockWallet(page: Page) {
     accounts, writes: [] as Tx[], blocked: [] as string[], reads: [] as string[],
     rejectNext: false, revertNext: false, simulationFailure: false, accountFailure: false, feeFailure: false, markFailure: false,
     candleMode: 'loaded' as 'loaded' | 'empty' | 'error' | 'old', historyFailure: false, historyCount: 0,
-    profileFailure: false,
+    profileFailure: false, gasFailure: false, walletFailure: false,
     indexerStatus: 0, indexerRetryAfter: '', candleHang: false, candleCalls: 0, rpcBatches: [] as number[],
     profileRows: { Fill: [] as Record<string, unknown>[], PerpPositionChange: [] as Record<string, unknown>[], FundingPayment: [] as Record<string, unknown>[], PerpFeeRecord: [] as Record<string, unknown>[], MarginEvent: [] as Record<string, unknown>[] },
     contractReads: [] as { name: string; block: unknown; args: readonly unknown[] }[],
@@ -135,7 +135,10 @@ export async function mockWallet(page: Page) {
         if (method === 'eth_chainId') result = '0xc4cf';
         else if (method === 'eth_blockNumber') result = '0x64';
         else if (method === 'eth_getBlockByNumber' || method === 'eth_getBlockByHash') result = block;
-        else if (method === 'eth_getBalance') result = toHex(accounts[String(params[0]).toLowerCase()]?.gas || 0n);
+        else if (method === 'eth_getBalance') {
+          if (state.gasFailure) throw new Error('Controlled gas read failure');
+          result = toHex(accounts[String(params[0]).toLowerCase()]?.gas || 0n);
+        }
         else if (method === 'eth_getTransactionCount') result = toHex(accounts[String(params[0]).toLowerCase()]?.nonce || 0);
         else if (method === 'eth_getCode') result = '0x';
         else if (method === 'eth_gasPrice' || method === 'eth_maxPriorityFeePerGas') result = '0x165a0bc00';
@@ -167,6 +170,7 @@ export async function mockWallet(page: Page) {
           const owner = accounts[String(args[0]).toLowerCase()] || accounts[A];
           const market = ALL_VERIFIED_PERP_MARKETS.find(m => m.poolAddress.toLowerCase() === tx.to.toLowerCase()) || ALL_VERIFIED_PERP_MARKETS[0];
           if (state.accountFailure && ['getAccountState', 'getAccountHealth', 'getPosition', 'balanceOf'].includes(call.functionName)) throw new Error('Controlled account read failure');
+          if (state.walletFailure && call.functionName === 'balanceOf') throw new Error('Controlled wallet balance failure');
           if (state.simulationFailure && call.functionName === 'placeOrder') throw new Error('Controlled order simulation failure');
           if (state.feeFailure && call.functionName === 'getPerpPoolParameters') throw new Error('Controlled fee read failure');
           if (state.markFailure && call.functionName === 'tryGetMarkPrice') throw new Error('Controlled mark read failure');
@@ -201,12 +205,13 @@ export async function mockWallet(page: Page) {
   }
   return state;
 }
-export async function connectMock(page: Page) {
+export async function connectMock(page: Page, tradeEnabled = true) {
   await page.goto('/app');
   await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
   await page.getByRole('button', { name: /MetaMask/ }).click();
-  await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('0x1111');
-  await expect(page.locator('.submit-order')).toBeEnabled();
+  await expect(page.locator('.account-summary')).toContainText('0x1111');
+  if (tradeEnabled) await expect(page.locator('.submit-order')).toBeEnabled();
+  else await expect(page.locator('.submit-order')).toBeDisabled();
 }
 export async function walletEvent(page: Page, kind: 'account' | 'chain' | 'disconnect', value?: string, unknown = false) {
   await page.evaluate(({ kind, value, unknown }) => {

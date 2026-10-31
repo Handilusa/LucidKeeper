@@ -1,5 +1,17 @@
 # New-wallet funding: sourced verification
 
+## Current product guidance — 31 October 2026
+
+The owner's latest local docs/UI request supersedes the product-copy failure below; it is user-directed guidance, **not newly obtained independent team confirmation**:
+
+Trading on Tokyo testnet needs STT (gas) and USDso collateral distributed by the bounty program to whitelisted wallets. Any wallet holding those funds can connect and trade with LucidKeeper. Wallets without funds can explore in read-only mode.
+
+**Do not use Arena funds. Known limitation: independent-wallet trading requires program-distributed funds.** Current landing, funding state, field guide and README no longer suggest a public distribution endpoint or Arena credit. Ask official bounty support for missing funds. Profiles/history/docs and the explicit Live test account provide read-only exploration; Guardian stress preview requires a real fresh position. [Main demo-video verification checklist](../SUBMISSION_TODO.md).
+
+The prior source observations and comparison below remain historical evidence for `755e6f3`; grant quotas, each judge's eligibility and actual receipt of funds remain unverified. No new team contact, claim, fund movement or close occurred in this docs/UI task.
+
+## Historical read-only report
+
 Observed **31 October 2026**. Documentation only: no claim, wallet connection, signature, transfer or funding preparation. **Builder Bounty, not Perps Arena.** Public documentation does not establish that a judge's independent wallet is funded or eligible for bounty collateral.
 
 ## What the official sources establish
