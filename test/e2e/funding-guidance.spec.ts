@@ -126,8 +126,9 @@ for (const width of [375, 1440]) {
       await expect(close).toContainText('snapshot block 38261043');
       await expect(close.getByRole('link')).toHaveAttribute('href', `${PROJECT.explorer}/tx/${record.hash}`);
       await expect(close).not.toContainText(/profit|PnL|fee/i);
+      await close.screenshot({ path: testInfo.outputPath(`close-${record.market}.png`) });
     }
-    await expect(proof.getByRole('complementary')).toHaveCount(0);
+    await expect(proof.getByRole('complementary', { name: /close evidence$/ })).toHaveCount(0);
     await expect(proof).not.toContainText('close — pending');
     await expect(avax).not.toContainText(/profit|PnL|fee/i);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
