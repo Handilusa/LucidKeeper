@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { parseUnits } from 'viem';
 import { A, mockWallet, connectMock, walletEvent } from './mock-wallet';
-import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PROJECT, PROOF } from '../../src/content/project';
+import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PROJECT, PROOF, VERIFIED_PROOF_CLOSES } from '../../src/content/project';
 
 for (const width of [375, 1440]) {
   test(`zero funds offers a prominent non-error read-only tour at ${width}px`, async ({ page }, testInfo) => {
@@ -118,11 +118,17 @@ for (const width of [375, 1440]) {
     await expect(avax).toContainText('Owner-confirmed execution through the current product flow');
     await expect(avax).toContainText('independently verified read-only by receipt, fill, account events and a later position snapshot');
     await expect(proof).toContainText(PROJECT.account);
-    for (const market of ['AVAX', 'DOGE']) {
-      const close = page.getByRole('complementary', { name: `${market} close evidence` });
-      await expect(close.getByRole('heading', { name: `${market} close — pending` })).toBeVisible();
-      await expect(close.getByRole('link')).toHaveCount(0);
+    for (const record of VERIFIED_PROOF_CLOSES) {
+      const close = proof.locator('.proof-card').filter({ hasText: record.label });
+      await expect(close.getByRole('heading', { name: record.value })).toBeVisible();
+      await expect(close).toContainText('IOC orderType=2');
+      await expect(close).toContainText('Fully filled, zero order remainder and zero position after close');
+      await expect(close).toContainText('snapshot block 38261043');
+      await expect(close.getByRole('link')).toHaveAttribute('href', `${PROJECT.explorer}/tx/${record.hash}`);
+      await expect(close).not.toContainText(/profit|PnL|fee/i);
     }
+    await expect(proof.getByRole('complementary')).toHaveCount(0);
+    await expect(proof).not.toContainText('close — pending');
     await expect(avax).not.toContainText(/profit|PnL|fee/i);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await proof.scrollIntoViewIfNeeded();

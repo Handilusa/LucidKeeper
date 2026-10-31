@@ -1,0 +1,861 @@
+/* =========================================================================
+   LUCIDKEEPER TACTICAL PERPS COCKPIT (INSTRUMENT GRADE HARDWARE CHASSIS)
+   Aesthetic: Industrial Precision Dark UI / Tactical Instrumentation
+   ========================================================================= */
+
+.hero-cockpit-chassis {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  background: #09090d;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 24px 64px -16px rgba(0, 0, 0, 0.9),
+    0 0 40px -12px rgba(119, 27, 232, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Specular chassis bezel rim */
+.hero-cockpit-chassis::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(188, 147, 243, 0.4) 30%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(188, 147, 243, 0.4) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------
+   CHASSIS HEADER
+   ------------------------------------------------------------------------- */
+.cockpit-chassis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: #0d0d12;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-wrap: wrap;
+}
+
+.cockpit-identity-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cockpit-status-beacon {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  flex-shrink: 0;
+}
+
+.cockpit-identity-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cockpit-protocol-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #f0f0f5;
+  text-transform: uppercase;
+}
+
+.cockpit-chain-id {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+/* Tactile Market Selector Switcher */
+.cockpit-market-selector {
+  display: flex;
+  align-items: center;
+  background: #07070a;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 2px;
+}
+
+.cockpit-market-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cockpit-market-tab:hover {
+  color: #f0f0f5;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cockpit-market-tab.market-tab-active {
+  background: #171720;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.market-tab-symbol {
+  font-weight: 700;
+}
+
+.market-tab-change {
+  font-size: 10px;
+}
+
+.market-tab-change.pos {
+  color: #10b981;
+}
+
+.market-tab-change.neg {
+  color: #f43f5e;
+}
+
+/* Hardware Telemetry Ledger */
+.cockpit-telemetry-cluster {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.telemetry-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.telemetry-icon {
+  color: var(--color-cyan);
+}
+
+.telemetry-val {
+  color: #f0f0f5;
+  font-weight: 600;
+}
+
+.telemetry-dot-online {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+/* -------------------------------------------------------------------------
+   TACTICAL DECK BODY (3 INSTRUMENT BAYS)
+   ------------------------------------------------------------------------- */
+.cockpit-deck-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #09090d;
+}
+
+.cockpit-bay {
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cockpit-bay:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* -------------------------------------------------------------------------
+   BAY 1: LIVE MARKET & PRECISION SPARKLINE
+   ------------------------------------------------------------------------- */
+.bay-market {
+  background: #0a0a0e;
+  gap: 14px;
+}
+
+.bay-market-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.market-pair-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.market-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.market-price-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.market-badge-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.market-badge-change.pos {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.market-badge-change.neg {
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.market-micro-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.micro-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.stat-val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #e2e2ec;
+  font-weight: 600;
+}
+
+/* Vector Chart Stage */
+.cockpit-chart-container {
+  position: relative;
+  width: 100%;
+  height: 130px;
+  background: #060608;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cockpit-sparkline-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.chart-hotspots-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.chart-hotspot-column {
+  flex: 1;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.chart-hover-chip {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  background: #1a1a24;
+  border: 1px solid rgba(188, 147, 243, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+.bay-market-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  padding-top: 2px;
+}
+
+.oracle-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-cyan);
+}
+
+.oracle-ping {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  box-shadow: 0 0 6px var(--color-cyan);
+}
+
+.grid-spec {
+  opacity: 0.8;
+}
+
+/* -------------------------------------------------------------------------
+   BAY 2: RISK GUARDIAN INSTRUMENT
+   ------------------------------------------------------------------------- */
+.bay-guardian {
+  background: #09090d;
+  gap: 14px;
+}
+
+.bay-guardian-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.guardian-title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.guardian-shield-icon {
+  color: var(--color-cyan);
+}
+
+.guardian-brand {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.guardian-state-badge {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  letter-spacing: 0.05em;
+}
+
+/* Mechanical Segmented VU / Margin Meter */
+.guardian-meter-card {
+  background: #0e0e14;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meter-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.meter-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+.meter-ratio-val {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meter-status-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.segmented-gauge {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  height: 10px;
+}
+
+.gauge-segment {
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.seg-safe {
+  background: linear-gradient(180deg, #10b981, #059669);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.seg-warn {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+}
+
+.seg-dim {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.meter-scale-markers {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+/* Telemetry Spec Tiles */
+.guardian-specs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.spec-tile {
+  background: #0c0c11;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tile-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.tile-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #f0f0f5;
+  white-space: nowrap;
+}
+
+.tile-val-alert {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.tile-val-armed {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+/* -------------------------------------------------------------------------
+   BAY 3: PRE-FLIGHT INTENT SIZING
+   ------------------------------------------------------------------------- */
+.bay-sizing {
+  background: #0a0a0e;
+  gap: 12px;
+}
+
+.bay-sizing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sizing-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.sizing-auth-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--color-cyan);
+}
+
+/* Side Rocker Switch */
+.intent-direction-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #060608;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 3px;
+  border-radius: 7px;
+  gap: 3px;
+}
+
+.direction-btn {
+  padding: 7px;
+  border-radius: 5px;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.15s ease;
+}
+
+.direction-btn:hover {
+  color: #ffffff;
+}
+
+.direction-btn.btn-long.active {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.direction-btn.btn-short.active {
+  background: #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.4);
+}
+
+/* Leverage Sizing Keys */
+.intent-leverage-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.leverage-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.matrix-title {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+.current-lev-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-cyan);
+}
+
+.leverage-keys-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.leverage-key {
+  padding: 6px 0;
+  background: #111116;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.leverage-key:hover {
+  color: #ffffff;
+  background: #171720;
+}
+
+.leverage-key.leverage-key-active {
+  background: #771be8;
+  border-color: #bc93f3;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(119, 27, 232, 0.4);
+}
+
+/* Dynamic Order Math Ledger */
+.intent-math-ledger {
+  background: #0e0e14;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 7px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.math-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.math-key {
+  color: var(--muted);
+}
+
+.math-num {
+  color: #e2e2ec;
+  font-weight: 600;
+}
+
+.math-num.highlight {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.math-num.mono {
+  font-size: 8.5px;
+  color: var(--color-cyan);
+}
+
+/* Tactile Launch Action */
+.cockpit-launch-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #771be8 0%, #5b13b5 100%);
+  border: 1px solid #bc93f3;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 14px rgba(119, 27, 232, 0.4);
+  margin-top: 2px;
+}
+
+.cockpit-launch-action:hover {
+  background: linear-gradient(180deg, #8a2be2 0%, #6815cf 100%);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 6px 20px rgba(119, 27, 232, 0.55);
+}
+
+.cockpit-launch-action:active {
+  transform: translateY(1px);
+}
+
+/* -------------------------------------------------------------------------
+   CHASSIS FOOTER
+   ------------------------------------------------------------------------- */
+.cockpit-chassis-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  background: #08080b;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.chassis-guarantee-line,
+.chassis-hashes-proof {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.check-icon {
+  color: #10b981;
+}
+
+/* -------------------------------------------------------------------------
+   RESPONSIVE TUNING & GUTTER ALIGNMENT
+   ------------------------------------------------------------------------- */
+@media (max-width: 1150px) {
+  .cockpit-deck-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .bay-market {
+    border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .bay-guardian {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .bay-sizing {
+    grid-column: 1 / -1;
+    border-right: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .cockpit-deck-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cockpit-bay:not(:last-child) {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+}
+
+@media (max-width: 640px) {
+  .cockpit-chassis-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .cockpit-market-selector {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .cockpit-telemetry-cluster {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .market-price-row {
+    flex-wrap: wrap;
+  }
+  .cockpit-chassis-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+/* Container integration with landing page */
+.product-stage {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.hero-cockpit-window {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin-inline: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  background: #09090d !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 28px 80px -20px rgba(0, 0, 0, 0.95),
+    0 0 50px -10px rgba(119, 27, 232, 0.18) !important;
+  overflow: hidden !important;
+}
+
+.hero-cockpit-window .hero-cockpit-chassis {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.hero-cockpit-window figcaption {
+  background: #08080b;
+  border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  box-sizing: border-box;
+}

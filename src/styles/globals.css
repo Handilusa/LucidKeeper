@@ -4,46 +4,46 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-display: 'Syne', sans-serif;
-  --color-violet-300: #bba5ff;
-  --color-violet-500: #7645da;
-  --color-cyan-300: #9cecf5;
-  --color-cyan-400: #6ce5f2;
-  --color-cyan-500: #2db9cc;
-  --color-emerald-400: #66d9ab;
-  --color-emerald-500: #66d9ab;
-  --color-rose-400: #ff899b;
-  --color-rose-500: #ff899b;
-  --color-slate-400: #a8b5ce;
-  --color-slate-500: #a8b5ce;
-  --color-slate-800: #293449;
-  --color-slate-700: #4b5a76;
+  --color-violet-300: #bc93f3;
+  --color-violet-500: #771be8;
+  --color-cyan-300: #bc93f3;
+  --color-cyan-400: #bc93f3;
+  --color-cyan-500: #771be8;
+  --color-emerald-400: #60cf9f;
+  --color-emerald-500: #60cf9f;
+  --color-rose-400: #f4808b;
+  --color-rose-500: #f4808b;
+  --color-slate-400: #a49cb5;
+  --color-slate-500: #a49cb5;
+  --color-slate-800: #1d1829;
+  --color-slate-700: #332d42;
 }
 
 :root {
   color-scheme: dark;
-  --bg-base: #07080d;
-  --bg-deep: #0b0f1a;
-  --bg-panel: #101625;
-  --bg-surface: #192238;
-  --bg-hover: #25314b;
-  --border-color: #293449;
-  --border-highlight: #4b5a76;
-  --text: #edf2ff;
-  --muted: #a8b5ce;
-  --color-violet: #7645da;
-  --accent-bright: #bba5ff;
-  --color-cyan: #6ce5f2;
-  --color-magenta: #ec91df;
-  --color-emerald: #66d9ab;
-  --color-rose: #ff899b;
+  --bg-base: #070707;
+  --bg-deep: #0a0a0d;
+  --bg-panel: #111114;
+  --bg-surface: #1a1724;
+  --bg-hover: #262135;
+  --border-color: #241f30;
+  --border-highlight: #3f3652;
+  --text: #ece8f5;
+  --muted: #a49cb5;
+  --color-violet: #771be8;
+  --accent-bright: #bc93f3;
+  --color-cyan: #bc93f3;
+  --color-magenta: #9d5cf7;
+  --color-emerald: #60cf9f;
+  --color-rose: #f4808b;
   --color-amber: #e5b875;
-  --glow-violet: #9361ff33;
-  --glow-cyan: #54d6ef20;
-  --glow-magenta: #df64c822;
-  --gradient-accent: linear-gradient(110deg, var(--accent-bright), var(--color-cyan));
-  --gradient-button: linear-gradient(120deg, #7950d8, #6532c3);
-  --gradient-panel: linear-gradient(135deg, #171d33, var(--bg-panel) 65%);
-  --shadow-panel: 0 12px 40px #02051150, 0 1px 0 #c1ceff08 inset;
+  --glow-violet: #771be838;
+  --glow-cyan: #bc93f326;
+  --glow-magenta: #9d5cf720;
+  --gradient-accent: linear-gradient(110deg, #bc93f3, #9d5cf7);
+  --gradient-button: linear-gradient(120deg, #771be8, #5b10b8);
+  --gradient-panel: linear-gradient(135deg, #161322, #111114 65%);
+  --shadow-panel: 0 12px 40px #00000080, 0 1px 0 #bc93f30d inset;
   --radius-control: 5px;
   --space-panel: 20px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -162,9 +162,17 @@ input[type='range'] {
   letter-spacing: -1px;
 }
 .brand-mark {
-  color: var(--color-cyan);
-  width: 24px;
-  height: 28px;
+  width: 32px;
+  height: 26px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 10px rgba(188, 147, 243, 0.35));
+  transition: transform 0.22s var(--ease-out), filter 0.22s var(--ease-out);
+}
+.brand:hover .brand-mark {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 16px rgba(119, 27, 232, 0.8));
 }
 .header-left,
 .header-actions,
@@ -223,7 +231,7 @@ input[type='range'] {
   box-shadow: 0 5px 22px var(--glow-violet), 0 1px 0 #ffffff20 inset;
 }
 .button-primary:hover {
-  background: var(--color-violet);
+  background: #8535ec;
 }
 .icon-button {
   display: inline-flex;

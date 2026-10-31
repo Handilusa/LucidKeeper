@@ -18,7 +18,11 @@ import {
 import { Brand, TestnetBadge } from '@/components/Brand';
 import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PENDING_PROOF_CLOSES, PROJECT, PROOF, SOMNIA_SOURCES } from '@/content/project';
 import { ReceiptValue, Reveal, useLandingMotion, useMotionPreference } from './LandingMotion';
-import { WorkflowGraphic } from './WorkflowGraphic';
+import { WorkflowGraphic, type FlowNodeId } from './WorkflowGraphic';
+import { HeroCockpit } from './HeroCockpit';
+import { AtmosphereCanvas } from './AtmosphereCanvas';
+import { SigilGSAP } from './SigilGSAP';
+import { MultiStreamDiagram } from './MultiStreamDiagram';
 import './landing.css';
 
 const steps = [
@@ -88,21 +92,20 @@ function LifecycleCurve({ vertical = false }: { vertical?: boolean }) {
 export default function Landing() {
   const reducedMotion = useMotionPreference();
   const [paused, setPaused] = useState(false);
+  const [activeFlowNode, setActiveFlowNode] = useState<FlowNodeId | null>('wallet');
   const root = useLandingMotion(reducedMotion || paused);
   const features = ['On-chain market reads', 'Cross-margin visibility', 'Reviewable transactions', 'Evidence over promises'];
   return (
     <div className="landing" ref={root}>
       <div className="landing-atmosphere" aria-hidden="true">
-        <span className="aurora aurora-violet" />
-        <span className="aurora aurora-cyan" />
-        <span className="aurora aurora-magenta" />
+        <AtmosphereCanvas />
       </div>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
       <header className="landing-header">
         <div className="landing-nav wrap">
-          <Brand />
+          <Brand variant="neon" />
           <nav aria-label="Main navigation">
             <a href="#how-it-works">How it works</a>
             <a href="#different">Why different</a>
@@ -119,16 +122,7 @@ export default function Landing() {
       <main id="main" tabIndex={-1}>
         <section className="hero wrap" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <div className="guardian-insignia" aria-hidden="true">
-              <svg viewBox="0 0 320 320" fill="none">
-                <circle className="insignia-orbit" cx="160" cy="160" r="145" />
-                <circle cx="160" cy="160" r="114" strokeDasharray="2 12" />
-                <path className="insignia-crosshair" d="M160 0v30m0 260v30M0 160h30m260 0h30" />
-                <path className="insignia-shield" d="M103 96l57-20 57 20v70c0 34-32 64-57 83-25-19-57-49-57-83V96Z" />
-                <path className="insignia-monogram" d="M137 120v73h52m-27-73v47h27" />
-              </svg>
-              <span>HUMAN INTENT. ON-CHAIN EVIDENCE.</span>
-            </div>
+            <SigilGSAP />
             <p className="section-kicker">
               <span className="signal-dot" /> DREAMDEX PERPS · BUILT WITH A GUARDIAN
             </p>
@@ -157,37 +151,16 @@ export default function Landing() {
             </p>
           </div>
           <div className="product-stage">
-          <figure className="product-window">
-            <div className="product-caption">
-              <span>
-                <span className="signal-dot" /> THE WORKING TERMINAL
-              </span>
-              <span>Real UI capture · 30 Oct 2026</span>
-            </div>
-            <a
-              href="/assets/product/terminal.jpg"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="View full-size historical terminal screenshot"
-            >
-              <img
-                src="/assets/product/terminal-1440.webp"
-                srcSet="/assets/product/terminal-480.webp 480w, /assets/product/terminal-960.webp 960w, /assets/product/terminal-1440.webp 1440w"
-                sizes="(max-width: 767px) calc(100vw - 42px), (max-width: 1344px) calc(100vw - 66px), 1278px"
-                width="1440"
-                height="1000"
-                fetchPriority="high"
-                alt="LucidKeeper terminal with actual Tokyo market reads, margin health, chart, order review and positions. Historical snapshot, not live balances."
-              />
-            </a>
-            <figcaption>
-              <ShieldCheck size={16} aria-hidden="true" />
-              <span>Know what you hold. Know what you are about to sign.</span>
-              <a href="#proof">
-                Inspect the receipts <ArrowUpRight size={14} aria-hidden="true" />
-              </a>
-            </figcaption>
-          </figure>
+            <figure className="product-window hero-cockpit-window">
+              <HeroCockpit />
+              <figcaption>
+                <ShieldCheck size={16} aria-hidden="true" />
+                <span>Know what you hold. Know what you are about to sign.</span>
+                <a href="#proof">
+                  Inspect the receipts <ArrowUpRight size={14} aria-hidden="true" />
+                </a>
+              </figcaption>
+            </figure>
           </div>
           <div className="hero-strip">
             <div className="feature-marquee">
@@ -304,8 +277,61 @@ export default function Landing() {
                     Active tab required. The Guardian is not an always-on keeper, and it cannot
                     guarantee a fill.
                   </p>
+
+                  <div className="flow-step-list" role="tablist" aria-label="Interactive architecture workflow stages">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeFlowNode === 'wallet'}
+                      className={`flow-step-card ${activeFlowNode === 'wallet' ? 'flow-step-active' : ''}`}
+                      onClick={() => setActiveFlowNode('wallet')}
+                      onMouseEnter={() => setActiveFlowNode('wallet')}
+                    >
+                      <div className="step-card-num">01</div>
+                      <div className="step-card-body">
+                        <h4>Non-Custodial Client Intent</h4>
+                        <p>Sign strictly from your EOA. Zero private keys on disk, server, or agent memory.</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeFlowNode === 'guardian' || activeFlowNode === 'sdk'}
+                      className={`flow-step-card ${activeFlowNode === 'guardian' || activeFlowNode === 'sdk' ? 'flow-step-active' : ''}`}
+                      onClick={() => setActiveFlowNode('guardian')}
+                      onMouseEnter={() => setActiveFlowNode('guardian')}
+                    >
+                      <div className="step-card-num">02</div>
+                      <div className="step-card-body">
+                        <h4>Browser-Local Guardian</h4>
+                        <p>60fps tab cross-margin telemetry paired with live Tokyo CLOB book feeds.</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeFlowNode === 'chain'}
+                      className={`flow-step-card ${activeFlowNode === 'chain' ? 'flow-step-active' : ''}`}
+                      onClick={() => setActiveFlowNode('chain')}
+                      onMouseEnter={() => setActiveFlowNode('chain')}
+                    >
+                      <div className="step-card-num">03</div>
+                      <div className="step-card-body">
+                        <h4>Deterministic Settlement</h4>
+                        <p>Atomic IOC fills on dreamDEX Tokyo PerpPools with immutable receipts.</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-                <WorkflowGraphic paused={paused} reducedMotion={reducedMotion} onToggle={() => setPaused(!paused)} />
+                <WorkflowGraphic
+                  paused={paused}
+                  reducedMotion={reducedMotion}
+                  onToggle={() => setPaused(!paused)}
+                  activeNode={activeFlowNode}
+                  onSelectNode={setActiveFlowNode}
+                />
               </div>
             </Reveal>
           </div>
@@ -415,27 +441,7 @@ export default function Landing() {
                       loading="lazy"
                     />
                   </div>
-                  <div
-                    className="stream-visual"
-                    aria-label="Conceptual MultiStream diagram: independent validator data chains feed a consensus chain"
-                  >
-                    <div className="data-streams">
-                      {['Validator A', 'Validator B', 'Validator C'].map((label) => (
-                        <div key={label}>
-                          <span>{label}</span>
-                          <i />
-                          <i />
-                          <i />
-                          <b aria-hidden="true">→</b>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="consensus-node">
-                      Consensus
-                      <br />
-                      <span>One ordered stream</span>
-                    </div>
-                  </div>
+                  <MultiStreamDiagram />
                   <p>
                     According to Somnia’s MultiStream documentation, validators publish independent
                     data chains. A separate consensus chain agrees their heads and produces a
@@ -564,7 +570,9 @@ export default function Landing() {
               snapshot, not the submitting UI by themselves. The snapshot is not live state or
               close/settlement evidence. The deposit and DOGE FOK short (orderType=1) were
               owner-relayed and subsequently audited; they are not proof of execution through this
-              UI. AVAX close and DOGE close are pending.{' '}
+              UI. The separate BTC, DOGE and AVAX IOC closes are independently verified by
+              canonical receipts, fills, account events and pinned positions; all three were flat at
+              block 38261043. These are dated observations, not live state or net returns.{' '}
               <a href={`${PROJECT.github}/blob/main/STATUS.md`} target="_blank" rel="noreferrer">
                 Audit context ↗
               </a>
@@ -729,7 +737,7 @@ export default function Landing() {
       </main>
       <footer className="landing-footer wrap">
         <div>
-          <Brand />
+          <Brand variant="white" />
           <p>Perps execution. Risk in sight.</p>
         </div>
         <nav aria-label="Footer resources">

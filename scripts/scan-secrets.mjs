@@ -19,6 +19,8 @@ const KNOWN_SAFE_HASHES = new Set([
   '0x8e5f867136920a55b9b93fca85fa7373a386a22158b33c031d0866c24a77a47a'.toLowerCase(),
   // Verified close position transaction hash on Somnia Tokyo
   '0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6'.toLowerCase(),
+  // Real AVAX long IOC order/fill transaction hash on Somnia Tokyo (31 Oct 2026)
+  '0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e'.toLowerCase(),
   // Public transaction referenced in audit
   '0x2532174707449130883afd68d0dca5dbd9afca5db380e37116b06e01126fd7b6'.toLowerCase(),
   // Public bounty transactions (Approve, Deposit, DOGE Short) and block hashes

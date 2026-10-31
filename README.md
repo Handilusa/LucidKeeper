@@ -57,12 +57,15 @@ Real historical Tokyo receipts for `0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`:
 - **Deposit — 2 USDso**, block **37388613**: [`0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9`](https://explorer.testnet.somnia.network/tokyo/tx/0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9).
 - **DOGE short order — 120 DOGE filled at 0.07525 USDso**, block **37392617**: [`0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c`](https://explorer.testnet.somnia.network/tokyo/tx/0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c).
 - **AVAX long — current product flow, IOC (`orderType=2`), fully filled**, **31 Oct 2026 18:26:46 UTC**, block **38179383**: **4.8 AVAX at 8.588 USDso**, **41.2224 USDso notional (not margin)**, **zero remaining quantity**. [`0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e`](https://explorer.testnet.somnia.network/tokyo/tx/0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e).
-- **AVAX close — pending.** No close hash supplied; add one only when the owner provides a verified close.
-- **DOGE close — pending.** No close hash supplied; the historical BTC close is neither the AVAX close nor the DOGE close.
+- **AVAX close — verified**, **31 Oct 2026 20:40:30 UTC**, block **38259598**: IOC (`orderType=2`) sell **4.8 AVAX at 8.565 USDso**, **41.112 USDso notional (not margin)**. Fully filled; zero order remainder and zero position after close. [0xae9b…8b34](https://explorer.testnet.somnia.network/tokyo/tx/0xae9b6862f47f9e27a4f4cfa335e4b9cde4ff44018dea33a289a901237b3e8b34).
+- **DOGE close — verified**, **31 Oct 2026 20:40:11 UTC**, block **38259415**: IOC (`orderType=2`) buy **120 DOGE at 0.07574 USDso**, **9.0888 USDso notional (not margin)**. Fully filled; zero order remainder and zero position after close. [0xb7ae…311e](https://explorer.testnet.somnia.network/tokyo/tx/0xb7ae27d709d13cdea7bba3dac928b5392865b0852e6835081a401fd62d32311e).
+- **BTC short close — verified**, **31 Oct 2026 20:39:52 UTC**, block **38259218**: IOC (`orderType=2`) buy **0.00093 BTC at 77,654.2 USDso**, **72.218406 USDso notional (not margin)**. Fully filled; zero order remainder and zero position after close. [0x948d…b0b4](https://explorer.testnet.somnia.network/tokyo/tx/0x948dc39bc4e32e0a5f6246b50d243813ea42cc6c398c9a7c746c1b8af027b0b4). This closes the later BTC short, not the earlier historical BTC close below.
 
 The deposit and DOGE order were **owner-relayed and independently audited afterward**. DOGE used **FOK (`orderType=1`)**, not IOC (`2`), and is not proof of execution through the new UI. A confirmed transaction, fill, position and settlement are distinct. [Audit](docs/audit/012-owner-relayed-fok-ioc-mismatch.md).
 
 The owner confirms AVAX execution through the **current product flow**; the agent independently verified its canonical receipt, matching fill, account events and a later position snapshot **read-only**. At snapshot block **38182895**, the position was **+4.8 AVAX**, average entry **8.588 USDso**; this is a dated observation, not live state or close/settlement evidence. On-chain data verifies IOC execution, not the submitting UI by itself. No PnL or fee claim is added. [Receipt provenance](docs/LANDING_SOURCES.md#product-and-receipt-provenance).
+
+The three owner-reported closes were independently verified **read-only at 20:42:57 UTC** by canonical receipts, matching fills, account events, indexed position changes and pre-/post-/later pinned positions. At later block **38261043**, BTC, DOGE and AVAX sizes were all **zero**. This is not a live-state guarantee, proof of the submitting UI, net-PnL claim or withdrawal certification. [Close audit, exact event price PnL and limits](docs/audit/013-owner-reported-three-closes.md).
 
 For judges without funds, the main full-flow verification path is **record the full-flow demo video and show tx hashes**; the video remains pending and must show actual UI actions/receipts rather than relabeling this historical evidence. [Submission checklist](SUBMISSION_TODO.md).
 
@@ -103,7 +106,7 @@ All entries concern the bounty EOA on Tokyo. They describe historical actions, n
 | 30 Oct deposit | [0xf030…9fc9](https://explorer.testnet.somnia.network/tokyo/tx/0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9) | 37388613 | 2 USDso; decoded `Transfer` and `Deposited` events |
 | 30 Oct DOGE fill | [0x023d…4e4c](https://explorer.testnet.somnia.network/tokyo/tx/0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c) | 37392617 | 120 DOGE sold at 0.07525 USDso; 9.03 USDso notional; zero remainder |
 
-**The 30 October deposit and DOGE execution were owner-relayed and independently audited afterward.** The DOGE transaction was **FOK (`orderType=1`)**, not the reviewed-intent IOC (`2`), and is not demonstrated execution through this interface. No verified DOGE close is recorded here. [Full FOK/IOC audit](docs/audit/012-owner-relayed-fok-ioc-mismatch.md) · [Earlier public evidence](evidence/public/execution-2026-10-27.json) · [Canonical timestamps, costs and limits](STATUS_HISTORY.md).
+**The 30 October deposit and DOGE execution were owner-relayed and independently audited afterward.** The DOGE opening transaction was **FOK (`orderType=1`)**, not the reviewed-intent IOC (`2`), and is not demonstrated execution through this interface. Its separate **31 October IOC close** is now verified in [Proof](#proof) and the [three-close audit](docs/audit/013-owner-reported-three-closes.md). [Full FOK/IOC opening audit](docs/audit/012-owner-relayed-fok-ioc-mismatch.md) · [Earlier public evidence](evidence/public/execution-2026-10-27.json) · [Canonical timestamps, costs and limits](STATUS_HISTORY.md).
 
 ## Portfolio methodology
 
@@ -173,11 +176,14 @@ node scripts/audit-release.mjs
 
 Automated tests use an isolated wallet/RPC harness under test/; it is not part of the shipped app. [Production data audit](docs/NO_MOCKS_IN_PRODUCTION.md) preserves the original failures and records their local fixes: incomplete financial/history observations are unavailable, unknown pool units are rejected, and hypothetical previews/diagrams are explicitly illustrative. Vendor mock/test utilities still ship; this is not a blanket mock-free certification.
 
-Real-chain evidence: deposit, DOGE FOK order, AVAX IOC order and historical BTC close hashes with explorer links. **AVAX close and DOGE close are pending; the close below is historical BTC, not either of them.** AVAX is owner-confirmed current-product execution with independent read-only chain verification; the 30 October deposit and DOGE FOK execution were owner-relayed.
+Real-chain evidence: deposit, DOGE FOK order, AVAX IOC order, **three independently verified IOC closes on 31 October** and the separate historical BTC close. AVAX opening is owner-confirmed current-product execution with independent read-only chain verification; the 30 October deposit and DOGE FOK opening were owner-relayed. New close evidence verifies execution and flat positions, not UI authorship or net returns. [Close audit](docs/audit/013-owner-reported-three-closes.md).
 
 - **Deposit:** [`0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9`](https://explorer.testnet.somnia.network/tokyo/tx/0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9).
 - **DOGE order/fill:** [`0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c`](https://explorer.testnet.somnia.network/tokyo/tx/0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c).
 - **AVAX IOC order/fill:** [`0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e`](https://explorer.testnet.somnia.network/tokyo/tx/0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e).
+- **31 Oct BTC short close:** [0x948d…b0b4](https://explorer.testnet.somnia.network/tokyo/tx/0x948dc39bc4e32e0a5f6246b50d243813ea42cc6c398c9a7c746c1b8af027b0b4).
+- **31 Oct DOGE short close:** [0xb7ae…311e](https://explorer.testnet.somnia.network/tokyo/tx/0xb7ae27d709d13cdea7bba3dac928b5392865b0852e6835081a401fd62d32311e).
+- **31 Oct AVAX long close:** [0xae9b…8b34](https://explorer.testnet.somnia.network/tokyo/tx/0xae9b6862f47f9e27a4f4cfa335e4b9cde4ff44018dea33a289a901237b3e8b34).
 - **Historical BTC close:** [`0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6`](https://explorer.testnet.somnia.network/tokyo/tx/0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6).
 
 ### Deploy the exact tested version
