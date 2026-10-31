@@ -1,0 +1,59 @@
+/* Original trading palette; marketing, portfolio and guide keep the vivid theme. */
+html[data-terminal-theme] {
+  --bg-base: #070707;
+  --bg-deep: #070707;
+  --bg-panel: #111111;
+  --bg-surface: #252525;
+  --bg-hover: #303030;
+  --border-color: #252525;
+  --border-highlight: #4c4c4c;
+  --text: #e6e6e6;
+  --muted: #a8a8a8;
+  --color-violet: #771be8;
+  --accent-bright: #bc93f3;
+  --color-cyan: #bc93f3;
+  --color-emerald: #60cf9f;
+  --color-rose: #f4808b;
+  --color-violet-300: #bc93f3;
+  --color-violet-500: #771be8;
+  --color-cyan-300: #bc93f3;
+  --color-cyan-400: #bc93f3;
+  --color-cyan-500: #771be8;
+  --color-emerald-400: #60cf9f;
+  --color-emerald-500: #60cf9f;
+  --color-rose-400: #f4808b;
+  --color-rose-500: #f4808b;
+  --color-slate-400: #a8a8a8;
+  --color-slate-500: #a8a8a8;
+  --color-slate-800: #252525;
+  --color-slate-700: #4c4c4c;
+  --gradient-accent: linear-gradient(var(--color-cyan), var(--color-cyan));
+  --gradient-button: var(--color-violet);
+  --gradient-panel: var(--bg-panel);
+  --shadow-panel: none;
+}
+
+html[data-terminal-theme] body {
+  background: var(--bg-base);
+}
+
+html[data-terminal-theme] .order-entry {
+  background: var(--bg-panel);
+}
+
+html[data-terminal-theme] .app-header.site-app-header,
+html[data-terminal-theme] .button-primary {
+  box-shadow: none;
+}
+
+html[data-terminal-theme] .button-primary {
+  border-color: transparent;
+}
+
+html[data-terminal-theme] .button-primary:hover {
+  background: #8535ec;
+}
+
+html[data-terminal-theme] .modal-overlay {
+  background: #0009;
+}

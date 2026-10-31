@@ -4,6 +4,21 @@
 **Deadline:** 1 November 2026, 23:59 UTC.  
 **Rule:** No requirement is marked as completed without verifiable linked evidence.
 
+## Current release reconciliation — 31 October 2026
+
+Local tasks 1–6 are implemented/checked on `feat/landing-and-profile`, not newly deployed. Any connected Tokyo wallet can review supported actions; historical sole-EOA **agent** policy is not the product allowlist. Final acceptance: **94 pass / 19 skip / 0 fail** unit/service, **79 pass / 0 skip / 0 fail** Chromium; types/E2E types/lint/build pass. Publication check: 211 tracked paths, 13 documents, 103 local-link destinations, zero issues (not security certification). Task6 includes shipping/CI/publication and inherited-visual acceptance; [full results](PRE_PUSH_AUDIT.md). Controlled financial fixtures are test-only, never production performance evidence.
+
+| Requirement | Current acceptance boundary |
+| --- | --- |
+| Independent wallet lifecycle | Local implementation + two-wallet controlled tests; real funding/extension/fills/settlement still [human QA](MANUAL_QA.md) |
+| Public address/profile/ROI | Explicit read-only address and tested accounting; canonical historical inputs missing, no live ROI/win-rate/equity curve |
+| Leaderboard | Real bounded indexed volume of locally observed connected addresses, not global profit ranking |
+| Safe dependency remediation | Audit fix without force made no compatible changes;38affected entries remain [security gate](SECURITY_NOTES.md) |
+| Capacity/resilience | [Bounded read controls/static240request check](SCALABILITY.md), not mass-scale/RPC capacity |
+| Shipping/submission | [Exact owner instructions](DEPLOYMENT.md); push/deployment/parity/X URLs/video/bounty delivery pending |
+
+Historical sections below retain their dated claims; none substitutes for current live acceptance.
+
 ---
 
 ## 1. Phase 0 Production Baseline Audit (15-Minute Clean Wallet Test)
@@ -29,7 +44,7 @@
 
 ---
 
-## 2. Core On-Chain Lifecycle Requirements
+## 2. Historical Core On-Chain Lifecycle Requirements — 28 October
 
 | ID | Requirement | Status | Evidence / Link |
 | :--- | :--- | :--- | :--- |
@@ -142,24 +157,33 @@ Baseline check: `npm run typecheck` PASS on inherited source, 29 October 2026. R
 - **Implemented locally:** Former-name strings removed from all active-project text; fallback initials changed to `LK`; lowercase npm/localStorage identifiers retained as technical namespaces; established local directory unchanged.
 - **Acceptance evidence:** tracked-text branding regression PASS in the **66/66** unit suite; active-project and built-output searches find zero former-name or incorrect-casing matches; typecheck, ESLint, build and isolated rendered title/header/footer Chromium check PASS. Deployment verification remains separate.
 
-## Current reconciliation — 30 October 2026
+## Current reconciliation — 31 October 2026
 
-This section includes the six ordered local fixes and supersedes historical status tables above. [STATUS](../STATUS.md), [CHECKPOINT](CHECKPOINT.md) and [validation](LUCIDKEEPER_REDESIGN_VALIDATION.md) are current frontend authority. Local success is not deployment or live execution permission.
+This section supersedes historical status tables above. The current acceptance authority is [pre-push audit](PRE_PUSH_AUDIT.md), [STATUS](../STATUS.md) and [test provenance](TEST_DATA_SOURCES.md); older CHECKPOINT/validation/deployment records are dated history. **All requirements are not met.** Passing available checks is not complete transaction, security or mass-scale acceptance, and does not authorize live execution.
 
 | Requirement / module | Current status and evidence | Still unverified |
 | --- | --- | --- |
-| Wallet / REQ-UI-01 | RainbowKit/Wagmi implemented; Reown configuration 5/5 production checks passed on 29 October, [005](../feedback/005-production-reown-origin-allowlist.md) | Actual connection/relay/signing since the Reown change |
+| Wallet / REQ-UI-01 | RainbowKit/Wagmi implemented; fresh disconnected connection-modal check passes. Earlier Reown checks in [005](../feedback/005-production-reown-origin-allowlist.md) remain historical | Actual connected switch/disconnect/network/relay/review/signing races |
 | Markets / REQ-UI-02 | 21 verified markets; local switching/native-interval tests and dated deployed read checks in validation | No new all-market production audit |
 | Chart / REQ-UI-03 | Native interval/units validation, preserved OHLC, separate Mark line, reversible robust scale, keyboard/time/read states; [004 resolved](../feedback/004-mixed-candle-intervals.md), `src/features/terminal/Chart.tsx` | Full manual accessibility/performance; no mark-price substitution into execution candles is required |
 | Trading / REQ-UI-04 | Raw bigint/fresh IOC mark; shared HOLD/EOA/full unsigned review; limit UI exists but signing is disallowed | Fresh production transaction/fill smoke test; controlled cases skipped |
-| Positions / REQ-UI-05 | Identity-only partial dialog, fresh pinned raw size/mark/grid and post-review check; sourced changed/flat/flipped regressions | Nonempty live portfolio/close; no protocol reduce-only guarantee |
+| Positions / REQ-UI-05 | Identity-only partial dialog, fresh pinned raw size/mark/grid and post-review check; sourced changed/flat/flipped regressions. Fresh disconnected activity states pass | Current nonempty connected portfolio/close/fill outcomes; no protocol reduce-only guarantee |
 | Orders/history / REQ-UI-06 | Real indexed `Order`/`Fill`/`MarginEvent`, pagination, RPC/cache fallback; empty/orders/history browser checks | Cancel signing outside allowlist; no fresh nonempty book/cancel proof; controlled pagination failures skipped |
 | Collateral / REQ-UI-07 | Exact2USDso review, shared HOLD, approval receipt awaited before deposit; withdrawal UI held/disallowed | Sequencing/revert paths skipped; no new live post-approval allowance/deposit verification; offline CLI envelope integration unfinished |
 | Guardian / REQ-UI-08 | Pinned-block portfolio health, protocol maintenance input, active-tab/wallet-approval disclosure, account/network isolation and reload-disarmed settings; `src/features/sentinel/RiskGuardian.tsx` | Live execution, verified actual fill/remaining quantity and automated retry are not certified; receipt confirmation explicitly says actual fill not yet verified |
 | Share / REQ-UI-09 | LucidKeeper canvas/PNG, related tx/pool labeling, explicit snapshot-not-realized-PnL disclaimer; `src/features/share/TradeCardModal.tsx` | Fresh live nonempty-position card path; hash syntax alone is not independent execution verification |
 | Accessible groups | [006 production verified](../feedback/006-generic-container-accessible-labels.md): six named AX groups at desktop/phone, zero scoped naming violations/incomplete results | Real screen reader, manual contrast/modal-focus review, dense labels/small targets |
 | Operational permission | **Wallet-scoped HOLD release:** subsequent explicit written owner confirmation; mandatory EOA/50383 context, exact funding/reviewed IOC gates remain | Complete offline CLI envelope integration and separate approval for each live step; agent handoff offline/user-mediated and publication user-owned; confirmation/provenance owner-reported, not independently verified |
+| Multi-user account isolation | Disconnected market-only views, scoped queries/storage, keyed lifetimes and pre-dispatch live-wallet guards; pure/cache/source regressions, disconnected375/1440 browser tests and actual HTTP/GraphQL identity checks pass; [014](../feedback/014-disconnected-bounty-account-fallback.md), [015](../feedback/015-wallet-state-and-review-isolation.md) | Pure/cache foreign identity is a public pool, not a second connected wallet; real connected transitions remain untested; UI isolation is not on-chain privacy |
+| General multi-user trading | **NOT IMPLEMENTED**: bounty EOA only; arbitrary connected wallets can view their own data but cannot fund/trade/close/execute Guardian | Separate product/policy decision and controlled transaction validation; do not widen bounty allowlist in an audit |
+| Landing / dedicated portfolio / guide | Four routes × four widths pass current public/disconnected render checks. Pinned portfolio/history/tables/export code implemented; [data contract](PORTFOLIO_DATA.md) | Connected alias/tables/windows/CSV/PNG/recovery not rerun after fallback removal |
+| Complete return analytics | **UNAVAILABLE**: ROI, historical equity, full-cycle win rate and verified leaderboard | Starting equity, complete cash flows/window PnL/cohort inputs; do not substitute fabricated results |
+| Mass-scale capacity | **NOT VALIDATED**: no concurrency/load/soak acceptance run; per-browser polling public services | Define users/RPS/latency/error/quota targets, test authorized capacity and overload/recovery behavior |
+| Engineering / REQ-ENG-01,02,04,05,06 | Fresh typecheck/lint/E2E types/build PASS; full tests72pass/21skip, browser22pass/17skip,0fail/0flaky | All-critical-flows goal not met; limited library coverage78.16% lines, not app-wide; CI runs npmtest only |
+| Security / REQ-ENG-03,09 | **OPEN**: audit exit1,38 affected entries,27runtime+11dev-only; [triage](DEPENDENCY_TRIAGE.md) | Tested remediation/reachability and independent security review; no fresh secret-scan certification |
+| Accessibility/performance / REQ-ENG-07 | Fresh16route-width states axe0/overflow0/errors0; keyboard/dialog/reduced-motion checks pass. Lighthouse87/100/100/100 is historical30Oct | Human assistive technology/devices and fresh performance under capacity; lab/axe are not certification |
+| Delivery / REQ-ENG-08, REQ-BOUNTY-* | Historical repo/receipts/deployment exist; latest checked deployed build remains0dce074,30Oct15:43UTC; new branch remains local | Owner push/new deployment parity, current-UI execution evidence,2–3XURLs/video/feedback/submission |
 
-Latest30October committed full verification at`0dce074`: **59passed/21skipped/0failed**,14files80cases; TypeScript/ESLint/build **PASS**(50.70s). Three additive HOLD/first-gate regressions retain scoped-release tests; downstream races remain skipped. Prior local real-serviceChromium14/16/0,five sizes is not newly rerun. [Sources and gaps](TEST_DATA_SOURCES.md). Earlier double-based totals and Lighthouse70 remain historical. DESIGN0errors/9warnings not rerun; dependencies27runtime/0dev-only/threeadvisories persist. [Triage](DEPENDENCY_TRIAGE.md). Buildwarnings remain.
+Latest local verification **31October11:27–11:32UTC**: full tests **72passed/21skipped/0failed**,93cases; Chromium **22passed/17skipped/0failed/0flaky**, full build included10.88s; TypeScript/ESLint/supplementalE2Etypes **PASS**. Limited coverage command14pass/2skip,78.16%lines/78.08%branches/75%functions across five loaded library files; not complete coverage.16route-width states plus motion/disconnected profile checks pass. First fresh browser21/17/1 failed only an obsolete title assertion, corrected without changing product behavior; original artifacts preserved. [Exact results and gaps](PRE_PUSH_AUDIT.md). Earlier double-based totals, Lighthouse70 and30Oct59/21 are historical. Dependency audit is **not clean**,38affected/4advisories; buildwarnings remain.
 
-**Submission status:** publicmain/Vercel`0dce074`/cloudCI verified15:43UTC;180/180local`dist/`filesmatchproduction,desktop/phoneread-onlysmokepass. No newliveexecution/fullproductionPlaywright certification. [Eleven issue reports](../feedback/README.md) exist; three originals unsubmitted, localfixes004–011 not upstreamacceptance. X copy draftonly. Further publication,user signing,video,2–3XURLs,feedback,whitelist/bounty submission are user-owned by1November23:59UTC. Optional OG/Twittermetadata not completed here.
+**Submission status:** historicalpublicmain/Vercel`0dce074`/cloudCI verified30Oct15:43UTC;180/180local`dist/`filesmatchedproduction then. Current branch/changes not pushed or parity-checked; no current-UI liveexecution/fullproductionPlaywright certification. [Feedback index](../feedback/README.md) includes original and local application findings; local fixes are not upstream acceptance or proof of protocol bugs. X copy draftonly. Further publication,user signing,video,2–3XURLs,feedback,whitelist/bounty submission are user-owned by1November23:59UTC. No mainnet or mass-scale release acceptance.

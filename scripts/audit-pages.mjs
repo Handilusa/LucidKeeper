@@ -40,8 +40,11 @@ try {
           .locator('.market-source')
           .filter({ hasText: 'On-chain mark' })
           .waitFor({ timeout: 45000 });
-      if (path === '/app/profile')
-        await page.locator('[data-profile-ready="true"]').waitFor({ timeout: 60000 });
+      if (path === '/app/profile') {
+        await page.getByRole('heading', { name: 'Connect your wallet to view your portfolio' }).waitFor();
+        assert.equal(await page.locator('.profile-identity, .account-metrics, .profile-table-panel').count(), 0);
+        assert.equal(requests.some((url) => /hideki|smk\.somnia/.test(url)), false, 'Disconnected profile requested account services');
+      }
       await page.addScriptTag({ path: '.git/lucidkeeper-audit/axe.min.js' });
       const violations = await page.evaluate(async () =>
         (
@@ -79,7 +82,7 @@ try {
         await page.getByText('Is this real-money trading?', { exact: true }).click();
         assert.ok((await page.locator('details').first().getAttribute('open')) !== null);
       }
-      report.push({ path, width, overflow, violations, errors, writes, screenshot: `${name}.png` });
+      report.push({ path, width, accountState: path.startsWith('/app') && path !== '/app/docs' ? 'disconnected' : 'not applicable', overflow, violations, errors, writes, screenshot: `${name}.png` });
       await page.close();
     }
   }

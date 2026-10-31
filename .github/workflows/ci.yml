@@ -1,4 +1,4 @@
-name: Offline checks
+name: Testnet release checks
 
 on:
   push:
@@ -10,6 +10,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         node: [24]
@@ -20,4 +21,18 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:e2e:types
+      - run: npm run lint
       - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run test:load -- after
+      - run: node scripts/audit-release.mjs
+      - name: Save failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failures
+          path: test-results/
+          retention-days: 7

@@ -12,7 +12,7 @@ Opening a position is only the first decision. LucidKeeper keeps market context,
 
 > **Delivery status — 31 October 2026:** the landing, dedicated portfolio and visual/motion passes are local on `feat/landing-and-profile`. The last independently checked production version is `0dce074` (30 October 15:43 UTC). New routes/features are not claimed as deployed; publication is owner-managed.
 
-> **Release-blocker work — 31 October:** any wallet can trade through its own browser wallet on Tokyo; no product account allowlist. Two-wallet browser verification, dependency remediation and capacity validation are being completed separately. Real second-wallet funding/fills require manual QA. **Not yet mass-scale verified.** [Audit](docs/PRE_PUSH_AUDIT.md).
+> **Local release checks — 31 October:** independent Tokyo wallets, two-wallet lifecycle tests, address-scoped profiles and bounded read resilience are implemented. **79/79 Chromium**, **94 passed / 19 skipped / 0 failed** unit/service; types, lint and build pass. Publication check: 211 tracked paths, 13 documents, 103 local-link destinations, zero issues (not security certification). Dependencies remain **38 affected entries**; real second-wallet funding/fills and deployed parity require human QA. Static 240-request check is **not multi-user/RPC capacity certification**. [Audit](docs/PRE_PUSH_AUDIT.md) · [Deploy](docs/DEPLOYMENT.md).
 
 ![Actual LucidKeeper terminal capture from 30 October 2026](public/assets/product/terminal-1440.webp)
 
@@ -77,7 +77,7 @@ All entries concern the bounty EOA on Tokyo. They describe historical actions, n
 | 30 Oct deposit | [0xf030…9fc9](https://explorer.testnet.somnia.network/tokyo/tx/0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9) | 37388613 | 2 USDso; decoded `Transfer` and `Deposited` events |
 | 30 Oct DOGE fill | [0x023d…4e4c](https://explorer.testnet.somnia.network/tokyo/tx/0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c) | 37392617 | 120 DOGE sold at 0.07525 USDso; 9.03 USDso notional; zero remainder |
 
-**The 30 October deposit and DOGE execution were owner-relayed and independently audited afterward.** The DOGE transaction was **FOK (`orderType=1`)**, not the reviewed-intent IOC (`2`), and is not demonstrated execution through this interface. No verified DOGE close is recorded here. [Full FOK/IOC audit](docs/audit/012-owner-relayed-fok-ioc-mismatch.md) · [Earlier public evidence](evidence/public/execution-2026-10-27.json) · [Canonical timestamps, costs and limits](STATUS.md).
+**The 30 October deposit and DOGE execution were owner-relayed and independently audited afterward.** The DOGE transaction was **FOK (`orderType=1`)**, not the reviewed-intent IOC (`2`), and is not demonstrated execution through this interface. No verified DOGE close is recorded here. [Full FOK/IOC audit](docs/audit/012-owner-relayed-fok-ioc-mismatch.md) · [Earlier public evidence](evidence/public/execution-2026-10-27.json) · [Canonical timestamps, costs and limits](STATUS_HISTORY.md).
 
 ## Portfolio methodology
 
@@ -134,11 +134,20 @@ Open **http://127.0.0.1:4175**. For active frontend development, run `npx vite -
 ```bash
 npm run typecheck
 npm run lint
+npm run test:e2e:types
 npm test
 npm run test:e2e
+npm run test:load -- after
+node scripts/audit-release.mjs
 ```
 
-`npm test` includes public read-only service checks plus pure/captured cases and explicit skips. `test:e2e` builds and starts a preview on port **4174**; keep that port free. No synthetic financial responses or live transaction sends are used. For the standalone UI audit scripts, serve port **4175** (or set `AUDIT_URL`); see the [quality report](docs/LANDING_PROFILE_QUALITY.md) for exact commands, dependencies and results.
+`npm test` includes public read-only service checks, pure/captured cases, controlled **test-only** transport outcomes and explicit historical skips. `test:e2e` builds and starts port **4174**; keep it free. Two injected test wallets and financial/RPC outcomes are isolated to tests; HTTP/WebSocket external paths are intercepted. No keys, raw signing or real transaction sends. `test:load` creates its own capped loopback static server, never targets dreamDEX/Somnia. [Manual QA](docs/MANUAL_QA.md) · [Capacity](docs/SCALABILITY.md). Optional standalone visual scripts use local4175/`AUDIT_URL`; historical lab figures are not refreshed release scores.
+
+### Deploy the exact tested version
+
+Vercel: repository root (blank Root Directory), Node 24.x, Vite, install `npm ci`, build `npm run build`, output `dist`; keep `vercel.json` SPA/cache headers. **No env value is required.** Optional **public** `VITE_WALLETCONNECT_PROJECT_ID` overrides the built-in public Reown ID; configure the effective deployment origin and rebuild. No RPC, signer, allowlist or execution env override exists. Never put secrets into `VITE_*`.
+
+Only the owner publishes/merges `feat/landing-and-profile` and deploys the correct commit. Verify live routes/asset headers and complete independent-wallet QA before calling it accepted. [Exact owner commands, env scopes, hosting and submission checklist](docs/DEPLOYMENT.md).
 
 Optional real-service inspection:
 
@@ -165,7 +174,7 @@ npm run check -- --address 0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA
 - Account/network switches reset dialogs, drafts and armed state. Late work from a previous lifetime cannot dispatch another action or display its result in the new account. IOC encoding **2**, limit encoding **0**, grid helpers and the **300-second** expiry are unchanged. Opposite-side close sizing is revalidated, but the direct call has no protocol reduce-only flag.
 - The agent does not sign, broadcast, use keys or move funds. Retained offline/CLI policy is historical agent tooling, not a browser product restriction. [Separation and historical contract](docs/OFFLINE_SIGNING.md).
 - Guardian monitoring needs an active tab and wallet approval. Local settings are not guaranteed execution, protocol reduce-only protection or on-chain privacy.
-- This is not a security-audit certification. Existing dependency findings, connected-wallet/race-path coverage gaps and human assistive-technology checks are documented in [STATUS](STATUS.md), [dependency triage](docs/DEPENDENCY_TRIAGE.md) and [test sources](docs/TEST_DATA_SOURCES.md).
+- This is not a security certification. No-force audit fix produced no compatible changes: 38 affected entries, 27 runtime + 11 dev-only. Controlled wallet/race tests now run; actual extension/fills and human assistive-technology QA remain pending. [Security notes](docs/SECURITY_NOTES.md) · [Status](STATUS.md) · [Test sources](docs/TEST_DATA_SOURCES.md).
 
 ## Quality and roadmap
 

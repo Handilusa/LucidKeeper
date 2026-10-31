@@ -9,7 +9,7 @@ const report = [];
 try {
   for (const width of [375, 768, 1280, 1920]) {
     const page = await browser.newPage({ viewport: { width, height: 1000 }, reducedMotion: 'no-preference' });
-    const errors = [], writes = [], checks = [];
+    const errors = [], writes = [], checks = [], skipped = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     await page.route('**/*', async (route) => {
@@ -21,7 +21,7 @@ try {
     await page.goto(`${process.env.AUDIT_URL || 'http://127.0.0.1:4175'}/app`);
     await page.locator('.market-stat.primary .animated-value').waitFor({ timeout: 60000 });
     if (width < 1024) await page.getByRole('navigation', { name: 'Trading workspace' }).getByRole('button', { name: 'Activity', exact: true }).click();
-    const positionTab = page.getByRole('tab', { name: /^Positions \(\d+\)$/ });
+    const positionTab = page.getByRole('tab', { name: 'Positions', exact: true });
     await positionTab.focus();
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('tab', { name: 'Open orders' })).toHaveAttribute('aria-selected', 'true');
@@ -42,7 +42,7 @@ try {
     checks.push('Animated dialog, focus trap, Escape and focus restoration');
     if (width < 1024) await page.getByRole('navigation', { name: 'Trading workspace' }).getByRole('button', { name: 'Activity', exact: true }).click();
     await positionTab.click();
-    // Uses an actual public position; never injects data or claims a position exists.
+    // Only a genuinely connected account may expose a position; never inject a wallet/data.
     const share = page.getByRole('button', { name: /^Share .+ position$/ }).first();
     if (await share.count()) {
       await share.click();
@@ -53,7 +53,7 @@ try {
       await page.screenshot({ path: `${output}/share-toast-${width}.png`, animations: 'disabled' });
       await page.keyboard.press('Escape');
       checks.push('Real-position share export and actual success toast');
-    } else checks.push('Share omitted: no rendered public position at this observation');
+    } else skipped.push('Connected-position share export/toast: no connected wallet in this audit');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     if (width < 1024) await page.getByRole('navigation', { name: 'Trading workspace' }).getByRole('button', { name: 'Trade', exact: true }).click();
     await trigger.click();
@@ -64,7 +64,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     assert.deepEqual(errors, []);
     assert.deepEqual(writes, []);
-    report.push({ width, checks, errors, writes });
+    report.push({ width, accountState: 'disconnected', checks, skipped, errors, writes });
     await page.close();
   }
 } finally {

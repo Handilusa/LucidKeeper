@@ -2,6 +2,14 @@
 
 31 October 2026 · local delivery complete on `feat/landing-and-profile` · base `c4d343c`.
 
+## Release-blocker acceptance — 31 October 2026
+
+Tasks 1–6 supersede the earlier restricted-product/browser-skip findings. Final independent-wallet/profile/resilience/release suite: **79 pass / 0 skip / 0 fail Chromium** and **94 pass / 19 skip / 0 fail unit/service**; types/E2E types/lint/build pass. Task6 includes the reviewed inherited curved lifecycle/workflow, classic terminal palette and audit scripts for tested-source parity. Twenty route-width states and four keyboard pause/resume/reduced-motion cases pass at 375/768/1280/1920px. Landing/workflow, disconnected and public B profile mobile/desktop renders inspected; missing SDK pool-scope fixture corrected before final screenshots in `.git/lucidkeeper-audit/task6-accepted-browser/`. No new axe/Lighthouse scores are claimed. [Current audit](PRE_PUSH_AUDIT.md) is authoritative; figures below remain historical. No real second-wallet transactions, new deployment or push.
+
+## Earlier acceptance override — 31 October, 11:30–11:32 UTC
+
+The connected portfolio/export claims below describe historical **disconnected bounty watch-mode** audits; that fallback is now removed. Current disconnected profile shows connection-required state, not default finance. Fresh overall checks: **72 unit/service passed /21 skipped**, **22 browser passed /17 skipped**, zero failures; typecheck/lint/E2E types/build pass. Fresh16route-width states and four-width lifecycle/landing/dialog-motion checks pass with zero axe violations (where scanned), overflow/errors/writes. Profile skip-link/connect-modal/zero account requests pass; **connected exports and nonempty position share were not rerun**. Historical Lighthouse numbers are not refreshed. The prior source-comparison statement at the end applies to the original design task, not the later isolation changes. [Full pre-push verdict](PRE_PUSH_AUDIT.md).
+
 ## Delivered routes
 
 | Route | Delivered |
@@ -25,7 +33,7 @@ All Launch App links target `/app`. Every route displays **Testnet – no real f
 
 The final refinement/documentation commit follows these stages and contains the portfolio invitation, final link assertions, this report, the English README and the [reusable README prompt](README_PROMPT.md). Obtain its exact hash with `git log -1 --format=%H -- docs/LANDING_PROFILE_QUALITY.md`.
 
-## Checks and evidence
+## Historical design checks and evidence
 
 Checks use a local **production Vite build** with public Tokyo data. Screenshots are dated observations; values naturally differ between captures. Browser audits block transaction/signing/mutation requests and recorded **zero attempted writes**. No wallet was connected, Guardian armed, transaction prepared, signed or broadcast.
 
@@ -44,7 +52,7 @@ Checks use a local **production Vite build** with public Tokyo data. Screenshots
 | Landing motion | Four widths: pause/resume, system reduced-motion switching, desktop Lenis teardown/tilt, lifecycle reveal and accessible receipt values pass; observed running properties only transform/opacity |
 | Final portfolio invitation | Visually inspected at **375/768/1280/1920**; readable stacked/mobile and inline/desktop layouts, contained CTA, correct destination, zero overflow/errors/writes |
 
-The terminal suite compares displayed portfolio health/positions against actual decoded responses grouped by block. Its existing wallet/fill/race skips remain explicit; passing read-only checks does not certify transaction execution. The separate app audit now covers real-position export/toast behavior without changing those inherited registrations.
+The historical terminal suite compared displayed portfolio health/positions against actual decoded responses grouped by block. Its existing wallet/fill/race skips remain explicit; passing read-only checks does not certify transaction execution. The historical app audit covered real-position export/toast behavior; current disconnected runs omit that path explicitly.
 
 ### Lighthouse
 
@@ -120,9 +128,10 @@ node scripts/audit-pages.mjs review-normal --motion
 node scripts/audit-profile.mjs review-profile
 node scripts/audit-motion.mjs review-motion
 node scripts/audit-app-motion.mjs review-app-motion
+node scripts/audit-workflow.mjs review-workflow
 node scripts/audit-lighthouse.mjs review-lighthouse
 ```
 
 `AUDIT_URL` overrides the standalone audit URL. `E2E_BASE_URL` overrides the existing Playwright suite’s preview; otherwise it starts port 4174. Financial observations are real and may change or become unavailable; the audits do not replace responses. Choose a new output name to preserve prior evidence.
 
-Source review confirmed no changes from `c4d343c` in `src/lib`, `src/chain`, `src/features/trade`, `src/features/margin`, `src/features/sentinel` or `src/app/App.tsx`. `PositionsTable` changes are limited to the existing numeric display component. Native page navigation preserves the terminal’s existing unload behavior.
+The original design-task source review confirmed no changes from `c4d343c` in `src/lib`, `src/chain`, `src/features/trade`, `src/features/margin`, `src/features/sentinel` or `src/app/App.tsx`; its `PositionsTable` changes were numeric presentation only. **Later31October isolation work does change account queries, storage, lifetime and pre-dispatch guards in these areas.** Native page navigation preserves the terminal’s existing unload behavior. Fresh audits above supersede historical connected-path coverage, not preserve it by restoring a public account.

@@ -109,7 +109,10 @@ export async function mockWallet(page: Page) {
       const end = Math.floor(Date.now() / 1000 / interval) * interval - (state.candleMode === 'old' ? 10 * interval : 0);
       const Candle = state.candleMode === 'empty' ? [] : Array.from({ length: 30 }, (_, i) => ({ bucketStart: end - i * interval, intervalSeconds: interval, openPrice: state.mark.toString(), high: (state.mark + parseUnits('10', 18)).toString(), low: (state.mark - parseUnits('10', 18)).toString(), closePrice: state.mark.toString(), baseVolume: '10000', quoteVolume: '8000000000000000000', tradeCount: 1 }));
       const MarginEvent = /UserTradeHistory/.test(query) ? Array.from({ length: state.historyCount }, (_, i) => ({ id: `${variables.account}-${i}`, txHash: toHex(i + 100, { size: 32 }), account: variables.account, kind: 'Deposit', amount: parseUnits('1', 18).toString(), timestamp: Math.floor(Date.now() / 1000) - i, blockNumber: 100 })).slice(variables.offset, variables.offset + variables.limit) : [];
-      return route.fulfill({ json: { data: { chain_metadata: [{ chain_id: 50383 }], _sdkWatermark: [{ chain_id: 50383, latest_processed_block: 100 }], PerpMarket: ALL_VERIFIED_PERP_MARKETS.map(m => ({ id: m.poolAddress.toLowerCase() })), SpotMarket: [], Candle, Order: [], PerpFill: [], ...state.profileRows, MarginEvent: /UserTradeHistory/.test(query) ? MarginEvent : state.profileRows.MarginEvent } } });
+      // SDK0.32.1 scopes ended orders through PoolsByType -> Market.poolAddress,
+      // not PerpMarket.id. Supply that actual response shape for healthy profile reads.
+      const Market = variables.where?.marketType?._eq === 'SPOT' ? [] : ALL_VERIFIED_PERP_MARKETS.map(m => ({ poolAddress: m.poolAddress.toLowerCase(), marketType: 'PERP' }));
+      return route.fulfill({ json: { data: { chain_metadata: [{ chain_id: 50383 }], _sdkWatermark: [{ chain_id: 50383, latest_processed_block: 100 }], Market, PerpMarket: ALL_VERIFIED_PERP_MARKETS.map(m => ({ id: m.poolAddress.toLowerCase() })), SpotMarket: [], Candle, Order: [], PerpFill: [], ...state.profileRows, MarginEvent: /UserTradeHistory/.test(query) ? MarginEvent : state.profileRows.MarginEvent } } });
     }
     if (url.hostname !== 'api.hideki2.infra.testnet.somnia.network') { state.blocked.push(url.href); return route.abort(); }
     const request = route.request().postDataJSON();

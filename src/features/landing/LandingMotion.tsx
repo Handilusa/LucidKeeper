@@ -68,6 +68,18 @@ export function useLandingMotion(disabled: boolean) {
       node.querySelectorAll('[data-reveal], .lifecycle, .problem-grid article, .somnia-bento article, .proof-card, .roadmap-grid article').forEach((element) => observer.observe(element));
       cleanups.push(() => observer.disconnect());
 
+      // Repeating workflow effects only run while their own graphic is in view.
+      const flowObserver = new IntersectionObserver((entries) => {
+        entries.forEach(({ target, isIntersecting }) => {
+          target.setAttribute('data-flow-visible', String(isIntersecting));
+        });
+      }, { threshold: .12 });
+      node.querySelectorAll('[data-flow]').forEach((element) => flowObserver.observe(element));
+      cleanups.push(() => {
+        flowObserver.disconnect();
+        node.querySelectorAll('[data-flow-visible]').forEach((element) => element.removeAttribute('data-flow-visible'));
+      });
+
       const ambientVisibility = () => { node.dataset.motion = document.hidden ? 'off' : 'on'; };
       document.addEventListener('visibilitychange', ambientVisibility);
       cleanups.push(() => document.removeEventListener('visibilitychange', ambientVisibility));

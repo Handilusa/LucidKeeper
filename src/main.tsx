@@ -5,9 +5,12 @@ import Landing from './features/landing/Landing';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { TestnetBadge } from './components/Brand';
 import './styles/globals.css';
+import './styles/terminal-theme.css';
 
 const TerminalRoutes = lazy(() => import('./app/TerminalRoutes'));
 const isApp = window.location.pathname === '/app' || window.location.pathname.startsWith('/app/');
+// Scope the classic palette to the terminal, including body-portaled dialogs.
+document.documentElement.toggleAttribute('data-terminal-theme', window.location.pathname.replace(/\/$/, '') === '/app');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

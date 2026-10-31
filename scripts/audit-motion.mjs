@@ -50,7 +50,7 @@ try {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.waitForFunction(() => !document.getAnimations().some((a) => a.playState === 'running'));
     assert.equal(await page.evaluate(() => document.documentElement.classList.contains('lenis')), false);
-    assert.ok(await page.getByRole('button', { name: 'Motion off (system)' }).isDisabled());
+    assert.ok(await page.getByRole('button', { name: 'Motion off (system)', exact: true }).isDisabled());
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
     assert.equal(overflow, false);
     assert.deepEqual(errors, []);

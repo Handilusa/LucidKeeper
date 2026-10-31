@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -7,22 +7,28 @@ import {
   Eye,
   Wallet,
   Braces,
+  ArrowDownToLine,
+  ChartCandlestick,
+  Radar,
+  LogOut,
+  ReceiptText,
   Activity,
   ChevronDown,
 } from 'lucide-react';
 import { Brand, TestnetBadge } from '@/components/Brand';
 import { PROJECT, PROOF, SOMNIA_SOURCES } from '@/content/project';
 import { ReceiptValue, Reveal, useLandingMotion, useMotionPreference } from './LandingMotion';
+import { WorkflowGraphic } from './WorkflowGraphic';
 import './landing.css';
 
 const steps = [
-  ['Approve', 'Review the exact USDso allowance.'],
-  ['Deposit', 'Wait for confirmation, then fund margin.'],
-  ['Open', 'Review the order. Verify the actual fill.'],
-  ['Monitor', 'Watch margin, mark price and risk.'],
-  ['Close', 'Review an exit. Check remaining size.'],
-  ['Settle', 'Verify realized PnL in MarginBank.'],
-];
+  ['Approve', 'Review the exact USDso allowance.', Wallet],
+  ['Deposit', 'Wait for confirmation, then fund margin.', ArrowDownToLine],
+  ['Open', 'Review the order. Verify the actual fill.', ChartCandlestick],
+  ['Monitor', 'Watch margin, mark price and risk.', Radar],
+  ['Close', 'Review an exit. Check remaining size.', LogOut],
+  ['Settle', 'Verify realized PnL in MarginBank.', ReceiptText],
+] as const;
 const faq = [
   [
     'Is this real-money trading?',
@@ -57,6 +63,28 @@ function Launch({ large = false }: { large?: boolean }) {
     </a>
   );
 }
+
+function LifecycleCurve({ vertical = false }: { vertical?: boolean }) {
+  const direction = vertical ? 'vertical' : 'horizontal';
+  return (
+    <svg className={`lifecycle-curve lifecycle-curve-${direction}`}
+      viewBox={vertical ? '0 0 96 1000' : '0 0 1000 128'}
+      preserveAspectRatio="none" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={`lifecycle-${direction}`} x1="0%" y1="0%"
+          x2={vertical ? '0%' : '100%'} y2={vertical ? '100%' : '0%'}>
+          <stop className="lifecycle-stop-start" />
+          <stop className="lifecycle-stop-middle" offset=".5" />
+          <stop className="lifecycle-stop-end" offset="1" />
+        </linearGradient>
+      </defs>
+      <path stroke={`url(#lifecycle-${direction})`} d={vertical
+        ? 'M32 0 C32 80 64 120 64 200 S32 320 32 400 S64 520 64 600 S32 720 32 800 S64 920 64 1000'
+        : 'M0 88 C80 88 120 48 200 24 S320 -24 400 0 S520 40 600 64 S720 136 800 120 S920 88 1000 88'} />
+    </svg>
+  );
+}
+
 export default function Landing() {
   const reducedMotion = useMotionPreference();
   const [paused, setPaused] = useState(false);
@@ -234,15 +262,26 @@ export default function Landing() {
                   LucidKeeper keeps those distinctions visible.
                 </p>
               </div>
-              <ol className="lifecycle">
-                {steps.map(([title, detail], index) => (
-                  <li key={title}>
-                    <span className="step-node">{String(index + 1).padStart(2, '0')}</span>
-                    <h3>{title}</h3>
-                    <p>{detail}</p>
-                  </li>
-                ))}
-              </ol>
+              <div className="lifecycle" data-flow>
+                <LifecycleCurve />
+                <LifecycleCurve vertical />
+                <ol className="lifecycle-steps" role="list" aria-label="Illustrated six-step trading lifecycle">
+                  {steps.map(([title, detail, Icon], index) => (
+                    <li key={title} style={{ '--flow-delay': `${index * 1.6}s` } as CSSProperties}>
+                      <span className="step-wash flow-animated" aria-hidden="true" />
+                      <span className="step-node">
+                        <span className="step-halo flow-animated" aria-hidden="true" />
+                        {String(index + 1).padStart(2, '0')}
+                        <Icon className="step-icon flow-animated" size={18} aria-hidden="true" />
+                      </span>
+                      <div className="step-copy">
+                        <h3>{title}</h3>
+                        <p>{detail}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
               <div className="architecture-grid">
                 <div className="architecture-copy">
                   <p className="section-kicker">HOW IT WORKS</p>
@@ -262,39 +301,7 @@ export default function Landing() {
                     guarantee a fill.
                   </p>
                 </div>
-                <div
-                  className="architecture-map"
-                  aria-label="Wallet review connects the terminal and browser Guardian to dreamDEX contracts; receipts return on-chain results"
-                >
-                  <div>
-                    <Wallet aria-hidden="true" />
-                    <strong>Your wallet</strong>
-                    <span>Review & approve</span>
-                  </div>
-                  <span className="map-connector" aria-hidden="true">
-                    ↓
-                  </span>
-                  <div className="architecture-pair">
-                    <div>
-                      <Braces aria-hidden="true" />
-                      <strong>dreamDEX SDK</strong>
-                      <span>Markets & account reads</span>
-                    </div>
-                    <div>
-                      <ShieldCheck aria-hidden="true" />
-                      <strong>Risk Guardian</strong>
-                      <span>Local monitoring</span>
-                    </div>
-                  </div>
-                  <span className="map-connector" aria-hidden="true">
-                    ↓
-                  </span>
-                  <div>
-                    <Activity aria-hidden="true" />
-                    <strong>dreamDEX on Tokyo</strong>
-                    <span>MarginBank · PerpPools · receipts</span>
-                  </div>
-                </div>
+                <WorkflowGraphic paused={paused} reducedMotion={reducedMotion} onToggle={() => setPaused(!paused)} />
               </div>
             </Reveal>
           </div>
