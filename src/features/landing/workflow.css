@@ -203,6 +203,13 @@
   flex-shrink: 0;
 }
 
+/* Keep every CSS effect under the same pause/visibility gate as the workflow. */
+.landing:not([data-motion='on']) .architecture-map *,
+.architecture-map:not([data-flow-visible='true']) * {
+  animation: none !important;
+  transition: none !important;
+}
+
 @keyframes beaconPulse {
   0%, 100% { opacity: 0.6; transform: scale(0.9); }
   50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 14px #34d399; }

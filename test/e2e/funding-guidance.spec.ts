@@ -57,7 +57,7 @@ test('account read failure with zero wallet does not claim missing deposited col
   const guide = page.getByRole('region', { name: 'Funding guidance' });
   await expect(guide).toContainText('Margin or position reads unavailable');
   await expect(guide).not.toContainText('Missing: program-distributed');
-  await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('Bank collateral — USDso');
+  await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('Bank collateral Unavailable USDso');
   expect(state.writes).toEqual([]);
 });
 

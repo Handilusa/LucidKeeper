@@ -13,11 +13,11 @@ const bank = CONTRACT_ADDRESSES.MARGIN_BANK.toLowerCase();
 const token = CONTRACT_ADDRESSES.COLLATERAL_USDSO.toLowerCase();
 const pool = CONTRACT_ADDRESSES.BTC_PERP_POOL;
 type Tx = { from: Hex; to: Hex; data: Hex; value?: Hex; nonce?: Hex };
-type Account = { wallet: bigint; margin: bigint; gas: bigint; allowance: bigint; size: bigint; nonce: number };
+type Account = { wallet: bigint; margin: bigint; locked: bigint; gas: bigint; allowance: bigint; size: bigint; nonce: number };
 export async function mockWallet(page: Page) {
   const accounts: Record<string, Account> = {
-    [A]: { wallet: parseUnits('200', 18), margin: parseUnits('20', 18), gas: parseUnits('10', 18), allowance: 0n, size: 0n, nonce: 0 },
-    [B]: { wallet: parseUnits('300', 18), margin: parseUnits('70', 18), gas: parseUnits('10', 18), allowance: 0n, size: 0n, nonce: 0 },
+    [A]: { wallet: parseUnits('200', 18), margin: parseUnits('20', 18), locked: 0n, gas: parseUnits('10', 18), allowance: 0n, size: 0n, nonce: 0 },
+    [B]: { wallet: parseUnits('300', 18), margin: parseUnits('70', 18), locked: 0n, gas: parseUnits('10', 18), allowance: 0n, size: 0n, nonce: 0 },
   };
   const state = {
     accounts, writes: [] as Tx[], blocked: [] as string[], reads: [] as string[],
@@ -30,6 +30,8 @@ export async function mockWallet(page: Page) {
     profileRows: { Fill: [] as Record<string, unknown>[], PerpPositionChange: [] as Record<string, unknown>[], FundingPayment: [] as Record<string, unknown>[], PerpFeeRecord: [] as Record<string, unknown>[], MarginEvent: [] as Record<string, unknown>[] },
     contractReads: [] as { name: string; block: unknown; args: readonly unknown[] }[],
     mark: parseUnits('80000', 18), holdReceipts: false, fillOrders: true,
+    heldReceiptMethods: new Set<string>(),
+    mineBlock() { block.number = toHex(BigInt(block.number) + 1n); },
   };
   const transactions = new Map<Hex, { tx: Tx; reverted: boolean; applied: boolean }>();
   const blockHash = `0x${'ab'.repeat(32)}`;
@@ -44,6 +46,7 @@ export async function mockWallet(page: Page) {
     expect(BigInt(tx.value || '0x0')).toBe(0n);
     const call = decode(tx);
     expect(['approve', 'deposit', 'withdraw', 'placeOrder', 'cancelOrder']).toContain(call.functionName);
+    if (call.functionName === 'deposit') expect(accounts[tx.from.toLowerCase()].allowance).toBeGreaterThanOrEqual(call.args![0] as bigint);
     state.writes.push(tx);
     const hash = toHex(state.writes.length, { size: 32 });
     transactions.set(hash, { tx, reverted: state.revertNext, applied: false });
@@ -137,7 +140,7 @@ export async function mockWallet(page: Page) {
       let result: unknown;
       try {
         if (method === 'eth_chainId') result = '0xc4cf';
-        else if (method === 'eth_blockNumber') result = '0x64';
+        else if (method === 'eth_blockNumber') result = block.number;
         else if (method === 'eth_getBlockByNumber' || method === 'eth_getBlockByHash') result = block;
         else if (method === 'eth_getBalance') {
           if (state.gasFailure) throw new Error('Controlled gas read failure');
@@ -151,9 +154,13 @@ export async function mockWallet(page: Page) {
           result = [];
         }
         else if (method === 'eth_estimateGas') result = '0x2dc6c0';
+        else if (method === 'eth_getTransactionByHash') {
+          const record = transactions.get(params[0] as Hex);
+          result = record ? { ...record.tx, hash: params[0], input: record.tx.data, nonce: record.tx.nonce || toHex(accounts[record.tx.from.toLowerCase()].nonce - 1), value: '0x0', gas: '0x2dc6c0', gasPrice: '0x165a0bc00', blockHash: null, blockNumber: null, transactionIndex: null, type: '0x2' } : null;
+        }
         else if (method === 'eth_getTransactionReceipt') {
           const record = transactions.get(params[0] as Hex);
-          if (!record || state.holdReceipts) result = null;
+           if (!record || state.holdReceipts || state.heldReceiptMethods.has(decode(record.tx).functionName)) result = null;
           else {
             const { tx, reverted } = record;
             const owner = accounts[tx.from.toLowerCase()];
@@ -184,7 +191,7 @@ export async function mockWallet(page: Page) {
           let value: unknown;
           switch (call.functionName) {
             case 'getSystemConfig': value = { marginBank: bank, collateralToken: token, perpPoolFactory: factory, liquidationEngine: A, insuranceFund: A, feeRecipient: A, maxLeverageLimit: 20, fullyWired: true }; break;
-            case 'getAccountState': value = { unlockedCollateralBalance: owner.margin, lockedCollateral: 0n, activePerpPools: owner.size ? [pool] : [] }; break;
+            case 'getAccountState': value = { unlockedCollateralBalance: owner.margin, lockedCollateral: owner.locked, activePerpPools: owner.size ? [pool] : [] }; break;
             case 'getAccountHealth': value = [owner.margin, 0n, 0n, 0n]; break;
             case 'getWithdrawableCollateral': value = owner.margin; break;
             case 'getMarginStatus': value = 0; break;

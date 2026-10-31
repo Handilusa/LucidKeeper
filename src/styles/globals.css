@@ -492,6 +492,15 @@ input[type='range'] {
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-color);
 }
+.collateral-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.collateral-actions .button { min-height: 44px; }
+.collateral-max { min-width: 44px; min-height: 44px; color: var(--color-cyan); font-weight: 600; }
+.collateral-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; list-style: none; padding: 0; margin-block: 16px; }
+.collateral-steps li { display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; overflow-wrap: anywhere; }
+.collateral-steps li span { text-transform: capitalize; color: var(--muted); }
+.collateral-steps li[data-state='confirmed'] { border-color: var(--color-cyan); }
+.collateral-steps li[data-state='failed'] { border-color: var(--color-rose); }
+.collateral-steps a { color: var(--color-cyan); text-decoration: underline; }
 .account-heading {
   display: flex;
   align-items: center;

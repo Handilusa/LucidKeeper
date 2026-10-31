@@ -25,7 +25,7 @@ test('market selection updates mark, quantity units and native candle interval',
 });
 test('collateral modal traps focus, closes with Escape, and restores its trigger', async ({ page }) => {
   const state = await terminalFixture(page); await page.goto('/app');
-  const trigger = page.getByRole('button', { name: 'Manage margin collateral' }); await trigger.click();
+  const trigger = page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true }); await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Manage collateral' }); await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Close dialog' }).focus(); await page.keyboard.press('Shift+Tab');
   expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
@@ -159,14 +159,14 @@ test('controlled wrong-network block recovers after switching', async ({ page })
 for (const stage of ['approve', 'deposit'] as const) test(`controlled ${stage} reverted receipt stops funding success`, async ({ page }) => {
   const state = await mockWallet(page); if (stage === 'deposit') state.accounts[A].allowance = 7n * 10n ** 18n;
   state.revertNext = true; await connectMock(page); page.on('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Manage margin collateral' }).click(); await page.getByLabel('Amount', { exact: true }).fill('7');
+  await page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true }).click(); await page.getByLabel('Amount', { exact: true }).fill('7');
   await page.getByRole('button', { name: 'Deposit 7 USDso' }).click();
   await expect(page.getByRole('dialog', { name: 'Manage collateral' })).toContainText('reverted');
   expect(state.writes).toHaveLength(1); expect(state.accounts[A].margin).toBe(20n * 10n ** 18n);
 });
 test('controlled withdrawal uses selected amount and updates only its account', async ({ page }) => {
   const state = await mockWallet(page); await connectMock(page); page.on('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Manage margin collateral' }).click(); await page.getByRole('button', { name: 'Withdraw', exact: true }).click();
+  await page.locator('.order-entry').getByRole('button', { name: 'Withdraw', exact: true }).click();
   await page.getByLabel('Amount', { exact: true }).fill('7'); await page.getByRole('button', { name: 'Withdraw 7 USDso' }).click();
   await expect(page.getByRole('dialog', { name: 'Manage collateral' })).toContainText('Withdrawal transaction confirmed');
   expect(state.accounts[A].margin).toBe(13n * 10n ** 18n); expect(state.accounts[B].margin).toBe(70n * 10n ** 18n);

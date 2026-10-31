@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAccount, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
+import { useAccount, useBalance, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { toast } from 'sonner';
 import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi } from '@/chain/abis';
@@ -9,38 +9,61 @@ import { Modal } from '@/components/Modal';
 import { reviewBrowserWrite, assertBrowserAccount } from '@/lib/browser-policy';
 import { useWalletLifetime } from '@/lib/useWalletLifetime';
 import { walletError } from '@/lib/walletError';
+import { BOUNTY_FUNDING } from '@/content/project';
+import { NetworkNotice } from '@/features/terminal/NetworkNotice';
+import type { CollateralAction } from './CollateralActions';
+
+type StepState = { state: 'ready' | 'pending' | 'confirmed' | 'failed'; hash?: string; note?: string };
+function StepFeedback({ label, progress }: { label: string; progress: StepState }) {
+  return <li data-state={progress.state}>
+    <strong>{label}</strong><span>{progress.state === 'ready' ? 'Not started' : progress.state}</span>
+    {progress.note && <small>{progress.note}</small>}
+    {progress.hash && <a href={`https://explorer.testnet.somnia.network/tokyo/tx/${progress.hash}`} target="_blank" rel="noreferrer">{progress.hash.slice(0, 10)}…{progress.hash.slice(-6)} ↗</a>}
+  </li>;
+}
 
 export function MarginHubModal({
   isOpen,
   onClose,
   unlockedMargin,
+  freeMargin = null,
+  lockedMargin = null,
+  initialAction = 'deposit',
   onConfirmed,
 }: {
   isOpen: boolean;
   onClose: () => void;
   unlockedMargin: number | null;
+  freeMargin?: number | null;
+  lockedMargin?: number | null;
+  initialAction?: CollateralAction;
   onConfirmed?: () => void;
 }) {
   const { address, isConnected, chainId } = useAccount();
   const lifetime = useWalletLifetime(address);
   const publicClient = usePublicClient({ chainId: 50383 });
-  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
+  const [activeTab, setActiveTab] = useState<CollateralAction>(initialAction);
   const [amount, setAmount] = useState('2.0');
   const [step, setStep] = useState<
     'idle' | 'checking' | 'approving' | 'depositing' | 'withdrawing'
   >('idle');
   const [status, setStatus] = useState('');
   const [hash, setHash] = useState<string | null>(null);
+  const [approvalProgress, setApprovalProgress] = useState<StepState>({ state: 'ready' });
+  const [depositProgress, setDepositProgress] = useState<StepState>({ state: 'ready' });
+  const [withdrawProgress, setWithdrawProgress] = useState<StepState>({ state: 'ready' });
+  const gas = useBalance({ address, chainId: 50383, query: { enabled: isConnected && !!address && isOpen, refetchInterval: 3000 } });
+  const gasValue = !gas.isError && Date.now() - gas.dataUpdatedAt < 45000 ? gas.data?.value : undefined;
   const wallet = useReadContract({
     address: CONTRACT_ADDRESSES.COLLATERAL_USDSO,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: 50383,
-    query: { enabled: isConnected && !!address && isOpen },
+    query: { enabled: isConnected && !!address && isOpen, refetchInterval: 3000 },
   });
   const walletUsdso =
-    isConnected && wallet.data !== undefined && !wallet.isError ? Number(formatUnits(wallet.data, 18)) : null;
+    isConnected && wallet.data !== undefined && !wallet.isError && Date.now() - wallet.dataUpdatedAt < 45000 ? Number(formatUnits(wallet.data, 18)) : null;
   const { writeContractAsync } = useWriteContract();
   const busy = step !== 'idle';
   const numericAmount = positiveDecimal(amount);
@@ -56,6 +79,7 @@ export function MarginHubModal({
       invalid ||
       insufficient ||
       reportedBalance == null ||
+      gasValue == null || gasValue === 0n ||
       !isConnected ||
       !address ||
       chainId !== 50383 ||
@@ -65,6 +89,10 @@ export function MarginHubModal({
     setStatus('');
     setHash(null);
     setStep('checking');
+    setApprovalProgress({ state: 'ready' });
+    setDepositProgress({ state: 'ready' });
+    setWithdrawProgress({ state: 'ready' });
+    let activeStep: 'approve' | 'deposit' | 'withdraw' = activeTab === 'deposit' ? 'approve' : 'withdraw';
     try {
       lifetime.assert();
       const parsedAmount = parseUnits(amount, 18);
@@ -78,6 +106,7 @@ export function MarginHubModal({
         lifetime.assert();
         if (allowance < parsedAmount) {
           setStep('approving');
+          setApprovalProgress({ state: 'pending' });
           setStatus('Step 1 of 2 · review exact-amount approval in your wallet.');
           const request = {
             chainId: 50383,
@@ -92,16 +121,21 @@ export function MarginHubModal({
           const approval = await writeContractAsync({ ...request, ...reviewed });
           lifetime.assert();
           setHash(approval);
+          setApprovalProgress({ state: 'pending', hash: approval });
           setStatus('Approval submitted · awaiting receipt.');
           const receipt = await publicClient.waitForTransactionReceipt({ hash: approval });
           lifetime.assert();
           if (receipt.status !== 'success')
             throw new Error('Approval reverted. Deposit was not submitted.');
         }
+        setApprovalProgress(previous => ({ ...previous, state: 'confirmed', note: allowance >= parsedAmount ? 'Existing allowance sufficient; no new approval needed.' : 'Successful approval receipt.' }));
+        activeStep = 'deposit';
+        setDepositProgress({ state: 'pending' });
         setStep('depositing');
         setStatus('Step 2 of 2 · review the deposit in your wallet.');
       } else {
         setStep('withdrawing');
+        setWithdrawProgress({ state: 'pending' });
         setStatus('Review the withdrawal in your wallet.');
       }
       const tx =
@@ -128,10 +162,14 @@ export function MarginHubModal({
           })();
       lifetime.assert();
       setHash(tx);
+      if (activeTab === 'deposit') setDepositProgress({ state: 'pending', hash: tx });
+      else setWithdrawProgress({ state: 'pending', hash: tx });
       setStatus('Transaction submitted · awaiting receipt.');
       const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
       lifetime.assert();
       if (receipt.status !== 'success') throw new Error('Transaction reverted.');
+      if (activeTab === 'deposit') setDepositProgress({ state: 'confirmed', hash: tx });
+      else setWithdrawProgress({ state: 'confirmed', hash: tx });
       setStatus(
         `${activeTab === 'deposit' ? 'Deposit' : 'Withdrawal'} transaction confirmed. Refreshing balances.`
       );
@@ -149,6 +187,10 @@ export function MarginHubModal({
     } catch (error) {
       if (!lifetime.current()) return;
       const message = walletError(error);
+      const failed = (previous: StepState): StepState => ({ ...previous, state: 'failed' });
+      if (activeStep === 'approve') setApprovalProgress(failed);
+      else if (activeStep === 'deposit') setDepositProgress(failed);
+      else setWithdrawProgress(failed);
       setStatus(message);
       toast.error('Collateral operation failed', { description: message });
     } finally {
@@ -163,21 +205,25 @@ export function MarginHubModal({
       title="Manage collateral"
       description="Move USDso between your wallet and MarginBank on Somnia Tokyo testnet (50383). STT is used separately for gas."
     >
+      <NetworkNotice />
       <dl className="account-values mb-5" style={{ gridTemplateColumns: '1fr 1fr' }}>
         <div>
           <dt>Wallet assets</dt>
           <dd>
-            {isConnected && walletUsdso != null && !wallet.isError ? walletUsdso.toFixed(2) : '—'}{' '}
+            {isConnected && walletUsdso != null && !wallet.isError ? walletUsdso.toFixed(2) : 'Unavailable'}{' '}
             <small>USDso</small>
           </dd>
         </div>
         <div>
           <dt>Bank collateral</dt>
           <dd>
-            {isConnected && unlockedMargin != null ? unlockedMargin.toFixed(2) : '—'}{' '}
+            {isConnected && unlockedMargin != null ? unlockedMargin.toFixed(2) : 'Unavailable'}{' '}
             <small>USDso</small>
           </dd>
         </div>
+        <div><dt>Free margin</dt><dd>{isConnected && freeMargin != null ? freeMargin.toFixed(2) : 'Unavailable'} <small>USDso</small></dd></div>
+        <div><dt>Locked collateral</dt><dd>{isConnected && lockedMargin != null ? lockedMargin.toFixed(2) : 'Unavailable'} <small>USDso</small></dd></div>
+        <div><dt>Gas funds</dt><dd>{gasValue == null ? 'Unavailable' : Number(formatUnits(gasValue, 18)).toFixed(4)} <small>STT</small></dd></div>
       </dl>
       <div className="order-types" role="group" aria-label="Collateral action">
         {(['deposit', 'withdraw'] as const).map((value) => (
@@ -188,6 +234,7 @@ export function MarginHubModal({
             onClick={() => {
               setActiveTab(value);
               setStatus('');
+              setHash(null);
             }}
           >
             {value === 'deposit' ? 'Deposit' : 'Withdraw'}
@@ -210,6 +257,7 @@ export function MarginHubModal({
             aria-describedby="collateral-help collateral-error"
           />
           <span>USDso</span>
+          <button className="collateral-max" disabled={busy || reportedBalance == null || reportedBalance <= 0} onClick={() => setAmount(activeTab === 'deposit' && wallet.data !== undefined ? formatUnits(wallet.data, 18) : String(reportedBalance))}>Max</button>
         </div>
       </div>
       <p id="collateral-help" className="form-note mb-4">
@@ -217,6 +265,12 @@ export function MarginHubModal({
           ? 'If needed, approve this exact amount first. The deposit waits for a successful approval receipt.'
           : 'Active positions may restrict withdrawals. Bank collateral is not a guarantee of withdrawable funds.'}
       </p>
+      <ol className="collateral-steps" aria-label="Collateral progress" aria-live="polite">
+        {activeTab === 'deposit' ? <><StepFeedback label="1 Approve" progress={approvalProgress} /><StepFeedback label="2 Deposit" progress={depositProgress} /></> : <StepFeedback label="Withdraw" progress={withdrawProgress} />}
+      </ol>
+      {isConnected && gasValue == null && <p className="form-note">STT gas balance Unavailable. Wait or refresh; unknown does not mean zero.</p>}
+      {isConnected && gasValue === 0n && <p className="form-error">Insufficient Tokyo STT. STT is needed for gas to approve, deposit or withdraw. Request Tokyo STT from the official bounty team.</p>}
+      {isConnected && activeTab === 'deposit' && walletUsdso === 0 && <p className="form-note">{BOUNTY_FUNDING} Request Builder Bounty USDso from the official bounty team in Discord. Do not use Arena funds.</p>}
       <div id="collateral-error" aria-live="polite">
         {invalid ? (
           <p className="form-error">Enter a positive amount with at most 18 decimal places.</p>
@@ -238,6 +292,7 @@ export function MarginHubModal({
           !!invalid ||
           insufficient ||
           reportedBalance == null ||
+          gasValue == null || gasValue === 0n ||
           (activeTab === 'deposit' && (walletUsdso == null || wallet.isError))
         }
         onClick={() => void submit()}

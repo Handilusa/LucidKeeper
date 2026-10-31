@@ -21,6 +21,8 @@ Actualizado: **31 de octubre de 2026**. Un Markdown por incidencia; distinguir d
 | [013 — Chart overlay disposal](013-chart-overlay-disposal.md) | Corregido y verificado localmente: regresión con posición real, 15 browser pass / 16 skips; no enviado |
 | [014 — Disconnected bounty-account fallback](014-disconnected-bounty-account-fallback.md) | Corregido localmente: sin cuenta por defecto en terminal, portfolio o HTTP; desktop/móvil y lecturas reales verificados; no desplegado |
 | [015 — Wallet state and review isolation](015-wallet-state-and-review-isolation.md) | Preferencias/estado separados por cuenta y red; guardas de wallet activa antes de enviar. Regresiones puras/cache/browser pasan; cambios reales de wallet y carreras de firma pendientes |
+| [017 — Deposit collateral discoverability](017-deposit-collateral-discoverability.md) | Defecto UI local reproducido en 375/1440 px; acciones explícitas reutilizan el modal/flujo existente. Sin firma, envío, deploy ni entrega al bounty |
+| [018 — Landing motion pause](018-landing-motion-pause.md) | Defecto local de pausa/limpieza y canvas reproducido; gates acotados, verificación completa pendiente. No es un bug de dreamDEX |
 
 **007–011 son hallazgos de la aplicación LucidKeeper, no bugs acreditados de dreamDEX ni entregas del bounty.** [Triage de dependencias](../docs/DEPENDENCY_TRIAGE.md): 27 entradas runtime afectadas, 0 dev-only, tres advisories; sin solución compatible no forzada ni explotabilidad confirmada. Alcance de entradas wallet/Zod sin resolver; JSON completo local, no publicar payloads de explotación.
 

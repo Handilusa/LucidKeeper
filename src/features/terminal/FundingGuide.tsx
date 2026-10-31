@@ -1,14 +1,16 @@
 import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PROJECT } from '@/content/project';
 import { fundingState } from '@/lib/data/fundingState';
+import { CollateralActions, type CollateralAction } from '@/features/margin/CollateralActions';
 
 export function FundingGuide({ account, gas, wallet, deposited, margin, hasPositions, onManage, onGuardian }: {
   account: string; gas: bigint | undefined; wallet: bigint | undefined;
   deposited: bigint | undefined; margin: number | null; hasPositions: boolean | undefined;
-  onManage: () => void; onGuardian: () => void;
+  onManage: (action?: CollateralAction) => void; onGuardian: () => void;
 }) {
   const { missingCollateral, notice } = fundingState({ gas, wallet, deposited, margin, hasPositions });
   return <section className="funding-guide" aria-label="Funding guidance">
     <h2>{notice || 'Your Tokyo funding'}</h2>
+    <CollateralActions onAction={onManage} />
     {notice && <p>This is a normal unfunded-wallet state, not an application error. No transaction is needed to explore.</p>}
     <p>{gas === undefined ? 'STT balance unavailable; wait or refresh. Unknown does not mean zero.' : gas === 0n ? 'Missing: STT for Tokyo gas.' : 'STT detected; every action also checks its estimated gas cost.'}</p>
     <p>{wallet === undefined ? 'USDso wallet balance unavailable; unknown does not mean zero.' : wallet === 0n ? 'Wallet USDso: zero.' : 'USDso detected in your wallet. Deposit an exact amount to fund margin.'} {missingCollateral ? 'Missing: program-distributed USDso collateral; no deposited margin or positions detected.' : deposited === undefined || margin === null || hasPositions === undefined ? 'Margin or position reads unavailable; do not infer an empty account.' : deposited > 0n || hasPositions || margin > 0 ? 'Existing margin or positions detected. A zero wallet balance does not erase deposited collateral or exposure.' : 'No deposited margin detected.'}</p>
@@ -24,7 +26,7 @@ export function FundingGuide({ account, gas, wallet, deposited, margin, hasPosit
       <p>{BOUNTY_FUNDING}</p>
       <p>Missing funds? Request Tokyo STT and Builder Bounty USDso from the official bounty team in Discord for your own whitelisted wallet. Do not use Arena funds.</p>
       <p><a href={PROJECT.sdk} target="_blank" rel="noreferrer">Official dreamDEX testnet documentation ↗</a> · Verify Tokyo 50383 and your receiving address. LucidKeeper does not distribute funds or offer a claim.</p>
-      <button className="button" disabled={!!notice} onClick={onManage}>Manage collateral</button>
+      <button className="button" onClick={() => onManage()}>Manage collateral</button>
     </details>
   </section>;
 }

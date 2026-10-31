@@ -10,6 +10,7 @@ import { TradingBox } from '@/features/trade/TradingBox';
 import { PositionsTable, type PositionItem } from '@/features/portfolio/PositionsTable';
 import { RiskGuardian } from '@/features/sentinel/RiskGuardian';
 import { MarginHubModal } from '@/features/margin/MarginHubModal';
+import type { CollateralAction } from '@/features/margin/CollateralActions';
 import { TradeCardModal } from '@/features/share/TradeCardModal';
 import { fetchPerpMarkets, fetchMarket24hChange, type MarketInfo } from '@/lib/data/indexer';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
@@ -36,6 +37,11 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
   const publicClient = usePublicClient({ chainId: 50383 });
   const [selectedMarket, setSelectedMarket] = useState<MarketInfo>(ALL_VERIFIED_PERP_MARKETS[0]);
   const [marginHubOpen, setMarginHubOpen] = useState(false);
+  const [marginAction, setMarginAction] = useState<CollateralAction>('deposit');
+  const openMargin = (action: CollateralAction = 'deposit') => {
+    setMarginAction(action);
+    setMarginHubOpen(true);
+  };
   const [cardPosition, setCardPosition] = useState<PositionItem | null>(null);
   const [mobileView, setMobileView] = useState<'chart' | 'trade' | 'activity'>('chart');
   const riskRef = useRef<HTMLDetailsElement>(null);
@@ -322,7 +328,7 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
           markStale={staleMark || markPrice <= 0}
           fundingWindow={fundingParamsQuery.data ? Number(fundingParamsQuery.data.fundingCalculationWindowSec) : null}
         />
-        {currentAccount && <FundingGuide account={currentAccount} gas={fundingGas} wallet={fundingWallet} deposited={fundingDeposited} margin={fundingMargin} hasPositions={fundingPositions} onManage={() => setMarginHubOpen(true)} onGuardian={() => { navigate('risk'); riskRef.current?.scrollIntoView({ block: 'start' }); }} />}
+        {currentAccount && <FundingGuide account={currentAccount} gas={fundingGas} wallet={fundingWallet} deposited={fundingDeposited} margin={fundingMargin} hasPositions={fundingPositions} onManage={openMargin} onGuardian={() => { navigate('risk'); riskRef.current?.scrollIntoView({ block: 'start' }); }} />}
         <nav className="mobile-nav" aria-label="Trading workspace">
           {(['chart', 'trade', 'activity'] as const).map((view) => (
             <button
@@ -371,7 +377,7 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
                 (p) => p.poolAddress.toLowerCase() === selectedMarket.poolAddress.toLowerCase()
               )}
               onOrderSuccess={refreshAccount}
-              onOpenMarginHub={() => setMarginHubOpen(true)}
+              onOpenMarginHub={openMargin}
             />
           </section>
           <section className="activity-area" id="activity" aria-label="Portfolio activity">
@@ -381,8 +387,9 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
               wallet={readDisplay(currentAccount && walletQuery.data !== undefined ? Number(formatUnits(walletQuery.data, 18)) : null, walletQuery.dataUpdatedAt, walletQuery.isError, now, 45000)}
               deposited={readDisplay(accountState ? unlockedMargin : null, stateQuery.dataUpdatedAt, stateQuery.isError, now, 30000)}
               available={availableRead}
+              locked={readDisplay(accountState ? Number(formatUnits(accountState.lockedCollateral, 18)) : null, stateQuery.dataUpdatedAt, stateQuery.isError, now, 30000)}
               gas={readDisplay(currentAccount && gasQuery.data ? Number(gasQuery.data.formatted) : null, gasQuery.dataUpdatedAt, gasQuery.isError, now, 45000)}
-              onManage={() => setMarginHubOpen(true)}
+              onManage={openMargin}
             />
             <PositionsTable
               key={currentAccount}
@@ -440,9 +447,13 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
         </nav>
       </footer>
       <MarginHubModal
+        key={marginAction}
+        initialAction={marginAction}
         isOpen={marginHubOpen}
         onClose={() => setMarginHubOpen(false)}
-        unlockedMargin={accountState && !stateQuery.isError ? unlockedMargin : null}
+        unlockedMargin={accountState && !stateQuery.isError && now - stateQuery.dataUpdatedAt < 30000 ? unlockedMargin : null}
+        freeMargin={fundingMargin}
+        lockedMargin={accountState && !stateQuery.isError && now - stateQuery.dataUpdatedAt < 30000 ? Number(formatUnits(accountState.lockedCollateral, 18)) : null}
         onConfirmed={refreshAccount}
       />
       <TradeCardModal

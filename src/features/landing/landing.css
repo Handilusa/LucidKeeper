@@ -118,6 +118,8 @@
   border-radius: 50%;
   background: var(--color-emerald);
   box-shadow: 0 0 8px var(--color-emerald);
+}
+.hero-brand-sigil[data-ambient-motion='true'] .sigil-status-dot {
   animation: sigil-dot-pulse 2.2s ease-in-out infinite;
 }
 .sigil-hud-telemetry {

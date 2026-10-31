@@ -17,6 +17,9 @@ Status: **not executed by the agent**, 31 October 2026. Automated wallets and ha
 | Connect the independent wallet | Only its address/data; not the bounty account | Pending |
 | Switch away from Tokyo; switch/add back | Writes blocked off-network; wallet shows verified 50383/RPC/STT configuration | Pending |
 | Funding guidance | Correct STT/USDso state; effective official URL and actual receiving address verified | Pending |
+| **Deposit collateral** — find it at 375/1440 px | Terminal: visible above Chart/Trade/Activity tabs, in Trade, and Account funds (mobile Activity). Portfolio: connected-wallet funds, never the watched public address. Opens the existing shared dialog without a signature request | Pending |
+| Collateral balances and edge states | Wallet USDso, bank collateral, free/locked margin, gas, amount and Max. Unknown/failed reads say Unavailable, never zero; no STT blocks execution with gas explanation; no USDso shows bounty-program guidance; wrong network offers Tokyo switch | Pending |
+| Approve → Deposit step feedback | Each pending/confirmed/failed step keeps its own explorer hash. Approval must have a successful receipt before a separate deposit review. Approval failure never submits a deposit. Existing allowance can satisfy step 1 without another approval | Pending |
 | Reject unsigned review and wallet request | No submission hash; actionable rejection; approval rejection never starts deposit | Pending |
 | Choose a small exact deposit supported by your balance | Review exact approval to MarginBank; successful canonical receipt before a separate deposit review; margin actually credited | Pending: approval hash, receipt, deposit hash, deposit event |
 | Review and open a minimum/grid-valid IOC | From your wallet, value zero, official pool, IOC enum **2**, reviewed **300-second** expiry; signed only after inspection | Pending: transaction hash, receipt, fill events, resulting position |
@@ -34,5 +37,7 @@ Record failure details in one `feedback/` Markdown per issue: severity, area, re
 ## Automated coverage and remaining gaps
 
 `npm run test:e2e` exercises two injected test-only addresses, account/network/disconnect cleanup, exact funding/reverted receipts, rejection/gas, IOC success/no-fill/revert, partial/full close, Guardian trigger/reload, chart/history failures, exports and pinned reads. `npm run test:e2e:types` checks the harness too. Unknown external hosts are blocked; the mock EIP-1193 provider never signs or broadcasts.
+
+Deposit-branch acceptance **31 October 2026, 22:31 UTC**, before feature integration: complete Chromium **121 passed / 0 skipped / 0 failed**, including 22 collateral cases; unit/service **112 passed / 19 historical skipped / 0 failed**; app/E2E types, lint and build pass. Collateral screenshots at 375/1440 px reviewed. Complete integrated revalidation is pending. These controlled tests do not fill in any pending human result above or certify extension/deployed behavior.
 
 Still human/unverified: actual second-wallet credit eligibility/receiving account, real receipts/fills/settlement, wallet-extension UX outside Chromium, liquidity-driven partial fills, protocol races after preflight, inactive-tab monitoring, long outages/receipt timeouts, full history/funding/cohort inputs, deployment parity and capacity. Historical offline signing/broadcast test skips do not certify browser execution or authorize sends.
