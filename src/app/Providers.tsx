@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { wagmiConfig } from '@/chain/wagmiConfig';
 import { queryRetryDelay } from '@/lib/data/readResilience';
+import { TransactionReviewModal } from '@/components/TransactionReviewModal';
 import '@rainbow-me/rainbowkit/styles.css';
 
 const queryClient = new QueryClient({
@@ -36,7 +37,10 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
             overlayBlur: 'none',
           })}
         >
-          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          <TooltipProvider delayDuration={200}>
+            {children}
+            <TransactionReviewModal />
+          </TooltipProvider>
           <Toaster
             position="bottom-right"
             theme="dark"

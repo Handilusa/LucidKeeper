@@ -327,11 +327,10 @@ export function TradingBox({
       stage = 'simulation';
       await publicClient.simulateContract({ ...request, account: address });
       lifetime.assert();
-      setSimulating(false);
       stage = 'wallet';
-      toast.info('Review the order transaction in your wallet');
       const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${market.baseSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Place ${side} ${orderType === 'market' ? 'IOC' : 'limit'} order on the official Tokyo pool; confirmation is not a fill.` }, lifetime.assert);
       lifetime.assert();
+      setSimulating(false);
       assertBrowserAccount(address);
       await writeContractAsync({ ...request, ...reviewed });
       lifetime.assert();
@@ -576,7 +575,7 @@ export function TradingBox({
         >
           {(simulating || isPending || isConfirming) && <LoaderCircle size={16} className="state-spinner" aria-hidden="true" />}
           {confirmed && !simulating && !isPending && !isConfirming && <Check size={16} className="confirmed-check" aria-hidden="true" />}
-          {simulating ? 'Simulating…' : isPending
+          {simulating ? 'Preparing order…' : isPending
             ? 'Waiting for signature…'
             : isConfirming
               ? 'Awaiting confirmation…'
