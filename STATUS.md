@@ -1,8 +1,13 @@
 # Project status
 
-Updated **31 October 2026, 22:47 UTC** · collateral fix `d313dd0` and tested close-evidence follow-ups integrated locally into **`feat/landing-and-profile`** by normal merge `f791781`; complete integrated checks pass. **Not pushed or deployed**; local `main` unchanged for the owner's PR. The owner reports the preceding version deployed; deployed parity is not independently verified here. Previously recorded independent production check: **`0dce074`**, 30 October 15:43 UTC. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
+Updated **1 November 2026** · all 19 historical unit skip markers now execute meaningful isolated assertions. Current test changes are **local and uncommitted**; no agent push/deployment. The owner reports the preceding collateral integration published; deployed parity was not independently checked in this task. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
 
-## Integrated acceptance — 31 October, 22:47 UTC
+## Offline test update — 1 November
+
+- Independently checked: **`npm test`: 131 passed / 0 skipped / 0 failed**; affected four files **50/50**, limited two-file coverage **16/16**. Native network access is blocked in unit commands; three retained real-service checks are opt-in via `npm run test:live:reads`, not rerun here.
+- Controlled broadcaster/recovery/policy outcomes and placement-only logs are tests, not real sends, fills, resting-only receipt provenance or live race certification. No production transaction changes, keys, signing or wallet operations. Prior Chromium/types/lint/build results below are historical, not rerun. [Test sources and limits](docs/TEST_DATA_SOURCES.md). Unrelated concurrent profile edits are outside this task.
+
+## Historical integrated acceptance — 31 October, 22:47 UTC
 
 - Complete Chromium **121 passed / 0 skipped / 0 failed**, including **22 deposit cases** and retained close-card captures; unit/service **112 passed / 19 historical skipped / 0 failed** (131 cases). App/E2E types, lint and build pass (**58.76s**, existing dependency annotation/chunk warnings).
 - Funding/Trade/Account/connected Portfolio, Max, approval/deposit pending/confirmed/failed hashes, missing gas/USDso, unavailable reads and wrong-network captures reviewed at **375/1440 px**. Pause/preference/hidden-tab driver and inherited workflow checks pass; original drift and unfinished excluded work are not imported.
