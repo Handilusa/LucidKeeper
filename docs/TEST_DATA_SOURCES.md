@@ -1,15 +1,25 @@
-# Test data and coverage gaps — 2026-10-31
+# Test data and coverage — 2026-11-01
 
 Production data is never fabricated. The user's release-blocker directive authorizes **test-only** injected EIP-1193 wallets and controlled RPC/GraphQL outcomes. No secrets, generated keys, signing or live sends. Real-service tests remain distinct from offline controlled tests; neither proves actual second-wallet funding or live execution.
 
-## Current controlled coverage — 31 October 2026
+## Current controlled coverage — 1 November 2026
 
 - `test/e2e/mock-wallet.ts` announces an EIP-6963 injected provider through the production connector path. Two fake addresses (`0x1111…1111`, `0x2222…2222`), balances, prices, nonces, receipts, candles and margin events are explicitly modeled inside tests only. The provider rejects unsupported methods; all external HTTP is intercepted or aborted. No production mock switch/connector or fixture fallback exists.
 - `multi-wallet.spec.ts`: connection/live switching, verified Tokyo add/switch, disconnect, exact7 USDso approval→successful receipt→deposit, rejection/insufficient assets/gas, IOC open/close, revert/simulation failure, Guardian account isolation/trigger/reload, switch-during-approval race, no-fill confirmation and declined unsigned review.
 - `funding-state.test.mjs`: five pure state cases distinguish known zero, unavailable reads, wallet collateral, total deposited/locked collateral and real positions. `funding-guidance.spec.ts`: nine isolated browser cases cover zero-funds onboarding at 375/1440px, failed balance/account reads, deposited-margin support, disconnect cleanup, non-transactional Guardian stress with an actual modeled position, read-only Live test account/proof links and bounty-only docs. No production financial fixtures, signing or live sends. The branding check permits only backtick-delimited retained local directory paths, not retired product branding.
 - The former **17 browser skips** are runnable controlled tests now. Expanded sizing, share PNG, chart failure/empty/old, history pagination, unavailable mark/fee, funding reverts, withdraw, pending receipt, partial close, failed-refresh isolation, limit review, block pinning, reduced motion and overlay disposal. Titles describe actual narrower assertions: slow-read timeout, all history failure combinations and four-hour funding are not silently certified by different checks.
-- Two unit skips are runnable again: funding ceiling-rounding arithmetic and zero nonce/priority fee. They use labeled mathematical/envelope inputs, not observations. **19 unit/service skips remain**:13 historical offline broadcaster branches,4 historical raw-signature scenarios,1 combined migrated network/filesystem marker and1 genuinely sourced resting-only receipt gap. They are not passing; browser test results do not cover these offline tooling branches.
+- Two earlier unit skips cover funding ceiling-rounding arithmetic and zero nonce/priority fee with labeled mathematical/envelope inputs, not observations. **All remaining 19 skip markers now execute assertions:** 13 controlled broadcaster scenarios, four wire/recovery/broadcast-boundary scenarios, one combined SDK/network/writer case and one controlled placement-only event case. Full offline `npm test`: **131 passed / 0 skipped / 0 failed**; affected four files: **50/50 passed**. This does not establish a genuine resting-only receipt or live send/race outcomes.
 - [Human QA and unresolved acceptance cases](MANUAL_QA.md). Current final counts are in [STATUS](../STATUS.md). Earlier statements below describe the former no-double audit, not current restrictions or coverage.
+
+### Executable offline boundaries
+
+- `test/helpers/load-with-boundaries.mjs` bundles the actual production entry entirely in memory with esbuild and substitutes declared imports only for that entry. Each declared boundary must resolve. No generated source files, production injection API, test import or fixture fallback is added to the application.
+- `broadcast-harness.mjs` isolates recovery, RPC, send, policy and evidence imports per case. A deliberately non-transaction sentinel is the only permitted controlled send input; the clock is fixed to the captured block timestamp. Tests assert early rejection, exact request snapshotting, zero sends on failed preflight/HOLD/nonce gates, canonical receipt identity, no fill claims, sanitized evidence and no resend after ambiguous results. These are controlled outcomes, not actual network sends or chain races. Existing Inspector-based real first-gate regressions are retained unchanged.
+- `wire-boundary.mjs` serializes unsigned captured fields with adversarial public curve scalars (`r=s=1`) in memory; no signer produces a signature and no valid bounty transaction is created. Actual parsing/canonical checks reject reviewed-field changes, malformed/unsigned/legacy/EIP-2930 encodings, out-of-range/high-s scalars and unreviewed access lists before recovery. A recovery-boundary observer counts calls. A separate actual viem cryptographic-recovery test proves these adversarial fields do not authenticate the bounty EOA. No raw payload or signature is saved.
+- `dreamdex-harness.mjs` supplies captured network/market/account values through isolated SDK/RPC/file boundaries. SDK-shaped margin, absent code/voucher and unique file suffixes are explicitly controlled wrappers. The real functions verify Tokyo, pinned read blocks, writer metadata and exclusive `wx` flags; `evidence.test.mjs` still checks distinct files on the actual filesystem and removes only its own files.
+- The placement-only case filters the captured IOC's logs to owned `OrderPlaced` events and excludes all fill/position events. It asserts placement without fill/position/PnL and rejects foreign-account/reverted cases. **A sourced genuine resting-only receipt is still absent**; the title does not claim otherwise.
+- `npm test` and `test:coverage` preload `deny-network.mjs`, which blocks native socket/TLS connections and default fetch. Injected transports remain test-only; unexpected network access fails rather than fetching or substituting a fallback. A separate check verified fetch/net/TLS rejection. The three unchanged real-service checks moved to `test/live/dreamdex-readonly.test.mjs`: `npm run test:live:reads` is explicit opt-in and was **not run** in this task. Browser/type/build checks were not rerun.
+- Limited two-file `test:coverage`: **16 passed / 0 skipped / 0 failed**. In-memory bundled boundary executions are not attributed to original source lines by Node coverage; this is not app-wide coverage certification.
 
 ## Historical no-double audit (superseded methodology)
 
@@ -19,7 +29,7 @@ Production data is never fabricated. The user's release-blocker directive author
 - Historical approval/deposit/IOC receipts: canonical blocks **34042277**, **34042291**, **34044423**, public bounty EOA **0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA**. Unsigned public transaction fields only; signatures/raw transactions are not stored.
 - 1000PEPE regression: real mark at block **37084078**, with block hash and market grid recorded. Historical BTC position snapshots retain block/transaction sources.
 - Reproduce via `node scripts/capture-test-reads.mjs` (read-only; overwrites this reviewed capture only after all checks succeed).
-- `dreamdex.test.mjs` performs real network, SDK market/account and mined public-transaction recovery reads. Public signature fields are read only into memory to reconstruct and verify the already-mined hash; no signing or sending.
+- At this historical audit, `dreamdex.test.mjs` performed real network, SDK market/account and mined public-transaction recovery reads. These checks now live in the opt-in `test/live/dreamdex-readonly.test.mjs`. Public signature fields are read only into memory to reconstruct and verify the already-mined hash; no signing or sending.
 - Playwright uses real HTTP services, real fonts and a read-only RPC/GraphQL firewall. There is no injected wallet. External outages fail tests rather than trigger fabricated fallbacks.
 
 ## Restored-HOLD and independent boundary observations
@@ -29,9 +39,9 @@ Production data is never fabricated. The user's release-blocker directive author
 - During the rejected-action measurement window, all six counts must be zero for absent/foreign contexts, restored HOLD with the authorized EOA/Tokyo context, and three CLI imports given the bounty EOA as arguments. Historical unsigned envelope fields are used; no raw transaction/signature is fabricated or submitted.
 - These are first-gate regressions, not downstream race/live-execution proof. CLIs currently reject before wallet arguments are parsed; the test proves HOLD precedence, not a complete CLI handoff.
 
-## Preserved gaps — skipped, not passing
+## Historical preserved gaps — then skipped, not passing
 
-The previous scenarios remain named in the test runner. Their controlled outcomes cannot be replayed from a successful historical receipt alone. No tests were silently removed; grouped pure-math cases now use captured inputs. Earlier fixture-suite totals are historical and are not current coverage claims.
+The table records the superseded no-double audit. Its skip statuses are no longer current: executable isolated cases now cover the named branches as described above. Their controlled outcomes cannot be inferred from a successful historical receipt alone. Earlier fixture-suite totals are historical and are not current coverage claims.
 
 | File / scenarios | Why not runnable without a double or additional real source |
 | --- | --- |

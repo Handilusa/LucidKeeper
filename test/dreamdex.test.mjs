@@ -1,16 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createPublicClient, http, serializeTransaction, keccak256 } from 'viem';
-import { hidekiTestnet } from '@somnia-chain/markets-sdk/chains';
-import { openTokyo, verifyNetwork, verifiedMarket, readAccount, walletAddress, orderParams, receiptEvidence } from '../src/lib/dreamdex.mjs';
-import { validateSignedTransaction } from '../src/lib/offline-transactions.mjs';
+import { serializeTransaction, parseTransaction } from 'viem';
+import { walletAddress, orderParams, receiptEvidence } from '../src/lib/dreamdex.mjs';
+import { envelopeTransaction } from '../src/lib/offline-transactions.mjs';
+import { createDreamdexHarness } from './helpers/dreamdex-harness.mjs';
+import { createWireBoundary, adversarialWire } from './helpers/wire-boundary.mjs';
 import { capture, btc, bigintGrid, orderInput, approval, amount, historicalEnvelope } from './fixtures/captured.mjs';
-const rpc = createPublicClient({ chain: hidekiTestnet, transport: http(undefined, { retryCount: 0, timeout: 15000 }) });
-test('real read-only Tokyo network verification matches captured genesis', async () => {
-  // Actual read-only Tokyo verification; wrong-chain branch remains explicitly untested.
-  const network = await verifyNetwork(rpc);
+test('offline network verification matches captured Tokyo genesis', async () => {
+  const h = await createDreamdexHarness();
+  const network = await h.verifyNetwork(h.rpc);
   assert.equal(network.chainId, capture.provenance.network.chainId);
   assert.equal(network.genesisHash, capture.provenance.network.genesisHash);
+  assert.deepEqual(h.calls, [['chain'], ['block', { blockNumber: 0n }]]);
 });
 test('wallet boundary rejects absent, truncated and malformed addresses', () => {
   assert.equal(walletAddress(capture.account.address), capture.account.address);
@@ -44,29 +45,46 @@ test('separates account position events, pool fills, and absent PnL', () => {
   assert.equal(result.accountPositionEvents[0].args.newSize.toString(), capture.historicalPosition.size);
   assert.equal(result.pnl, null);
 });
-test('an owned resting order is a placement, not a fill or position', { skip: 'No captured resting-only receipt in the reviewed set; requires approved live limit order or a separately sourced real receipt.' }, () => {});
-test('real mined transaction recovery and exact reviewed wire validation use no signer', async () => {
-  const tx = await rpc.getTransaction({ hash: approval.hash });
-  const raw = serializeTransaction({ type: tx.type, chainId: tx.chainId, nonce: tx.nonce, gas: tx.gas, to: tx.to, value: tx.value, data: tx.input, maxFeePerGas: tx.maxFeePerGas, maxPriorityFeePerGas: tx.maxPriorityFeePerGas, accessList: tx.accessList }, { r: tx.r, s: tx.s, yParity: tx.yParity });
-  assert.equal(keccak256(raw), approval.hash);
-  const intent = { action: 'approve', amount: amount.toString() };
-  const envelope = historicalEnvelope();
-  const result = await validateSignedTransaction(raw, envelope, intent);
-  assert.equal(result.from, capture.account.address);
-  await assert.rejects(validateSignedTransaction(raw, { ...envelope, nonce: envelope.nonce + 1 }, intent), /Signed nonce/);
-  for (const change of [{ gas: String(BigInt(envelope.gas) + 1n) }, { fees: { ...envelope.fees, maxFeePerGas: String(BigInt(envelope.fees.maxFeePerGas) + 1n) } }, { fees: { ...envelope.fees, maxPriorityFeePerGas: String(BigInt(envelope.fees.maxPriorityFeePerGas) + 1n) } }])
-    await assert.rejects(validateSignedTransaction(raw, { ...envelope, ...change }, intent));
-  for (const bad of ['', '0x', raw.slice(0, -2), raw + '00']) await assert.rejects(validateSignedTransaction(bad, envelope, intent));
-  // Raw and public signature fields stay in memory; nothing signs or sends.
+test('controlled owned placement-only logs are not a fill or position', () => {
+  // Remove fill/position logs from the reviewed IOC receipt. This tests event
+  // classification, NOT the existence of a sourced real resting-only receipt.
+  const source = receiptEvidence(capture.execution[2].receipt, btc.market, capture.account.address);
+  assert.ok(source.accountOrderEvents.length > 0);
+  const controlled = { ...capture.execution[2].receipt, logs: source.accountOrderEvents };
+  const result = receiptEvidence(controlled, btc.market, capture.account.address);
+  assert.equal(result.transactionConfirmed, true);
+  assert.equal(result.accountOrderEvents.length, source.accountOrderEvents.length);
+  assert.equal(result.accountPositionEvents.length, 0); assert.equal(result.poolFillEvents.length, 0);
+  assert.equal(result.poolFillObserved, false); assert.equal(result.pnl, null);
+  assert.throws(() => receiptEvidence(controlled, btc.market, capture.system.marginBank), /No placement or position event/);
+  assert.throws(() => receiptEvidence({ ...controlled, status: 'reverted' }, btc.market, capture.account.address), /Transaction reverted/);
 });
-test('verifiedMarket and readAccount use actual SDK and Tokyo services', async () => {
-  const { exchange, rpc: client } = openTokyo();
+test('captured unsigned fields round-trip and an exact controlled wire reaches recovery', async () => {
+  const envelope = historicalEnvelope();
+  const unsigned = serializeTransaction(envelopeTransaction(envelope));
+  assert.equal(serializeTransaction(parseTransaction(unsigned)), unsigned);
+  const intent = { action: 'approve', amount: amount.toString() };
+  const boundary = await createWireBoundary();
+  // Recovery boundary deliberately rejects: reaching it proves all preceding
+  // canonical-wire comparisons passed, not that a synthetic input is authorized.
+  await assert.rejects(boundary.validateSignedTransaction(adversarialWire(), { ...envelope, description: 'Historical metadata only' }, intent), /Cannot recover signed transaction sender/);
+  assert.equal(boundary.recoveries.length, 1);
+});
+test('verifiedMarket and readAccount use captured reads at one pinned block offline', async () => {
+  const h = await createDreamdexHarness();
+  const { exchange, rpc } = h.openTokyo();
   try {
-    const markets = await exchange.client.listPerpMarkets();
-    const result = await verifiedMarket(exchange, client, markets, 'BTC');
+    const result = await h.verifiedMarket(exchange, rpc, capture.snapshots.map(snapshot => snapshot.market), 'BTC');
     assert.equal(result.market.poolAddress.toLowerCase(), btc.market.poolAddress.toLowerCase());
-    const account = await readAccount(exchange, client, result.system, capture.account.address);
+    assert.deepEqual(result.grid, bigintGrid(btc)); assert.equal(result.blockNumber, h.blockNumber);
+    const account = await h.readAccount(exchange, rpc, result.system, capture.account.address);
     assert.equal(account.address, capture.account.address);
-    assert.ok(account.blockNumber > 0n);
+    assert.equal(account.blockNumber, h.blockNumber); assert.equal(account.gas.toString(), capture.account.gas);
+    assert.equal(account.walletCollateral.toString(), capture.account.walletCollateral);
+    assert.equal(account.margin, h.margin); assert.equal(account.accountHasCode, false); assert.equal(account.voucher, null);
+    for (const [name, args] of h.calls.filter(([name]) => ['read', 'balance', 'code'].includes(name))) {
+      assert.equal(args.blockNumber, h.blockNumber, name);
+      if (name !== 'read' || args.functionName === 'balanceOf') assert.equal(args.address, name === 'read' ? capture.system.collateralToken : capture.account.address);
+    }
   } finally { await exchange.close(); }
 });

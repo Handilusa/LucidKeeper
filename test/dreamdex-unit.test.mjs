@@ -4,6 +4,7 @@ import { decodeFunctionData, formatUnits } from 'viem';
 import { perpPoolWriteAbi } from '@somnia-chain/markets-sdk';
 import { walletAddress, bountyAddress, exactUnits, orderParams, buildUnsignedOrder, receiptEvidence } from '../src/lib/dreamdex.mjs';
 import { btc, capture, decodedOrder, orderInput, bigintGrid } from './fixtures/captured.mjs';
+import { createDreamdexHarness } from './helpers/dreamdex-harness.mjs';
 test('dreamdex: walletAddress and bountyAddress validation', () => {
   assert.equal(walletAddress(capture.account.address.toLowerCase()), capture.account.address);
   assert.equal(bountyAddress(capture.account.address), capture.account.address);
@@ -29,7 +30,33 @@ test('dreamdex: buildUnsignedOrder encoding', () => {
   assert.equal(decoded.args[3], decodedOrder.args[3]);
   assert.equal(decoded.args[4], (timestamp + 300n) * 1_000_000_000n);
 });
-test('dreamdex: openTokyo, verifyNetwork and saveEvidence', { skip: 'Network check moved to real-read dreamdex.test.mjs; exclusive filesystem behavior tested in evidence.test.mjs, no RPC double.' }, () => {});
+test('dreamdex: openTokyo, verifyNetwork and saveEvidence use isolated boundaries', async () => {
+  const h = await createDreamdexHarness();
+  const { rpc, exchange } = h.openTokyo();
+  try {
+    assert.equal(rpc, h.rpc);
+    const client = h.calls.find(([name]) => name === 'client')[1];
+    const config = h.calls.find(([name]) => name === 'sdk')[1];
+    assert.equal(client.chain.id, 50383); assert.equal(config.chain.id, 50383);
+    assert.equal(config.indexerUrl, capture.provenance.network.indexer);
+    assert.equal(config.addresses.marginBank.toLowerCase(), capture.system.marginBank.toLowerCase());
+    assert.deepEqual(h.calls.find(([name]) => name === 'transport').slice(1), [undefined, { timeout: 15000, retryCount: 1 }]);
+    const network = await h.verifyNetwork(rpc);
+    assert.deepEqual(network, capture.provenance.network);
+    let genesisCalls = 0;
+    await assert.rejects(h.verifyNetwork({ getChainId: async () => 1, getBlock: async () => { genesisCalls++; } }), /RPC is not Tokyo testnet/);
+    assert.equal(genesisCalls, 0);
+    const files = await Promise.all([h.saveEvidence('controlled-network', network), h.saveEvidence('controlled-network', network)]);
+    assert.notEqual(files[0].href, files[1].href); assert.equal(h.files.size, 2);
+    for (const file of files) {
+      const saved = JSON.parse(h.files.get(file.href));
+      assert.equal(saved.genesisHash, network.genesisHash);
+      assert.equal(saved.recordedAt, new Date(Number(capture.provenance.block.timestamp) * 1000).toISOString());
+    }
+    for (const call of h.calls.filter(([name]) => name === 'mkdir')) assert.deepEqual(call[2], { recursive: true });
+  } finally { await exchange.close(); }
+  assert.equal(h.calls.filter(([name]) => name === 'close').length, 1);
+});
 test('captured verified markets retain on-chain bank and grid agreement', () => {
   for (const snapshot of capture.snapshots) {
     assert.equal(snapshot.market.marginBank.toLowerCase(), capture.system.marginBank.toLowerCase());

@@ -16,7 +16,7 @@ Trading on Tokyo testnet needs STT (gas) and USDso collateral distributed by the
 
 **Do not use Arena funds.** Request missing Tokyo STT and Builder Bounty USDso from the official bounty team in Discord for your own whitelisted wallet. LucidKeeper does not distribute funds or offer a claim.
 
-> **Delivery status — 31 October 2026:** the landing, dedicated portfolio and visual/motion passes are local on `feat/landing-and-profile`. The last independently checked production version is `0dce074` (30 October 15:43 UTC). New routes/features are not claimed as deployed; publication is owner-managed.
+> **Delivery status — 1 November 2026:** active development is now on local **`main`**, including profile commit `90eb29f` and the pending offline test update. The last independently checked production version is `0dce074` (30 October 15:43 UTC). New routes/features are not claimed as deployed; publication is owner-managed.
 
 > **Integrated collateral/UI acceptance — 31 October, 22:47 UTC:** complete **121/121 Chromium**, **112 passed / 19 historical skipped / 0 failed** unit/service on local `feat/landing-and-profile` after normal merge of `d313dd0`. App/E2E types, lint and build pass (58.76s; existing warnings). Includes 22 deposit cases at 375/1440 px, close-card captures and actual-driver pause/preference/tab regressions. Captures reviewed; docs, public-text/history scan, ignore and protected execution checks pass. Local `main` unchanged; no push, deploy or live transaction. Not security, deployed or real-wallet certification. [Current status](STATUS.md).
 
@@ -170,7 +170,7 @@ npm run test:load -- after
 node scripts/audit-release.mjs
 ```
 
-`npm test` includes public read-only service checks, pure/captured cases, controlled **test-only** transport outcomes and explicit historical skips. `test:e2e` builds and starts port **4174**; keep it free. Two injected test wallets and financial/RPC outcomes are isolated to tests; HTTP/WebSocket external paths are intercepted. No keys, raw signing or real transaction sends. `test:load` creates its own capped loopback static server, never targets dreamDEX/Somnia. [Manual QA](docs/MANUAL_QA.md) · [Capacity](docs/SCALABILITY.md). Optional standalone visual scripts use local4175/`AUDIT_URL`; historical lab figures are not refreshed release scores.
+`npm test` runs offline pure/captured cases and controlled **test-only** transport outcomes; unexpected network access fails closed. **1 November 2026: 131 passed / 0 skipped / 0 failed.** All 19 historical skip markers now execute meaningful assertions. The three retained real-service checks are opt-in via `npm run test:live:reads` and were not rerun in this update. Controlled confirmation/resting-placement tests are not real send or resting-only receipt evidence. `test:e2e` builds and starts port **4174**; keep it free. Two injected test wallets and financial/RPC outcomes are isolated to tests; HTTP/WebSocket external paths are intercepted. No keys, signing or real transaction sends. `test:load` creates its own capped loopback static server, never targets dreamDEX/Somnia. [Manual QA](docs/MANUAL_QA.md) · [Capacity](docs/SCALABILITY.md). Optional standalone visual scripts use local4175/`AUDIT_URL`; historical lab figures are not refreshed release scores.
 
 ### Testing
 
@@ -190,7 +190,7 @@ Real-chain evidence: deposit, DOGE FOK order, AVAX IOC order, **three independen
 
 Vercel: repository root (blank Root Directory), Node 24.x, Vite, install `npm ci`, build `npm run build`, output `dist`; keep `vercel.json` SPA/cache headers. **No env value is required.** Optional **public** `VITE_WALLETCONNECT_PROJECT_ID` overrides the built-in public Reown ID; configure the effective deployment origin and rebuild. No RPC, signer, allowlist or execution env override exists. Never put secrets into `VITE_*`.
 
-Only the owner publishes/merges `feat/landing-and-profile` and deploys the correct commit. Verify live routes/asset headers and complete independent-wallet QA before calling it accepted. [Exact owner commands, env scopes, hosting and submission checklist](docs/DEPLOYMENT.md).
+Only the owner publishes `main` and deploys the correct commit. Verify live routes/asset headers and complete independent-wallet QA before calling it accepted. [Exact owner commands, env scopes, hosting and submission checklist](docs/DEPLOYMENT.md).
 
 Optional real-service inspection:
 

@@ -1,6 +1,6 @@
 # Project status
 
-Updated **1 November 2026** · all 19 historical unit skip markers now execute meaningful isolated assertions. Current test changes are **local and uncommitted**; no agent push/deployment. The owner reports the preceding collateral integration published; deployed parity was not independently checked in this task. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
+Updated **1 November 2026** · active local branch is **`main`**, fast-forwarded to profile commit `90eb29f` with all pending test changes preserved. All 19 historical unit skip markers now execute meaningful isolated assertions; test changes remain **uncommitted**. No agent push/deployment. The owner reports the preceding collateral integration published; deployed parity was not independently checked in this task. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
 
 ## Offline test update — 1 November
 

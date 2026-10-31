@@ -1,6 +1,14 @@
 # Production data / mock-isolation audit
 
-## Remediation — 31 October 2026
+## Executable historical skips — 1 November 2026
+
+The 19 empty skip markers have been replaced in the normal suite with actual isolated assertions: **`npm test`: 131 passed / 0 skipped / 0 failed**. The four affected test files pass **50/50**; limited two-file `test:coverage` passes **16/16**. No production file or transaction policy was changed by this test task.
+
+The tests bundle actual production functions in memory with test-only import boundaries; no test code is added to production. Broadcaster recovery/send/policy results and placement-only log filtering are explicitly controlled, not new chain evidence. Wire tests use adversarial public curve scalars in memory with actual parsing and cryptographic rejection, without signing or storing payloads. Unexpected network access is blocked in the offline unit commands. The three existing real-service checks are preserved under `test/live/`, opt-in via `npm run test:live:reads`, and were not rerun. Genuine resting-only receipt provenance and live send/race behavior remain unverified. [Exact sources and boundaries](TEST_DATA_SOURCES.md#executable-offline-boundaries).
+
+This supersedes the unchanged-marker statements in the historical replay below. Historical audits, counts and replay artifacts remain intact. No keys, signing, live sends, wallet operations, commit, push or deployment; Chromium/type/lint/build were not rerun in this task. Concurrent unrelated profile edits are outside its scope.
+
+## Historical remediation — 31 October 2026
 
 **The three requested failure groups now PASS locally.** This supersedes F1–F5 below for the tested remediation on `feat/landing-and-profile`, based on `4e0dc74`; the original FAIL-first audit and its evidence are preserved as historical findings. This document accompanies the local-only remediation commit; obtain its exact identity with `git rev-parse HEAD`. No push or deployment is claimed.
 
