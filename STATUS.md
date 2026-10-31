@@ -14,7 +14,9 @@ Task 2 committed locally as **`079f6e7`**, no push. Task 3 adds `/app/profile/:a
 
 Task 3 final unit/service rerun: **86 passed / 19 skipped / 0 failed**, 105 cases. No source changes after the passing 53-case browser run; only its outdated unit lifetime-key assertion was adjusted.
 
-Tasks 4–6 remain pending. No push/deployment. Dated records below describe the earlier restricted build, not current release readiness.
+Task 3 preservation follow-up **`bb8cd28`** keeps the inherited protocol reference verbatim below dated release discoveries. Task 4 `npm audit fix` (no force) made no compatible changes; fresh12:28UTC audit remains **38 entries:17 high/19 moderate/2 low/0 critical**,27 runtime +11 dev-only. [Security notes](docs/SECURITY_NOTES.md) document why incompatible Zod/uuid/minimatch/wallet major overrides were not applied. **Security blocker remains**, not a clean audit.
+
+Task 4 verification: build/types/lint/E2E types pass; **86 passed / 19 skipped / 0 failed** unit/service and **14/14** isolated multi-wallet/profile Chromium checks. Dependency files unchanged; residual security risk remains. Tasks 5–6 pending. No push/deployment. Dated records below describe the earlier restricted build, not current release readiness.
 
 ## Pre-push functionality audit — 31 October 2026
 
