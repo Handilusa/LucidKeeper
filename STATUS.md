@@ -1,6 +1,12 @@
 # Project status
 
-Updated **31 October 2026** · collateral fix `d313dd0` and tested close-evidence follow-ups are being integrated locally into **`feat/landing-and-profile`**; complete integrated revalidation is pending. **Not pushed or deployed**; local `main` unchanged for the owner's PR. The owner reports the preceding version deployed; deployed parity is not independently verified here. Previously recorded independent production check: **`0dce074`**, 30 October 15:43 UTC. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
+Updated **31 October 2026, 22:47 UTC** · collateral fix `d313dd0` and tested close-evidence follow-ups integrated locally into **`feat/landing-and-profile`** by normal merge `f791781`; complete integrated checks pass. **Not pushed or deployed**; local `main` unchanged for the owner's PR. The owner reports the preceding version deployed; deployed parity is not independently verified here. Previously recorded independent production check: **`0dce074`**, 30 October 15:43 UTC. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
+
+## Integrated acceptance — 31 October, 22:47 UTC
+
+- Complete Chromium **121 passed / 0 skipped / 0 failed**, including **22 deposit cases** and retained close-card captures; unit/service **112 passed / 19 historical skipped / 0 failed** (131 cases). App/E2E types, lint and build pass (**58.76s**, existing dependency annotation/chunk warnings).
+- Funding/Trade/Account/connected Portfolio, Max, approval/deposit pending/confirmed/failed hashes, missing gas/USDso, unavailable reads and wrong-network captures reviewed at **375/1440 px**. Pause/preference/hidden-tab driver and inherited workflow checks pass; original drift and unfinished excluded work are not imported.
+- Docs **257 tracked paths / 13 documents / 119 links**, scan **218 public text paths / 111 reachable commits**, zero issues at this check; ignore boundaries, **43 protected paths**, identical order body and collateral sequence except UI observers pass. Earlier accepted/failed evidence retained. These are local controlled/read-only checks, not security, live-wallet, deployed or capacity certification; **38 affected dependency entries** remain.
 
 ## Release outcome
 
