@@ -753,22 +753,102 @@ input[type='range'] {
   line-height: 1.6;
   margin: 10px 0;
 }
-.funding-guide {
-  margin-block: 16px;
-  padding: 18px;
+.funding-guide,
+.funding-disclosure {
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--color-violet);
-  border-radius: 8px;
+  margin-top: 16px;
   background: var(--bg-panel);
+  border-radius: 6px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.65;
+  transition: border-color 0.2s ease;
 }
-.funding-guide h2 { margin: 0 0 8px; color: var(--text); font-size: 17px; }
-.funding-guide p { margin-block: 8px; }
-.funding-links { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 14px; }
-.funding-guide summary { cursor: pointer; }
-.funding-guide details a { text-decoration: underline; }
+.funding-disclosure:hover {
+  border-color: rgba(119, 27, 232, 0.45);
+}
+.funding-disclosure > summary {
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.funding-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.funding-summary-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.funding-summary-title h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.funding-summary-title h2::before {
+  content: '+';
+  color: var(--color-cyan);
+  font: 18px var(--font-mono);
+  display: inline-block;
+  line-height: 1;
+}
+.funding-disclosure[open] .funding-summary-title h2::before {
+  content: '−';
+}
+.funding-toggle-badge {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--color-cyan);
+  padding: 3px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.funding-body {
+  padding: 6px 20px 20px;
+  border-top: 1px solid var(--border-color);
+}
+.funding-body p {
+  margin-block: 8px;
+}
+.funding-alert-note {
+  color: var(--accent-bright);
+  font-weight: 500;
+}
+.funding-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 14px;
+}
+.funding-requirements-nested {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+.funding-requirements-nested summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+}
+.funding-requirements-nested a {
+  color: var(--color-cyan);
+  text-decoration: underline;
+}
 .transaction-status {
   font-size: 11px;
   line-height: 1.6;

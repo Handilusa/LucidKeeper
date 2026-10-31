@@ -328,7 +328,6 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
           markStale={staleMark || markPrice <= 0}
           fundingWindow={fundingParamsQuery.data ? Number(fundingParamsQuery.data.fundingCalculationWindowSec) : null}
         />
-        {currentAccount && <FundingGuide account={currentAccount} gas={fundingGas} wallet={fundingWallet} deposited={fundingDeposited} margin={fundingMargin} hasPositions={fundingPositions} onManage={openMargin} onGuardian={() => { navigate('risk'); riskRef.current?.scrollIntoView({ block: 'start' }); }} />}
         <nav className="mobile-nav" aria-label="Trading workspace">
           {(['chart', 'trade', 'activity'] as const).map((view) => (
             <button
@@ -411,6 +410,21 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
             />
           </section>
         </div>
+        {currentAccount && (
+          <FundingGuide
+            account={currentAccount}
+            gas={fundingGas}
+            wallet={fundingWallet}
+            deposited={fundingDeposited}
+            margin={fundingMargin}
+            hasPositions={fundingPositions}
+            onManage={openMargin}
+            onGuardian={() => {
+              navigate('risk');
+              riskRef.current?.scrollIntoView({ block: 'start' });
+            }}
+          />
+        )}
         <details className="risk-disclosure" id="risk" ref={riskRef}>
           <summary>
             <strong>Risk Guardian</strong>

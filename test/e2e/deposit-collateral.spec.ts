@@ -5,17 +5,17 @@ import { BOUNTY_FUNDING } from '../../src/content/project';
 import { A, B, mockWallet, connectMock, walletEvent } from './mock-wallet';
 
 for (const width of [375, 1440]) {
-  test(`deposit is discoverable on Chart, Trade and Account; canonical approval then separate deposit at ${width}px`, async ({ page }, info) => {
+  test(`deposit is discoverable on Trade and Account; canonical approval then separate deposit at ${width}px`, async ({ page }, info) => {
     const state = await mockWallet(page);
     state.accounts[A].margin = 0n;
     state.heldReceiptMethods.add('approve'); state.heldReceiptMethods.add('deposit');
     await page.setViewportSize({ width, height: 1000 });
     await connectMock(page);
     const guide = page.getByRole('region', { name: 'Funding guidance' });
-    await expect(guide.getByRole('button', { name: 'Deposit collateral', exact: true })).toBeVisible();
-    await page.screenshot({ path: info.outputPath('terminal-button.png'), fullPage: true, animations: 'disabled' });
+    await expect(guide).toBeVisible();
     if (width === 375) await page.getByRole('button', { name: 'Trade', exact: true }).click();
     await expect(page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true })).toBeVisible();
+    await page.screenshot({ path: info.outputPath('terminal-button.png'), fullPage: true, animations: 'disabled' });
     await expect(page.locator('.submit-order')).toHaveText('Deposit collateral to trade');
     await page.locator('.submit-order').click();
     const modal = page.getByRole('dialog', { name: 'Manage collateral' });
@@ -72,9 +72,10 @@ for (const width of [375, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       await connectMock(page, edge === 'gas-unavailable' || edge === 'wallet-unavailable' || edge === 'wrong-network');
       if (edge === 'wrong-network') await walletEvent(page, 'chain', '0xc488', true);
-      const guide = page.getByRole('region', { name: 'Funding guidance' });
-      await expect(guide.getByRole('button', { name: 'Deposit collateral', exact: true })).toBeVisible();
-      await guide.getByRole('button', { name: 'Deposit collateral', exact: true }).click();
+      if (width === 375) await page.getByRole('button', { name: 'Trade', exact: true }).click();
+      const trigger = page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true });
+      await expect(trigger).toBeVisible();
+      await trigger.click();
       const modal = page.getByRole('dialog', { name: 'Manage collateral' });
       if (edge === 'no-stt') await expect(modal).toContainText('STT is needed for gas');
       if (edge === 'no-usdso') { await expect(modal).toContainText(BOUNTY_FUNDING); await expect(modal).toContainText('Do not use Arena funds.'); }
@@ -98,7 +99,8 @@ for (const width of [375, 1440]) {
       if (failedStep === 'deposit') state.heldReceiptMethods.add('approve');
       await page.setViewportSize({ width, height: 1000 }); await connectMock(page);
       page.on('dialog', dialog => dialog.accept());
-      await page.getByRole('region', { name: 'Funding guidance' }).getByRole('button', { name: 'Deposit collateral', exact: true }).click();
+      if (width === 375) await page.getByRole('button', { name: 'Trade', exact: true }).click();
+      await page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true }).click();
       const modal = page.getByRole('dialog', { name: 'Manage collateral' });
       await modal.getByLabel('Amount', { exact: true }).fill('7');
       await modal.getByRole('button', { name: 'Deposit 7 USDso' }).click();
@@ -135,7 +137,8 @@ for (const width of [375, 1440]) {
     const state = await mockWallet(page); state.accounts[A].margin = 0n; state.accounts[A].allowance = parseUnits('7', 18);
     await page.setViewportSize({ width, height: 1000 }); await connectMock(page);
     page.on('dialog', dialog => dialog.accept());
-    await page.getByRole('region', { name: 'Funding guidance' }).getByRole('button', { name: 'Deposit collateral', exact: true }).click();
+    if (width === 375) await page.getByRole('button', { name: 'Trade', exact: true }).click();
+    await page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true }).click();
     const modal = page.getByRole('dialog', { name: 'Manage collateral' });
     await modal.getByLabel('Amount', { exact: true }).fill('7');
     await modal.getByRole('button', { name: 'Deposit 7 USDso' }).click();
