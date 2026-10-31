@@ -17,6 +17,7 @@
     "test": "node --experimental-strip-types --test test/*.test.mjs",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:types": "tsc --noEmit -p test/tsconfig.e2e.json",
+    "test:load": "node scripts/load-static.mjs",
     "test:coverage": "node --experimental-strip-types --test --experimental-test-coverage test/math.test.mjs test/dreamdex-unit.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",

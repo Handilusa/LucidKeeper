@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Providers } from './Providers';
-import { App } from './App';
 import { AppHeader } from '@/features/terminal/AppHeader';
 import { PROJECT } from '@/content/project';
 import '@/styles/pages.css';
 
 const Profile = lazy(() => import('@/features/profile/Profile'));
+const App = lazy(() => import('./App').then(module => ({ default: module.App })));
 
 // Full document navigation preserves the terminal's existing beforeunload guard.
 export default function TerminalRoutes() {
@@ -16,7 +16,7 @@ export default function TerminalRoutes() {
   return (
     <Providers>
       {path === '/app' ? (
-        <App />
+        <Suspense fallback={<main className="content-page" role="status">Loading trading terminal…</main>}><App /></Suspense>
       ) : path === '/app/docs' ? (
         <DocsPage />
       ) : path === '/app/profile' || path.startsWith('/app/profile/') ? (

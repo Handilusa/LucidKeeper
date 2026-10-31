@@ -24,6 +24,7 @@ export async function mockWallet(page: Page) {
     rejectNext: false, revertNext: false, simulationFailure: false, accountFailure: false, feeFailure: false, markFailure: false,
     candleMode: 'loaded' as 'loaded' | 'empty' | 'error' | 'old', historyFailure: false, historyCount: 0,
     profileFailure: false,
+    indexerStatus: 0, indexerRetryAfter: '', candleHang: false, candleCalls: 0, rpcBatches: [] as number[],
     profileRows: { Fill: [] as Record<string, unknown>[], PerpPositionChange: [] as Record<string, unknown>[], FundingPayment: [] as Record<string, unknown>[], PerpFeeRecord: [] as Record<string, unknown>[], MarginEvent: [] as Record<string, unknown>[] },
     contractReads: [] as { name: string; block: unknown; args: readonly unknown[] }[],
     mark: parseUnits('80000', 18), holdReceipts: false, fillOrders: true,
@@ -97,6 +98,11 @@ export async function mockWallet(page: Page) {
     if (['127.0.0.1', 'localhost'].includes(url.hostname)) return route.continue();
     if (url.hostname === 'hideki-dev.smk.somnia.host') {
       const { query, variables } = route.request().postDataJSON();
+      if (/query Candles/.test(query)) {
+        state.candleCalls++;
+        if (state.candleHang) return;
+        if (state.indexerStatus) return route.fulfill({ status: state.indexerStatus, headers: state.indexerRetryAfter ? { 'Retry-After': state.indexerRetryAfter, 'Access-Control-Expose-Headers': 'Retry-After' } : {}, json: { error: 'Controlled overload' } });
+      }
       if (state.profileFailure && /UserFills|PerpPositionChanges|FundingPayments|PerpFees|MarginEvents/.test(query)) return route.fulfill({ status: 503, json: { error: 'Controlled profile source failure' } });
       if ((state.candleMode === 'error' && /Candles/.test(query)) || (state.historyFailure && /UserTradeHistory/.test(query))) return route.fulfill({ status: 503, json: { error: 'Controlled indexer failure' } });
       const interval = variables.interval || 3600;
@@ -107,6 +113,7 @@ export async function mockWallet(page: Page) {
     }
     if (url.hostname !== 'api.hideki2.infra.testnet.somnia.network') { state.blocked.push(url.href); return route.abort(); }
     const request = route.request().postDataJSON();
+    state.rpcBatches.push(Array.isArray(request) ? request.length : 1);
     return route.fulfill({ json: Array.isArray(request) ? request.map(reply) : reply(request) });
   });
   await page.routeWebSocket('**/*', socket => {

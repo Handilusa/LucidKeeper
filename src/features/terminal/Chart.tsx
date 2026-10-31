@@ -63,7 +63,7 @@ export function Chart({
     queryKey: ['candles', poolAddress, interval],
     queryFn: () => fetchMarketCandles(poolAddress, interval),
     refetchInterval: 15000,
-    retry: 1,
+    retry: 0, // The direct indexer boundary owns its bounded retry/deadline.
   });
   const last = query.data?.at(-1);
   const inspected = hovered || last;

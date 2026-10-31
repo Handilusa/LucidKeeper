@@ -6,6 +6,7 @@ import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { wagmiConfig } from '@/chain/wagmiConfig';
+import { queryRetryDelay } from '@/lib/data/readResilience';
 import '@rainbow-me/rainbowkit/styles.css';
 
 const queryClient = new QueryClient({
@@ -13,6 +14,10 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       staleTime: 5000,
+      gcTime: 300000,
+      retry: 1,
+      retryDelay: queryRetryDelay,
+      refetchIntervalInBackground: false,
     },
   },
 });

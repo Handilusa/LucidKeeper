@@ -10,6 +10,8 @@ import { INDEXER_GRAPHQL_URL } from '@/lib/data/indexer';
 export const profileClient = new SomniaMarkets({
   chain: hidekiTestnet,
   indexerUrl: INDEXER_GRAPHQL_URL,
+  // SDK owns its HTTP governor and WebSocket transport. Avoid nested retry multiplication.
+  indexerLimits: { maxInFlight: 4, maxQueued: 32, maxAttempts: 1, breakerThreshold: 5, breakerCooldownMs: 30000 },
   addresses: SOMNIA_HIDEKI_TESTNET_ADDRESSES,
 }).client;
 export const HISTORY_LIMIT = 1000;

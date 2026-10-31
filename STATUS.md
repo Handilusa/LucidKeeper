@@ -16,7 +16,9 @@ Task 3 final unit/service rerun: **86 passed / 19 skipped / 0 failed**, 105 case
 
 Task 3 preservation follow-up **`bb8cd28`** keeps the inherited protocol reference verbatim below dated release discoveries. Task 4 `npm audit fix` (no force) made no compatible changes; fresh12:28UTC audit remains **38 entries:17 high/19 moderate/2 low/0 critical**,27 runtime +11 dev-only. [Security notes](docs/SECURITY_NOTES.md) document why incompatible Zod/uuid/minimatch/wallet major overrides were not applied. **Security blocker remains**, not a clean audit.
 
-Task 4 verification: build/types/lint/E2E types pass; **86 passed / 19 skipped / 0 failed** unit/service and **14/14** isolated multi-wallet/profile Chromium checks. Dependency files unchanged; residual security risk remains. Tasks 5–6 pending. No push/deployment. Dated records below describe the earlier restricted build, not current release readiness.
+Task 4 local commit **`fd59a44`**: build/types/lint/E2E types pass; **86 passed / 19 skipped / 0 failed** unit/service and **14/14** isolated multi-wallet/profile Chromium checks. Dependency files unchanged; residual security risk remains.
+
+Task 5: bounded direct indexer reads/cooldown/cache, public RPC batching, lazy trading chunk and hosting cache rules. **55/55 Chromium**; **94 passed / 19 skipped / 0 failed** unit/service; types/E2E types/lint/build pass. Local static-only load **240/240**,12 concurrent; after p95 **41.59ms**, not user/RPC capacity. [Measurements and limits](docs/SCALABILITY.md). Task6 pending. No push/deployment. Dated records below describe the earlier restricted build, not current release readiness.
 
 ## Pre-push functionality audit — 31 October 2026
 

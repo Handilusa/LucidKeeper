@@ -1,8 +1,10 @@
 import { ALL_VERIFIED_PERP_MARKETS } from './markets';
 import { normalizeCandles, hourly24hChange, type ChartCandle } from './candles';
+import { createGraphqlReader } from './readResilience';
 export type { ChartCandle } from './candles';
 
 export const INDEXER_GRAPHQL_URL = 'https://hideki-dev.smk.somnia.host/v1/graphql';
+const indexerReads = createGraphqlReader(INDEXER_GRAPHQL_URL);
 
 export interface MarketInfo {
   id: string;
@@ -80,21 +82,7 @@ export async function fetchMarketCandles(
     }
   `;
 
-  const res = await fetch(INDEXER_GRAPHQL_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query,
-      variables: {
-        pool: poolAddress.toLowerCase(),
-        limit,
-        interval: intervalSeconds,
-      },
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Candle request failed (${res.status})`);
-  const json = await res.json();
+  const json = await indexerReads.read(query, { pool: poolAddress.toLowerCase(), limit, interval: intervalSeconds }, 5000);
   if (json.errors?.length) throw new Error('Candle indexer returned an error');
   const rawCandles = json?.data?.Candle;
   if (!Array.isArray(rawCandles)) throw new Error('Missing candle response');
@@ -129,19 +117,7 @@ export async function fetchMarket24hChange(poolAddress: string): Promise<number 
   `;
 
   try {
-    const res = await fetch(INDEXER_GRAPHQL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        variables: {
-          pool: poolAddress.toLowerCase(),
-        },
-      }),
-    });
-
-    if (!res.ok) return null;
-    const json = await res.json();
+    const json = await indexerReads.read(query, { pool: poolAddress.toLowerCase() }, 15000);
     if (json.errors?.length || !Array.isArray(json?.data?.Candle)) return null;
     const candles = normalizeCandles(
       json.data.Candle,
@@ -212,24 +188,7 @@ export async function fetchUserTradeHistory(
   `;
 
   try {
-    const res = await fetch(INDEXER_GRAPHQL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        variables: {
-          account: normalizedAccount,
-          limit,
-          offset,
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Indexer responded with HTTP ${res.status}`);
-    }
-
-    const json = await res.json();
+    const json = await indexerReads.read(query, { account: normalizedAccount, limit, offset });
     if (json.errors) {
       console.warn('[Indexer] GraphQL trade history error:', json.errors);
       throw new Error(json.errors[0]?.message || 'GraphQL query error');
@@ -306,7 +265,7 @@ export async function fetchUserTradeHistory(
       try {
         localStorage.setItem(
           `lucidkeeper_cache_trades_50383_${normalizedAccount}_${limit}_${offset}`,
-          JSON.stringify(items)
+          JSON.stringify({ observedAt: Date.now(), items })
         );
       } catch {
         // Ignore cache storage errors
@@ -324,8 +283,8 @@ export async function fetchUserTradeHistory(
         );
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.map((item: TradeHistoryItem) => ({ ...item, source: 'cache' }));
+          if (Number.isFinite(parsed.observedAt) && Date.now() >= parsed.observedAt && Date.now() - parsed.observedAt <= 300000 && Array.isArray(parsed.items) && parsed.items.length > 0) {
+            return parsed.items.map((item: TradeHistoryItem) => ({ ...item, source: 'cache' }));
           }
         }
       } catch {
@@ -371,17 +330,8 @@ export async function fetchUserActiveOrders(account: string): Promise<ActiveOrde
   `;
 
   try {
-    const res = await fetch(INDEXER_GRAPHQL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        variables: { account: normalizedAccount },
-      }),
-    });
-
-    if (!res.ok) throw new Error(`Indexer responded with HTTP ${res.status}`);
-    const json = await res.json();
+    // Deduplicate only while in flight; cancellation preflight never reuses a TTL snapshot.
+    const json = await indexerReads.read(query, { account: normalizedAccount });
     if (json.errors?.length || !Array.isArray(json?.data?.Order))
       throw new Error('Active orders response unavailable');
     const rawOrders = json.data.Order;

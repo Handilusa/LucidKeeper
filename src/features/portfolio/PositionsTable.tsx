@@ -82,6 +82,7 @@ export function PositionsTable({
   const history = useQuery({
     queryKey: ['tradeHistory', 50383, account, page],
     enabled: activeTab === 'history' && !!account,
+    retry: 0,
     queryFn: async () => {
       if (!account) throw new Error('Connect a wallet to view history');
       let failed = false;
@@ -113,6 +114,7 @@ export function PositionsTable({
       return fetchUserActiveOrders(account);
     },
     enabled: activeTab === 'orders' && !!account,
+    retry: 0,
     refetchInterval: 15000,
   });
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
