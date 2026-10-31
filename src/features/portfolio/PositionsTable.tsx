@@ -97,7 +97,13 @@ export function PositionsTable({
         if (failed) throw new Error('History unavailable');
         return { items: [], limited: false };
       }
-      const rpc = publicClient ? await fetchRpcTradeHistoryFallback(publicClient, account) : [];
+      let rpc: TradeHistoryItem[] = [];
+      try {
+        if (publicClient) rpc = await fetchRpcTradeHistoryFallback(publicClient, account);
+      } catch {
+        // A failed supplementary read is not empty history; only a valid indexer
+        // result or nonempty, labeled cached evidence may still be displayed.
+      }
       const cached = getTradeHistory(account).map((item) => ({
         ...item,
         source: 'cache' as const,
@@ -344,7 +350,7 @@ export function PositionsTable({
               </tbody>
             </table>
             <p className="form-note mb-3">
-              Cross-margin account · entry and portfolio liquidation estimates appear on the selected market’s chart. Other markets are held constant; collateral is shared.
+              Cross-margin account · entry and illustrative portfolio liquidation estimates appear on the selected market’s chart. Other markets are held constant; collateral is shared.
             </p>
           </div>
         )}
@@ -357,7 +363,7 @@ export function PositionsTable({
         ) : orders.isError ? (
           <div className="empty-state" role="status">
             <strong>Open orders unavailable</strong>
-            <span>The indexer could not be reached. Refresh to retry.</span>
+            <span>The indexer read failed or returned incomplete data. Refresh to retry.</span>
           </div>
         ) : !orders.data?.length ? (
           <div className="empty-state">

@@ -23,6 +23,8 @@ export async function mockWallet(page: Page) {
     accounts, writes: [] as Tx[], blocked: [] as string[], reads: [] as string[],
     rejectNext: false, revertNext: false, simulationFailure: false, accountFailure: false, feeFailure: false, markFailure: false,
     candleMode: 'loaded' as 'loaded' | 'empty' | 'error' | 'old', historyFailure: false, historyCount: 0,
+    historyData: undefined as Record<string, unknown> | undefined,
+    activeOrderRows: [] as Record<string, unknown>[], rpcLogsFailure: false,
     profileFailure: false, gasFailure: false, walletFailure: false,
     indexerStatus: 0, indexerRetryAfter: '', candleHang: false, candleCalls: 0, rpcBatches: [] as number[],
     profileRows: { Fill: [] as Record<string, unknown>[], PerpPositionChange: [] as Record<string, unknown>[], FundingPayment: [] as Record<string, unknown>[], PerpFeeRecord: [] as Record<string, unknown>[], MarginEvent: [] as Record<string, unknown>[] },
@@ -105,6 +107,8 @@ export async function mockWallet(page: Page) {
       }
       if (state.profileFailure && /UserFills|PerpPositionChanges|FundingPayments|PerpFees|MarginEvents/.test(query)) return route.fulfill({ status: 503, json: { error: 'Controlled profile source failure' } });
       if ((state.candleMode === 'error' && /Candles/.test(query)) || (state.historyFailure && /UserTradeHistory/.test(query))) return route.fulfill({ status: 503, json: { error: 'Controlled indexer failure' } });
+      if (/UserTradeHistory/.test(query) && state.historyData !== undefined) return route.fulfill({ json: { data: state.historyData } });
+      if (/UserActiveOrders/.test(query)) return route.fulfill({ json: { data: { Order: state.activeOrderRows } } });
       const interval = variables.interval || 3600;
       const end = Math.floor(Date.now() / 1000 / interval) * interval - (state.candleMode === 'old' ? 10 * interval : 0);
       const Candle = state.candleMode === 'empty' ? [] : Array.from({ length: 30 }, (_, i) => ({ bucketStart: end - i * interval, intervalSeconds: interval, openPrice: state.mark.toString(), high: (state.mark + parseUnits('10', 18)).toString(), low: (state.mark - parseUnits('10', 18)).toString(), closePrice: state.mark.toString(), baseVolume: '10000', quoteVolume: '8000000000000000000', tradeCount: 1 }));
@@ -142,7 +146,10 @@ export async function mockWallet(page: Page) {
         else if (method === 'eth_getTransactionCount') result = toHex(accounts[String(params[0]).toLowerCase()]?.nonce || 0);
         else if (method === 'eth_getCode') result = '0x';
         else if (method === 'eth_gasPrice' || method === 'eth_maxPriorityFeePerGas') result = '0x165a0bc00';
-        else if (method === 'eth_getLogs') result = [];
+        else if (method === 'eth_getLogs') {
+          if (state.rpcLogsFailure) throw new Error('Controlled log read failure');
+          result = [];
+        }
         else if (method === 'eth_estimateGas') result = '0x2dc6c0';
         else if (method === 'eth_getTransactionReceipt') {
           const record = transactions.get(params[0] as Hex);

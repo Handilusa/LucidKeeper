@@ -487,7 +487,7 @@ export function TradingBox({
             </span>
             {numericQty > 0 && (
               <p className="muted mt-1">
-                If fully filled:{' '}
+                illustrative netting · If fully filled:{' '}
                 {isSameSide
                   ? `${(currentPosition.size + numericQty).toFixed(lotDecimals)} ${market.baseSymbol}`
                   : numericQty === currentPosition.size
@@ -520,7 +520,7 @@ export function TradingBox({
             <dt>
               Est. liquidation{' '}
               <HelpTip label="liquidation estimate">
-                Standalone sizing scenario: this quantity filled at {orderType === 'market' ? 'mark' : 'limit'} with {leverage}× sizing margin, less the taker fee. Uses the pool’s maintenance threshold. Excludes IOC reserve, future funding and other positions. Actual cross-margin liquidation depends on shared account equity.
+                illustrative standalone sizing scenario: this quantity filled at {orderType === 'market' ? 'mark' : 'limit'} with {leverage}× sizing margin, less the taker fee. Uses the pool’s maintenance threshold. Excludes IOC reserve, future funding and other positions. Actual cross-margin liquidation depends on shared account equity.
               </HelpTip>
             </dt>
             <dd data-testid="liquidation-preview">{liquidation == null ? '—' : liquidation === 0 ? '0 · scenario floor' : <>≈<AnimatedValue value={liquidation} digits={Math.max(2, market.tickSize.split('.')[1]?.length || 0)} /></>}</dd>
@@ -532,7 +532,7 @@ export function TradingBox({
             </dd>
           </div>
         </dl>
-        <p className="estimate-context">Liquidation: standalone {leverage}× scenario · USDso</p>
+        <p className="estimate-context">illustrative liquidation · standalone {leverage}× scenario · USDso</p>
         <details className="estimate-details">
           <summary>Margin breakdown</summary>
           <dl>

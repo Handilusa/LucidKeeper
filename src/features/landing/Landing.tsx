@@ -265,10 +265,11 @@ export default function Landing() {
                   LucidKeeper keeps those distinctions visible.
                 </p>
               </div>
+              <p className="muted">illustrative six-step trading lifecycle</p>
               <div className="lifecycle" data-flow>
                 <LifecycleCurve />
                 <LifecycleCurve vertical />
-                <ol className="lifecycle-steps" role="list" aria-label="Illustrated six-step trading lifecycle">
+                <ol className="lifecycle-steps" role="list" aria-label="illustrative six-step trading lifecycle">
                   {steps.map(([title, detail, Icon], index) => (
                     <li key={title} style={{ '--flow-delay': `${index * 1.6}s` } as CSSProperties}>
                       <span className="step-wash flow-animated" aria-hidden="true" />
@@ -448,7 +449,7 @@ export default function Landing() {
                   >
                     MultiStream consensus ↗
                   </a>
-                  <small>Conceptual diagram, not network telemetry.</small>
+                  <small>illustrative conceptual diagram, not network telemetry.</small>
                 </article>
                 <article>
                   <span className="technical-label">EXECUTION</span>

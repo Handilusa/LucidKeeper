@@ -1,6 +1,8 @@
 import { ALL_VERIFIED_PERP_MARKETS } from './markets';
 import { normalizeCandles, hourly24hChange, type ChartCandle } from './candles';
 import { createGraphqlReader } from './readResilience';
+import { observationArray, observationRecord, observationText, observationHex, observationBoolean,
+  observationUint, observationUnits, observationInteger, observationTimestamp } from './observations';
 export type { ChartCandle } from './candles';
 
 export const INDEXER_GRAPHQL_URL = 'https://hideki-dev.smk.somnia.host/v1/graphql';
@@ -47,6 +49,58 @@ export interface ActiveOrderItem {
   placedAtTimestamp: number;
   placedTxHash: string;
   status: string;
+}
+
+function observedMarket(pool: unknown) {
+  const address = observationHex(pool, 20, 'Market pool');
+  const market = ALL_VERIFIED_PERP_MARKETS.find((m) => m.poolAddress.toLowerCase() === address.toLowerCase());
+  if (!market) throw new Error('Market units unavailable: unknown pool');
+  return market;
+}
+
+function historyObservations(data: unknown, account: string): TradeHistoryItem[] {
+  const response = observationRecord(data, 'History');
+  const fills = observationArray(response.Fill, 'Fill');
+  const marginEvents = observationArray(response.MarginEvent, 'MarginEvent');
+  const items: TradeHistoryItem[] = [];
+  for (const row of fills) {
+    const f = observationRecord(row, 'Fill');
+    const taker = observationHex(f.taker, 20, 'Fill taker').toLowerCase();
+    const maker = observationHex(f.maker, 20, 'Fill maker').toLowerCase();
+    if (taker !== account && maker !== account) continue;
+    const market = observedMarket(f.pool);
+    const takerIsBid = observationBoolean(f.takerIsBid, 'Fill side');
+    const isBuy = taker === account ? takerIsBid : !takerIsBid;
+    const size = observationUnits(f.quantity, market.baseDecimals, 'Fill quantity');
+    const price = observationUnits(f.fillPrice, market.quoteDecimals, 'Fill price');
+    items.push({
+      id: `fill-${observationText(f.id, 'Fill id')}`,
+      hash: observationHex(f.txHash, 32, 'Fill hash'),
+      type: 'order', marketSymbol: market.baseSymbol, side: isBuy ? 'buy' : 'sell', size, price,
+      blockNumber: observationInteger(f.blockNumber, 'Fill block'),
+      timestamp: observationTimestamp(f.timestamp, 'Fill timestamp'),
+      description: `OrderFilled: ${isBuy ? 'Long' : 'Short'} ${size} ${market.baseSymbol} @ $${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
+      source: 'indexer',
+    });
+  }
+  for (const row of marginEvents) {
+    const m = observationRecord(row, 'MarginEvent');
+    if (observationHex(m.account, 20, 'Margin account').toLowerCase() !== account) continue;
+    const kind = observationText(m.kind, 'Margin kind');
+    const isDeposit = /deposit/i.test(kind);
+    if (!isDeposit && !/withdraw/i.test(kind)) continue; // Internal lock/unlock bookkeeping.
+    const amount = observationUnits(m.amount, 18, 'Margin amount');
+    items.push({
+      id: `margin-${observationText(m.id, 'Margin id')}`,
+      hash: observationHex(m.txHash, 32, 'Margin hash'),
+      type: isDeposit ? 'deposit' : 'withdraw', amountUsdso: amount,
+      blockNumber: observationInteger(m.blockNumber, 'Margin block'),
+      timestamp: observationTimestamp(m.timestamp, 'Margin timestamp'),
+      description: `Margin ${isDeposit ? 'Deposit' : 'Withdrawal'}: ${amount.toFixed(2)} USDso`,
+      source: 'indexer',
+    });
+  }
+  return items.sort((a, b) => b.timestamp - a.timestamp);
 }
 
 /**
@@ -143,6 +197,8 @@ export async function fetchUserTradeHistory(
 ): Promise<TradeHistoryItem[]> {
   if (!account) return [];
   const normalizedAccount = account.toLowerCase();
+  // Old transformed caches may contain defaulted values; retain them but never read them.
+  const cacheKey = `lucidkeeper_cache_trades_v2_50383_${normalizedAccount}_${limit}_${offset}`;
 
   const query = `
     query UserTradeHistory($account: String!, $limit: Int!, $offset: Int!) {
@@ -189,83 +245,19 @@ export async function fetchUserTradeHistory(
 
   try {
     const json = await indexerReads.read(query, { account: normalizedAccount, limit, offset });
-    if (json.errors) {
+    if (json.errors?.length) {
       console.warn('[Indexer] GraphQL trade history error:', json.errors);
       throw new Error(json.errors[0]?.message || 'GraphQL query error');
     }
 
-    const items: TradeHistoryItem[] = [];
-
-    // 1. Process Fills
-    const fills = json?.data?.Fill || [];
-    for (const f of fills) {
-      if (f.taker?.toLowerCase() !== normalizedAccount && f.maker?.toLowerCase() !== normalizedAccount) continue;
-      const market = ALL_VERIFIED_PERP_MARKETS.find(
-        (m) => m.poolAddress.toLowerCase() === f.pool?.toLowerCase()
-      );
-      const isTaker = f.taker.toLowerCase() === normalizedAccount;
-      const isBuy = isTaker ? Boolean(f.takerIsBid) : !f.takerIsBid;
-      const baseDecimals = market?.baseDecimals || 8;
-      const size = Number(BigInt(f.quantity || '0')) / 10 ** baseDecimals;
-      const price = Number(BigInt(f.fillPrice || '0')) / 1e18;
-      const symbol = market?.baseSymbol || 'PERP';
-      const blockNum = f.blockNumber ? parseInt(f.blockNumber, 10) : undefined;
-      // Indexer timestamp is in seconds (or ns if huge)
-      const rawTs = parseInt(f.timestamp || '0', 10);
-      const timestampMs = rawTs > 1e12 ? rawTs : rawTs * 1000;
-
-      items.push({
-        id: `fill-${f.id}`,
-        hash: f.txHash,
-        type: 'order',
-        marketSymbol: symbol,
-        side: isBuy ? 'buy' : 'sell',
-        size,
-        price,
-        blockNumber: blockNum,
-        timestamp: timestampMs,
-        description: `OrderFilled: ${isBuy ? 'Long' : 'Short'} ${size} ${symbol} @ $${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
-        source: 'indexer',
-      });
-    }
-
-    // 2. Process Margin Events (filtering out internal lock/unlock bookkeeping to highlight deposits/withdrawals)
-    const marginEvents = json?.data?.MarginEvent || [];
-    for (const m of marginEvents) {
-      if (m.account?.toLowerCase() !== normalizedAccount) continue;
-      const kindStr = String(m.kind || '');
-      const isDeposit = /deposit/i.test(kindStr);
-      const isWithdraw = /withdraw/i.test(kindStr);
-
-      // Only display user-facing Margin actions
-      if (isDeposit || isWithdraw) {
-        const amt = Number(BigInt(m.amount || '0')) / 1e18;
-        const blockNum = m.blockNumber ? parseInt(m.blockNumber, 10) : undefined;
-        const rawTs = parseInt(m.timestamp || '0', 10);
-        const timestampMs = rawTs > 1e12 ? rawTs : rawTs * 1000;
-
-        items.push({
-          id: `margin-${m.id}`,
-          hash: m.txHash,
-          type: isDeposit ? 'deposit' : 'withdraw',
-          amountUsdso: amt,
-          blockNumber: blockNum,
-          timestamp: timestampMs,
-          description: `Margin ${isDeposit ? 'Deposit' : 'Withdrawal'}: ${amt.toFixed(2)} USDso`,
-          source: 'indexer',
-        });
-      }
-    }
-
-    // Sort descending by timestamp
-    items.sort((a, b) => b.timestamp - a.timestamp);
+    const items = historyObservations(json.data, normalizedAccount);
 
     // Update transient cache
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(
-          `lucidkeeper_cache_trades_50383_${normalizedAccount}_${limit}_${offset}`,
-          JSON.stringify({ observedAt: Date.now(), items })
+          cacheKey,
+          JSON.stringify({ observedAt: Date.now(), data: json.data })
         );
       } catch {
         // Ignore cache storage errors
@@ -278,13 +270,12 @@ export async function fetchUserTradeHistory(
     // Return cached items if available
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem(
-          `lucidkeeper_cache_trades_50383_${normalizedAccount}_${limit}_${offset}`
-        );
+        const cached = localStorage.getItem(cacheKey);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Number.isFinite(parsed.observedAt) && Date.now() >= parsed.observedAt && Date.now() - parsed.observedAt <= 300000 && Array.isArray(parsed.items) && parsed.items.length > 0) {
-            return parsed.items.map((item: TradeHistoryItem) => ({ ...item, source: 'cache' }));
+          if (Number.isFinite(parsed.observedAt) && Date.now() >= parsed.observedAt && Date.now() - parsed.observedAt <= 300000) {
+            const items = historyObservations(parsed.data, normalizedAccount);
+            if (items.length) return items.map((item) => ({ ...item, source: 'cache' }));
           }
         }
       } catch {
@@ -337,37 +328,28 @@ export async function fetchUserActiveOrders(account: string): Promise<ActiveOrde
     const rawOrders = json.data.Order;
 
     const activeOrders: ActiveOrderItem[] = [];
-    for (const o of rawOrders) {
-      if (o.owner?.toLowerCase() !== normalizedAccount) continue;
-      // Order ID is often pool_orderId or pool address in id
-      let poolAddr = o.pool;
-      if (!poolAddr && o.id && o.id.includes('_')) {
-        poolAddr = o.id.split('_')[0];
-      }
-
-      const market = ALL_VERIFIED_PERP_MARKETS.find(
-        (m) => m.poolAddress.toLowerCase() === (poolAddr || '').toLowerCase()
-      );
-      const baseDecimals = market?.baseDecimals || 8;
-      const fullQty = Number(BigInt(o.fullQuantity || '0')) / 10 ** baseDecimals;
-      const remainingQty = Number(BigInt(o.quantityRemaining || '0')) / 10 ** baseDecimals;
-      const price = Number(BigInt(o.price || '0')) / 1e18;
-      const rawTs = parseInt(o.placedAtTimestamp || '0', 10);
-      const timestampMs = rawTs > 1e12 ? rawTs : rawTs * 1000;
+    for (const row of rawOrders) {
+      const o = observationRecord(row, 'Order');
+      if (observationHex(o.owner, 20, 'Order owner').toLowerCase() !== normalizedAccount) continue;
+      const market = observedMarket(o.pool);
+      const fullQty = observationUnits(o.fullQuantity, market.baseDecimals, 'Order full quantity');
+      const remainingQty = observationUnits(o.quantityRemaining, market.baseDecimals, 'Order remaining quantity');
+      const price = observationUnits(o.price, market.quoteDecimals, 'Order price');
+      const isBid = observationBoolean(o.isBid, 'Order side');
 
       activeOrders.push({
-        id: o.id,
-        orderId: o.orderId,
-        poolAddress: poolAddr || market?.poolAddress || '',
-        marketSymbol: market?.baseSymbol || 'PERP',
-        isBid: Boolean(o.isBid),
-        side: o.isBid ? 'buy' : 'sell',
+        id: observationText(o.id, 'Order id'),
+        orderId: observationUint(o.orderId, 'Order number').toString(),
+        poolAddress: market.poolAddress,
+        marketSymbol: market.baseSymbol,
+        isBid,
+        side: isBid ? 'buy' : 'sell',
         price,
         fullQuantity: fullQty,
         quantityRemaining: remainingQty,
-        placedAtTimestamp: timestampMs,
-        placedTxHash: o.placedTxHash || '',
-        status: o.status,
+        placedAtTimestamp: observationTimestamp(o.placedAtTimestamp, 'Order timestamp'),
+        placedTxHash: observationHex(o.placedTxHash, 32, 'Order hash'),
+        status: observationText(o.status, 'Order status'),
       });
     }
 

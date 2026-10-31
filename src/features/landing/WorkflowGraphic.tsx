@@ -48,7 +48,7 @@ export function WorkflowGraphic({ paused, reducedMotion, onToggle }: {
   return <figure className="architecture-map" data-flow
     aria-label="Wallet review connects the terminal and browser Guardian to dreamDEX contracts; receipts return on-chain results">
     <figcaption className="flow-caption">
-      <span>WORKFLOW ILLUSTRATION</span>
+      <span>illustrative workflow</span>
       <button className="flow-toggle" onClick={onToggle} disabled={reducedMotion}
         aria-label={reducedMotion ? 'Workflow motion off (system)' : paused ? 'Resume workflow animation' : 'Pause workflow animation'}>
         {paused || reducedMotion ? <Play size={13} aria-hidden="true" /> : <Pause size={13} aria-hidden="true" />}

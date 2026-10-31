@@ -194,7 +194,7 @@ export function Chart({
     }));
     if (position.liquidationPrice != null && position.liquidationPrice > 0) lines.push(series.createPriceLine({
       price: position.liquidationPrice, color: '#e5b875', lineWidth: 1,
-      lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: 'Est. liq',
+      lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: 'illustrative liq',
     }));
     return () => {
       // Chart removal already disposes its lines. Never schedule another draw on that series.
@@ -262,7 +262,7 @@ export function Chart({
       <div className="chart-reference" role="group" aria-label="Chart price references">
         <span>Last {last ? <AnimatedValue value={last.close} digits={Math.max(1, tickSize.split('.')[1]?.length || 0)} flash /> : '—'}</span>
         <span className="brand-text">Mark {currentMarkPrice > 0 ? formatDynamicPrice(currentMarkPrice) : '—'}</span>
-        {position && <span title={`Portfolio snapshot block ${position.readBlock}; other market marks held constant.`}>Entry {formatDynamicPrice(position.entryPrice)} · <span className="caution">Est. liq {position.liquidationPrice == null ? '—' : formatDynamicPrice(position.liquidationPrice)}</span></span>}
+        {position && <span title={`Portfolio snapshot block ${position.readBlock}; other market marks held constant.`}>Entry {formatDynamicPrice(position.entryPrice)} · <span className="caution">illustrative liq {position.liquidationPrice == null ? '—' : formatDynamicPrice(position.liquidationPrice)}</span></span>}
       </div>
       <p id="chart-keyboard-help" className="sr-only">
         Use left and right arrows to inspect candles, Home or End to jump, and plus or minus to

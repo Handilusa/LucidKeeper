@@ -1,6 +1,6 @@
 # Project status
 
-Updated **31 October 2026** · local `feat/landing-and-profile` · **not pushed or newly deployed**. Last independently checked production: **`0dce074`**, 30 October 15:43 UTC. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
+Updated **31 October 2026** · local remediation closure on **`feat/landing-and-profile`**, based on **`4e0dc74`** · **local-only; not pushed or deployed**. Exact commit: `git rev-parse HEAD`. Previously recorded independent production check: **`0dce074`**, 30 October 15:43 UTC; deployed parity was not checked in this fix task. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
 
 ## Release outcome
 
@@ -23,6 +23,8 @@ Earlier six-task release checks (`755e6f3`): **79 passed / 0 skipped / 0 failed 
 - Funding-update checks: **88 passed / 0 skipped / 0 failed Chromium**, **99 passed / 19 historical skipped / 0 failed** unit/service (118 cases); app/E2E types, lint/build pass. Includes nine new isolated browser cases and five pure funding-state cases; 375/1440px affected screenshots visually reviewed. Local docs: six documents / 60 local destinations, protected evidence/helpers/dependencies unchanged. Existing dependency build warnings and 38 affected entries remain; no real-wallet, security or deployed acceptance is claimed.
 
 ## Critical boundaries
+
+- **Local data-audit remediation — 31 October, `feat/landing-and-profile` based on `4e0dc74`:** missing financial/time fields and unknown units are rejected; missing history arrays show unavailable, not empty success; scenarios/diagrams have literal illustrative labels. Accepted full suite: **109 passed / 19 historical skipped / 0 failed**, Chromium **97 passed / 0 skipped / 0 failed**; types/lint/build and dist harness-exclusion checks pass. Requested local-only replay of the 19 skipped scenario equivalents: **19 passed / 0 skipped / 0 failed**, 168 assertions; published historical markers remain unchanged. Fresh vendor package/import/graph evidence confirms no direct utility imports, but transitive emission remains WARN and runtime activation is unverified. [Audit and exact limits](docs/NO_MOCKS_IN_PRODUCTION.md). Local-only commit; no push/deploy/on-chain actions.
 
 - Any connected wallet can review/sign supported actions through its own wallet on **Tokyo 50383**. Agent policy is separate: no keys, signing, broadcasting, fund movement, claims or push performed in this release work.
 - IOC enum 2, limit 0 and **300-second expiry** preserved. A confirmation is not a fill; opposite-side closes are not protocol-guaranteed reduce-only. Historical 720s DOGE request remains outside current product work/unimplemented.

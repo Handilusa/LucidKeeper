@@ -167,7 +167,7 @@ node scripts/audit-release.mjs
 
 ### Testing
 
-Automated tests use an isolated wallet/RPC harness under test/; it is not part of the shipped app. [Production data audit](docs/NO_MOCKS_IN_PRODUCTION.md) records the exclusion checks, conditional data/label failures and vendor mock/test utilities that do ship.
+Automated tests use an isolated wallet/RPC harness under test/; it is not part of the shipped app. [Production data audit](docs/NO_MOCKS_IN_PRODUCTION.md) preserves the original failures and records their local fixes: incomplete financial/history observations are unavailable, unknown pool units are rejected, and hypothetical previews/diagrams are explicitly illustrative. Vendor mock/test utilities still ship; this is not a blanket mock-free certification.
 
 Real-chain evidence: deposit, DOGE order and close tx hashes with explorer links. **The close below is historical BTC, not DOGE; no verified DOGE close hash is recorded.** The 30 October deposit and DOGE FOK execution were owner-relayed, not demonstrated execution through this UI.
 

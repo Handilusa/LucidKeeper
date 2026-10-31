@@ -31,7 +31,7 @@ for (const width of [375, 768, 1280, 1920]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.emulateMedia({ reducedMotion: 'no-preference' }); await page.goto('/');
     await expect(page.locator('.landing')).toHaveAttribute('data-motion', 'on');
-    await expect(page.getByRole('list', { name: 'Illustrated six-step trading lifecycle' }).locator('li')).toHaveCount(6);
+    await expect(page.getByRole('list', { name: 'illustrative six-step trading lifecycle' }).locator('li')).toHaveCount(6);
     for (const link of await page.getByRole('link', { name: /Launch App/ }).all()) await expect(link).toHaveAttribute('href', '/app');
     const graphic = page.locator('.architecture-map'); await graphic.scrollIntoViewIfNeeded();
     await expect(graphic).toHaveAttribute('data-flow-visible', 'true');

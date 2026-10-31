@@ -587,6 +587,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       )}
 
       <div className="guardian-stress">
+      <p className="text-[11px] text-slate-400 font-mono">illustrative stress preview · not live portfolio health</p>
       {/* Selected-market scenario, distinct from the overview's portfolio health. */}
       <div className="guardian-control-section space-y-3">
         <div className="flex items-center justify-between font-mono text-xs">
@@ -630,7 +631,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
           <div className="flex items-center space-x-2">
             <span className="text-slate-300 font-bold">Hypothetical Stress Simulator:</span>
             <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] uppercase font-bold">
-              What-If Simulation Only
+              illustrative · What-If Simulation Only
             </span>
           </div>
           <span className="text-cyan-400 font-bold">

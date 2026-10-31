@@ -1,5 +1,53 @@
 # Production data / mock-isolation audit
 
+## Remediation — 31 October 2026
+
+**The three requested failure groups now PASS locally.** This supersedes F1–F5 below for the tested remediation on `feat/landing-and-profile`, based on `4e0dc74`; the original FAIL-first audit and its evidence are preserved as historical findings. This document accompanies the local-only remediation commit; obtain its exact identity with `git rev-parse HEAD`. No push or deployment is claimed.
+
+| Requested group | Fix / verification | Result |
+| --- | --- | --- |
+| Missing values become zero/epoch; unknown units assume 8 decimals (F1/F2) | `src/lib/data/observations.ts` validates required fields before conversion. Indexed fills/orders require catalogue-resolved pools; prices and quantities use that pool's quote/base decimals. RPC margin logs require decoded amount, account, hash and block identity. Missing/malformed data rejects rather than producing display rows; explicit returned zero/epoch remains distinct from absence. | **PASS** |
+| Missing history arrays appear successfully empty (F3) | Both `Fill` and `MarginEvent` must be arrays on every page. Missing arrays raise an unavailable state; actual returned empty arrays remain valid. RPC failure cannot certify empty indexed history. Versioned indexed caches store raw responses and revalidate them; old transformed caches are retained but not read. Nonempty fallback records remain explicitly limited/cached. | **PASS** |
+| Hypothetical previews and diagrams lack literal “illustrative” (F4/F5) | Visible literal labels now qualify Guardian stress, netting/liquidation previews, chart liquidation references, portfolio explanation and landing lifecycle/workflow/consensus diagrams. Existing scenario exclusions and actual-position prerequisites are unchanged. | **PASS** |
+
+Checks completed:
+
+- `npm test`: **109 passed / 19 historical skipped / 0 failed** (128 cases), including ten reader/cache regressions in `test/history-observations.test.mjs`. Tests bundle actual production readers in memory; controlled data never enters production sources.
+- App typecheck, E2E typecheck and lint: **PASS**. `npm run build`: **PASS**, 10.95s; existing dependency annotations and large-chunk warnings remain.
+- `npx playwright test test/e2e/history-integrity.spec.ts`: **9/9 PASS**. Verifies unavailable versus empty/zero, pagination, incomplete orders and visible labels at 375/1440px. Screenshots inspected; full-page sticky-header capture overlap is not a new label-layout defect.
+- Fresh byte/source checks: **197 dist files**, **18 excluded harness/fixture markers**, **9 required label strings present**, no source test imports or shipped test/map paths. Local artifact: `.git/lucidkeeper-audit/no-mocks-remediation-bundle-2026-10-31.json`.
+- Full `npx playwright test` rerun: **97 passed / 0 skipped / 0 failed**, 2.5 minutes, against the same production build. Accepted output: `.git/lucidkeeper-audit/no-mocks-remediation-final-2026-10-31/`. Initial full attempt retained under `.git/lucidkeeper-audit/no-mocks-remediation-chromium-2026-10-31/`: two new tests used a nonexistent spinbutton selector and the shell timed out. Tests were corrected to use the existing quantity field and actual mobile/disclosure controls; no production workaround was added.
+
+**Remaining WARNs:** vendor `createTestClient`, `Mock Connector` and Reown `mocked-quote-id` are still emitted; the fresh static import evidence below does not verify runtime activation. DOGE close evidence is still missing; the recorded BTC close is not a DOGE close. No new all-market on-chain attestation, deployed-parity check, signing, broadcasting, push or deployment. Existing contract addresses, execution arithmetic, IOC/limit encodings, expiry and historical receipts are unchanged.
+
+### Current W1 evidence — 31 October 2026, 17:56:21 UTC
+
+**WARN: third-party utility code ships transitively; no direct project utility import was found.** Normal package imports are present: `src/app/Providers.tsx:2,5` imports `wagmi` and `@rainbow-me/rainbowkit`; `src/chain/wagmiConfig.ts:1,3` uses RainbowKit `getDefaultConfig` and wagmi `http`; `src/lib/data/observations.ts:1` imports viem `formatUnits`. We do **not** assert that these packages are never imported.
+
+| Third-party package / inspected utility | Current emitted chunk / marker | Project-import evidence |
+| --- | --- | --- |
+| `viem@2.57.11`: `node_modules/viem/_cjs/clients/createTestClient.js:3–16`, `node_modules/viem/_cjs/actions/test/setBalance.js:5–14` | `dist/assets/index-C9eePQGN.js`: `createTestClient`, `evm_setAccountBalance` | No direct utility import or test-client selection in the project scan. Graph: Providers → RainbowKit → wagmi connectors → Safe provider/SDK → viem CommonJS barrel → test client/actions. |
+| `@wagmi/core@2.22.1`: `node_modules/@wagmi/core/dist/esm/connectors/mock.js:5–15` | `dist/assets/en_US-SK3WV2N3-CHcojZ0S.js`: `Mock Connector` | No direct `@wagmi/core` or mock-connector import in the project scan. Graph: `src/app/App.tsx` → wagmi barrel → `@wagmi/core` barrel → mock connector. Production configuration does not explicitly select `mock`. |
+| `@reown/appkit-controllers@1.7.8`: `node_modules/@reown/appkit-controllers/dist/esm/src/controllers/BlockchainApiController.js:416–445` | `dist/assets/core-iVj5EKJB.js`: `mocked-quote-id` | No direct controller/package import in the project scan. Graph: Providers → RainbowKit → wagmi WalletConnect connector/provider → Reown AppKit → controllers barrel → BlockchainApiController. |
+
+Fresh TypeScript-AST import/export/dynamic-import/require inventory: **70 JS/TS/MJS production/config files, 285 import statements**, zero direct utility imports and zero project test imports. Full-line searches also found zero `createTestClient`, `testActions`, `Mock Connector`, `mocked-quote-id`, `BlockchainApiController`, `@wagmi/core`, `@reown/appkit-controllers`, viem test-utility paths or wagmi mock paths in those files; separate searches of `public/` code/HTML and root `index.html` found none. Normal `viem`, `wagmi` and RainbowKit imports are recorded, not suppressed.
+
+Fresh Vite module graph uses **`write:false`, `envFile:false`**: **8,132 loaded / 2,594 included / 2,599 emitted modules**, **67 emitted first-party source modules**, zero loaded project test modules and zero direct first-party importers of the four physical vendor utility modules. Their transitive source traces and chunk rendered lengths are recorded. Existing emitted files contain the markers above. Source/import evidence and graph edges substantiate direct-import absence; keyword absence alone would not.
+
+Local evidence: `.git/lucidkeeper-audit/no-mocks-vendor-closure-2026-10-31T17-56-21-527Z.json` contains package versions, complete normal-package import inventory, graph traces/chunk mappings and hashed vendor excerpts. Run `node .git/lucidkeeper-audit/no-mocks-vendor-closure-2026-10-31.mjs` in this local audit workspace to create a **new timestamped** report; historical JSON remains untouched. This metadata is intentionally not published or shipped, so a fresh clone does not include the audit script/report.
+
+**Current Reown correction / verification limit:** lines 436–445 catch an onramp quote error and return the caller's `amount` for fees/payment/purchase fields plus `quoteId: 'mocked-quote-id'`. The inspected implementation has **no `exchangeRate: "1"` field**; that wording in preserved historical W1 is not supported by this fresh read. Whether any of these vendor paths is activated by a real LucidKeeper user was **not verified**. Emission is not activation, nor proof of fabricated perps observations.
+
+### Requested skipped-scenario replay — 31 October 2026, 18:02:42 UTC
+
+Only the **19 historical skipped scenario equivalents** were exercised in a new local-only assertion harness: **19 passed / 0 skipped / 0 failed, 168 assertions**. Thirteen cases bundle the actual broadcaster in memory with controlled recovery/RPC/send/evidence/policy boundaries; four use actual wire validation/boundary rejection with already-mined public transaction fields kept in memory; one checks actual SDK/Tokyo network plus the writer rebased to Git metadata; one checks a controlled placement-only log subset. No signing, live send or wallet operation occurs.
+
+The original published skip registrations are empty historical markers, not executable assertions. They remain unchanged to preserve the exact 16-path commit scope; removing their skip flags would falsely turn empty callbacks into PASS. This replay therefore does **not** change the earlier full-suite total of **109 passed / 19 historical skipped**, and does not certify genuine resting-only receipt provenance or live send/race outcomes. The **97/97** accepted Chromium run is unchanged; passing tests were not rerun in this closure.
+
+Accepted script/report: `.git/lucidkeeper-audit/skipped-scenarios-2026-10-31T18-02-34-077Z.mjs` and `skipped-scenarios-2026-10-31T18-02-40-297Z.json`. Initial replay `skipped-scenarios-2026-10-31T18-00-44-721Z.json` is preserved: **18 passed / 1 failed** because the local harness's evidence-string assertion omitted a BigInt serializer. The corrected harness is a new timestamped file; no production change or historical artifact overwrite was used to obtain PASS.
+
+## Original FAIL-first audit — historical, before remediation
+
 **31 October 2026 · Overall: FAIL under the requested strict criteria.** The project test harness is excluded, but malformed-response defaults can become displayed financial values, and hypothetical UI does not contain the required literal **“illustrative”** label. No seeded live balances, fabricated trader cohort, random financial generator or project-harness execution path was found. These are different conclusions, not a blanket mock-free certification.
 
 Audited source: `170bc44f204203d164526add46b37e614f7dec84`, branch `main`, initially clean. Scope: `src/`, `public/`, root `index.html`, build configuration and freshly rebuilt `dist/`. This is a read-only production audit: **no production fixes, wallet connection, transaction preparation, signing, broadcasting, push or deployment**. Only this report and the README Testing note are publication changes.
