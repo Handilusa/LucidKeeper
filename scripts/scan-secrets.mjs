@@ -29,6 +29,8 @@ const KNOWN_SAFE_HASHES = new Set([
   '0x0160c213facebb7e00a2d2c680427098d127ba4aa04c0867d3d4e8bfdb2edb6d'.toLowerCase(),
   // Somnia Tokyo genesis hash
   '0x2b2ebef7db781fc01d1fa75ff13dbba2e6cfa3fbc865d4fa394df183bdca36fb'.toLowerCase(),
+  // Pinned Somnia Tokyo block hash in DOGE close plan
+  '0x5901affd7090e02bde42a6934eb0216b8a99a5c547e03137d66507664afb215c'.toLowerCase(),
 ]);
 
 let findingsCount = 0;
