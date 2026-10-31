@@ -1,16 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { ALL_VERIFIED_PERP_MARKETS } from '../../src/lib/data/markets';
-import { terminalFixture, assertObservedPortfolio, assertReadOnly } from './terminal-fixture';
+import { A, mockWallet, connectMock } from './mock-wallet';
 
-test('switching away from an observed position disposes chart overlays cleanly', async ({ page }, testInfo) => {
-  const state = await terminalFixture(page);
-  await page.goto('/app');
-  test.skip(await page.locator('.guardian-identity h2').textContent() === 'Connect wallet to view risk', 'Requires a real connected wallet: disconnected visits no longer inspect bounty positions. Historical overlay regression retained, no wallet injection.');
-  const snapshot = await assertObservedPortfolio(page, state);
-  const openPool = Object.entries(snapshot.positions).find(([, size]) => BigInt(size) !== 0n)?.[0];
-  test.skip(!openPool, 'No real open position available to exercise overlay disposal.');
-  const active = ALL_VERIFIED_PERP_MARKETS.find(market => market.poolAddress.toLowerCase() === openPool)!;
-  const other = ALL_VERIFIED_PERP_MARKETS.find(market => market.poolAddress !== active.poolAddress)!;
+test('switching away from a test position disposes chart overlays cleanly', async ({ page }) => {
+  const state = await mockWallet(page); state.accounts[A].size = 10000n;
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await connectMock(page);
   const select = async (symbol: string) => {
     await page.getByRole('combobox', { name: 'Select perpetual market' }).click();
     await page.getByRole('option', { name: `${symbol}-PERP`, exact: true }).click();
@@ -18,13 +12,11 @@ test('switching away from an observed position disposes chart overlays cleanly',
     await expect(page.locator('.chart-ohlc time')).toBeVisible();
   };
   for (let cycle = 0; cycle < 2; cycle++) {
-    await select(active.baseSymbol);
+    await select('BTC');
     await expect(page.locator('.chart-reference [title^="Portfolio snapshot block"]')).toContainText('Entry');
-    await select(other.baseSymbol);
-    // A disposed series used to queue a paint that threw on the following frame.
+    await select('ETH');
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await page.getByRole('button', { name: 'Reset chart view' }).click();
-    await assertReadOnly(state);
   }
-  await testInfo.attach('observed-pinned-portfolio', { body: JSON.stringify(snapshot, null, 2), contentType: 'application/json' });
+  expect(errors).toEqual([]); expect(state.writes).toEqual([]);
 });

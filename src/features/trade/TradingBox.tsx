@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
+import { useAccount, useWriteContract, useReadContract, usePublicClient } from 'wagmi';
+import { useTokyoReceipt } from '@/lib/useTokyoReceipt';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatUnits, parseUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
@@ -144,7 +145,7 @@ export function TradingBox({
   }, [lastEdited, quantity, executionPrice, leverage, orderType]);
 
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash, chainId: 50383 });
+  const receipt = useTokyoReceipt(hash);
   const isConfirming = receipt.isLoading;
   const confirmed = receipt.data?.status === 'success';
   const notifiedHash = useRef<string | null>(null);

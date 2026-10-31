@@ -1,6 +1,16 @@
-# Test data and coverage gaps — 2026-10-30
+# Test data and coverage gaps — 2026-10-31
 
-No fabricated successful wallets, balances, prices, fills, receipts or RPC responses are permitted. No financial module mocks, provider injection or response fulfillment remain. Deliberately malformed validator inputs and explicitly labeled mathematical scenarios are not financial observations. The explicitly authorized isolated HOLD-state injection below changes policy state only, not financial data or production gate implementations.
+Production data is never fabricated. The user's release-blocker directive authorizes **test-only** injected EIP-1193 wallets and controlled RPC/GraphQL outcomes. No secrets, generated keys, signing or live sends. Real-service tests remain distinct from offline controlled tests; neither proves actual second-wallet funding or live execution.
+
+## Current controlled coverage — 31 October 2026
+
+- `test/e2e/mock-wallet.ts` announces an EIP-6963 injected provider through the production connector path. Two fake addresses (`0x1111…1111`, `0x2222…2222`), balances, prices, nonces, receipts, candles and margin events are explicitly modeled inside tests only. The provider rejects unsupported methods; all external HTTP is intercepted or aborted. No production mock switch/connector or fixture fallback exists.
+- `multi-wallet.spec.ts`: connection/live switching, verified Tokyo add/switch, disconnect, exact7 USDso approval→successful receipt→deposit, rejection/insufficient assets/gas, IOC open/close, revert/simulation failure, Guardian account isolation/trigger/reload, switch-during-approval race, no-fill confirmation and declined unsigned review.
+- The former **17 browser skips** are runnable controlled tests now. Expanded sizing, share PNG, chart failure/empty/old, history pagination, unavailable mark/fee, funding reverts, withdraw, pending receipt, partial close, failed-refresh isolation, limit review, block pinning, reduced motion and overlay disposal. Titles describe actual narrower assertions: slow-read timeout, all history failure combinations and four-hour funding are not silently certified by different checks.
+- Two unit skips are runnable again: funding ceiling-rounding arithmetic and zero nonce/priority fee. They use labeled mathematical/envelope inputs, not observations. **19 unit/service skips remain**:13 historical offline broadcaster branches,4 historical raw-signature scenarios,1 combined migrated network/filesystem marker and1 genuinely sourced resting-only receipt gap. They are not passing; browser test results do not cover these offline tooling branches.
+- [Human QA and unresolved acceptance cases](MANUAL_QA.md). Current final counts are in [STATUS](../STATUS.md). Earlier statements below describe the former no-double audit, not current restrictions or coverage.
+
+## Historical no-double audit (superseded methodology)
 
 ## Sources
 
@@ -33,6 +43,23 @@ The previous scenarios remain named in the test runner. Their controlled outcome
 
 Only the expressly authorized isolated restored-HOLD state injection above is used in tests; there is no production override or financial/RPC substitution. The owner's wallet-scoped release is a production policy decision, not transaction approval. Coverage gaps are release/demo limitations, not proof of safe live execution. Public captures are historical, not current balances or positions.
 
-## Latest verification totals
+## Historical verification totals — 30 October
 
 30 October full-suite rerun at clean `c49bdec`: **56 passed / 21 skipped / 0 failed**, 77 cases/14 files. With three additional HOLD/boundary regressions: **59 passed / 21 skipped / 0 failed**, 80 cases/14 files, including actual services. Prior real-service browser verification remains **14 passed / 16 skipped / 0 failed**, not rerun in this test update. Prior 66/66 and 30/30 double-based results remain historical only. Partial-close/IOC captures do not prove a live close or protocol reduce-only protection.
+
+## Account isolation — 31 October 2026
+
+- `account-scope.test.mjs` adds six pure/captured/source cases: absent/invalid identities, account/network lifetimes, wallet-scoped storage, stale reviewed-wallet rejection, real TanStack Query cache/observer separation and production fallback/dispatch wiring. Captured data is assigned only to the real test cache; no financial/RPC function or wallet provider is substituted.
+- `test/e2e/account-scope.spec.ts` checks disconnected terminal/profile at 375/1440px with actual market/candle reads, zero account requests and legacy leverage isolation. The shared real-service observer now records account RPC/GraphQL requests; it does not fabricate responses.
+- Existing disconnected trading expectations now require no selected account. `chart-lifecycle.spec.ts` remains retained but skips without a connected wallet: the previous disconnected bounty watch mode no longer exists. Its historical nonempty regression result is not claimed as current coverage.
+- Full `npm test`, **31 October 11:21 UTC**: **72 passed / 21 skipped / 0 failed**, 93 cases. Full Playwright: **22 passed / 17 skipped / 0 failed**; includes existing terminal palette checks. Build/typecheck/lint/server syntax pass. Initial browser **20 passed / 17 skipped / 2 failed** reflected mobile trigger/ambiguous connection-button selectors; corrected selectors, not production data, and passing rerun artifacts retained at `.git/lucidkeeper-audit/account-scope-browser-fixed/` alongside the initial run.
+- Additional HTTP/production-source GraphQL queries **11:22 UTC** use actual public services: five HTTP cases verify explicit/default/invalid identities and no-store; owned history returns 15 fills/21 margin events, foreign pool read identity returns none. Active-order schema succeeds but both responses are empty. Artifact `.git/lucidkeeper-audit/account-scope-public-reads-2026-10-31T11-22-09.928Z.json`. Initial probe sent unnecessary limit/offset variables to the active-order query and was rejected; that audit-only error is retained in `account-scope-public-reads.json`, corrected without changing the production query.
+- Real connected-wallet switches, live review/dispatch races, armed Guardian transitions and nonempty order parsing remain unverified. No signing, sending, response fulfillment or wallet injection in this task. Query keys prevent old-owner completions populating a different owner's observer; this is not an end-to-end transaction race certification.
+
+## Latest overall verification — 31 October 2026
+
+- Full `npm test`11:27UTC: **72 passed / 21 skipped / 0 failed**. Typecheck/lint and supplemental E2E types pass. Full Playwright11:30UTC: **22 passed / 17 skipped / 0 failed / 0 flaky**, build included. First fresh run21/17/1 failed only the obsolete title regex; assertion corrected to the correct route title, original trace/log preserved.
+- `npm run test:coverage`11:32UTC: **14 passed / 2 skipped**, five loaded library files, **78.16% lines / 78.08% branches / 75% functions**. Its two-file scope excludes React, transaction race branches and most libraries; not app-wide100% coverage, and overlaps full-suite registrations.
+- Standalone routes:16 states/fourwidths, zeroaxe/overflow/errors/writes. Lifecycle/landing/app motion checks pass. App-position PNG/toast and connected profile alias/history/windows/CSV/PNG/read-error recovery are **omitted, not passing**; disconnected profile/modal/zero account-service requests pass. Retained connected audit code is not executed by a fresh disconnected browser.
+- Pure/cache tests use public captured addresses, including a pool address as a foreign read identity—not two real connected wallets. Actual HTTP/GraphQL isolation and empty-order observations are dated11:22UTC. Connected switching, network/review races, full execution/fill reconciliation and armed Guardian require separate controlled validation. No load/concurrency/soak tests exist in this acceptance record.
+- `npm audit` and runtime-only audit both exit1; see [triage](DEPENDENCY_TRIAGE.md). Historical secret/performance/deployment checks were not rerun. [Overall verdict and exact artifact paths](PRE_PUSH_AUDIT.md).

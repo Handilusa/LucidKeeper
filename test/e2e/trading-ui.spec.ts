@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { terminalFixture, assertReadOnly, assertDisconnectedAccount } from './terminal-fixture';
+import { A, B, mockWallet, connectMock, walletEvent } from './mock-wallet';
+import { decodeFunctionData } from 'viem';
+import { perpPoolAbi } from '../../src/chain/abis';
 test('rendered product branding is consistently LucidKeeper', async ({ page }) => {
   const state = await terminalFixture(page); await page.goto('/app');
   await expect(page).toHaveTitle('Trade | LucidKeeper');
@@ -100,22 +103,127 @@ test('robust scale discloses candle outliers, full range is reversible and origi
   await page.getByRole('button', { name: 'Robust scale', exact: true }).click(); await expect(ohlc).toHaveText(original!);
   await assertReadOnly(state);
 });
-// Every former controlled wallet/failure/financial scenario remains explicitly listed.
-for (const title of [
-  'connected input validation, side, leverage, Max and minimum budget disclosure',
-  'share dialog draws canvas and exports a PNG without claiming verification',
-  'chart failure, retry, empty and old executions are explicit',
-  'empty and failed history pages retain Previous and isolate their cache',
-  'stale mark and failed account reads disable order execution',
-  'wrong network blocks execution and existing switch action recovers',
-  'mock collateral sequencing: successful receipts',
-  'mock collateral sequencing: approve',
-  'mock collateral sequencing: deposit',
-  'wallet rejection, submitted receipt and confirmation stay distinct from fills',
-  'partial close dialog and risk controls preserve requested-versus-filled semantics',
-  'cached balances survive failed refresh, recover and stay scoped to the connected account',
-  'failed initial reads show unavailable rather than stale zero and fee reads fail closed',
-  'funding normalizes a four-hour contract window and simulation failure never reaches the wallet',
-  'portfolio health and overlays share a pinned block; Guardian settings isolate accounts and networks',
-  'price motion is directional, bounded and disabled by reduced motion; slow reads offer recovery',
-]) test(title, async () => { test.skip(true, 'Needs a real connected signer/nonempty position or separately approved controlled wallet/network outcome. No provider injection, synthetic responses or live writes in this suite. See docs/TEST_DATA_SOURCES.md.'); });
+test('controlled connected input validates quantity, side, leverage and Max', async ({ page }) => {
+  const state = await mockWallet(page); await connectMock(page);
+  await page.getByLabel('Quantity', { exact: false }).fill('0');
+  await expect(page.locator('.submit-order')).toBeDisabled();
+  await page.getByLabel('Quantity', { exact: false }).fill('0.0001');
+  await page.getByRole('button', { name: 'Short / Sell', exact: true }).click();
+  await expect(page.locator('.submit-order')).toContainText('Sell / Short BTC');
+  await page.getByRole('button', { name: '10×', exact: true }).click();
+  await expect(page.getByLabel('Sizing leverage', { exact: true })).toHaveValue('10');
+  await page.getByRole('button', { name: 'Max', exact: true }).click();
+  await expect(page.getByLabel('Quantity', { exact: false })).not.toHaveValue('0');
+  expect(state.writes).toEqual([]);
+});
+test('controlled share canvas exports PNG with snapshot disclaimer', async ({ page }) => {
+  const state = await mockWallet(page); state.accounts[A].size = 10000n; await connectMock(page);
+  await page.getByRole('button', { name: 'Share BTC position' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Share position' });
+  await expect(dialog.getByRole('img')).toHaveAttribute('aria-label', /not proof of realized PnL/);
+  const download = page.waitForEvent('download'); await dialog.getByRole('button', { name: 'Download PNG' }).click();
+  expect((await download).suggestedFilename()).toBe('LucidKeeper-BTC-Position.png');
+  expect(state.writes).toEqual([]);
+});
+test('controlled chart failure retries to empty and then old executions', async ({ page }) => {
+  const state = await mockWallet(page); state.candleMode = 'error'; await connectMock(page);
+  await expect(page.getByRole('button', { name: 'Retry chart', exact: true })).toBeVisible({ timeout: 15_000 });
+  state.candleMode = 'empty'; await page.getByRole('button', { name: 'Retry chart', exact: true }).click();
+  await expect(page.getByText('No executions in this timeframe', { exact: true })).toBeVisible();
+  state.candleMode = 'old'; await page.getByRole('combobox', { name: 'Select perpetual market' }).click();
+  await page.getByRole('option', { name: 'ETH-PERP', exact: true }).click();
+  await expect(page.getByText('No recent indexed executions', { exact: true })).toBeVisible();
+});
+test('controlled empty history page retains Previous and account switch resets pages', async ({ page }) => {
+  const state = await mockWallet(page); state.historyCount = 20; await connectMock(page);
+  await page.getByRole('tab', { name: 'Trade history' }).click();
+  await expect(page.locator('.history-row')).toHaveCount(20);
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByText('Page 2', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Previous', exact: true })).toBeEnabled();
+  await walletEvent(page, 'account', B); await page.getByRole('tab', { name: 'Trade history' }).click();
+  await expect(page.getByText('Page 1', { exact: true })).toBeVisible();
+});
+test('controlled unavailable mark prevents initial execution', async ({ page }) => {
+  await mockWallet(page).then(state => { state.markFailure = true; });
+  await page.goto('/app'); await page.getByRole('button', { name: 'Connect wallet', exact: true }).click(); await page.getByRole('button', { name: /MetaMask/ }).click();
+  await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('0x1111');
+  await expect(page.locator('.submit-order')).toBeDisabled();
+});
+test('controlled wrong-network block recovers after switching', async ({ page }) => {
+  const state = await mockWallet(page); await connectMock(page); await walletEvent(page, 'chain', '0xc488');
+  await expect(page.locator('.submit-order')).toBeDisabled(); expect(state.writes).toEqual([]);
+  await page.getByRole('button', { name: 'Switch to Somnia Tokyo testnet' }).click();
+  await expect(page.locator('.submit-order')).toBeEnabled();
+});
+for (const stage of ['approve', 'deposit'] as const) test(`controlled ${stage} reverted receipt stops funding success`, async ({ page }) => {
+  const state = await mockWallet(page); if (stage === 'deposit') state.accounts[A].allowance = 7n * 10n ** 18n;
+  state.revertNext = true; await connectMock(page); page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Manage margin collateral' }).click(); await page.getByLabel('Amount', { exact: true }).fill('7');
+  await page.getByRole('button', { name: 'Deposit 7 USDso' }).click();
+  await expect(page.getByRole('dialog', { name: 'Manage collateral' })).toContainText('reverted');
+  expect(state.writes).toHaveLength(1); expect(state.accounts[A].margin).toBe(20n * 10n ** 18n);
+});
+test('controlled withdrawal uses selected amount and updates only its account', async ({ page }) => {
+  const state = await mockWallet(page); await connectMock(page); page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Manage margin collateral' }).click(); await page.getByRole('button', { name: 'Withdraw', exact: true }).click();
+  await page.getByLabel('Amount', { exact: true }).fill('7'); await page.getByRole('button', { name: 'Withdraw 7 USDso' }).click();
+  await expect(page.getByRole('dialog', { name: 'Manage collateral' })).toContainText('Withdrawal transaction confirmed');
+  expect(state.accounts[A].margin).toBe(13n * 10n ** 18n); expect(state.accounts[B].margin).toBe(70n * 10n ** 18n);
+});
+test('controlled wallet rejection has no hash; pending receipt has hash but no fill claim', async ({ page }) => {
+  const state = await mockWallet(page); await connectMock(page); page.on('dialog', dialog => dialog.accept()); state.rejectNext = true;
+  await page.locator('.submit-order').click(); await expect(page.locator('.order-entry .transaction-status')).toContainText('Request declined');
+  expect(state.writes).toHaveLength(0); state.holdReceipts = true; await page.locator('.submit-order').click();
+  await expect(page.locator('.order-entry .transaction-status')).toContainText('waiting for receipt');
+  await expect(page.locator('.order-entry .transaction-status a')).toHaveAttribute('href', /\/tx\/0x[0-9a-f]{64}$/);
+  expect(state.accounts[A].size).toBe(0n);
+});
+test('controlled partial close dialog reviews half of fresh remaining size', async ({ page }) => {
+  const state = await mockWallet(page); state.accounts[A].size = 40000n; await connectMock(page); page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Partial', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Partial close · BTC-PERP' })).toContainText('Requested reduction');
+  await page.getByRole('button', { name: 'Submit 50% close order', exact: true }).click();
+  await expect.poll(() => state.accounts[A].size).toBe(20000n);
+});
+test('controlled failed refresh hides account data then recovers without leaking to B', async ({ page }) => {
+  const state = await mockWallet(page); await connectMock(page); state.accountFailure = true;
+  await page.getByRole('button', { name: 'Refresh activity' }).click();
+  await expect(page.locator('.submit-order')).toBeDisabled({ timeout: 20_000 });
+  state.accountFailure = false; await walletEvent(page, 'account', B);
+  await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('300.00');
+  await expect(page.getByRole('region', { name: 'Account funds' })).not.toContainText('200.00');
+});
+test('controlled initial fee read failure blocks orders rather than assumes zero fee', async ({ page }) => {
+  const state = await mockWallet(page); state.feeFailure = true; await page.goto('/app');
+  await page.getByRole('button', { name: 'Connect wallet', exact: true }).click(); await page.getByRole('button', { name: /MetaMask/ }).click();
+  await expect(page.locator('.submit-order')).toBeDisabled(); expect(state.writes).toEqual([]);
+});
+test('controlled limit review retains enum zero and existing five-minute expiry', async ({ page }) => {
+  const state = await mockWallet(page); await connectMock(page); page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Limit', exact: true }).click(); await page.getByLabel('Limit price', { exact: true }).fill('80000');
+  await page.locator('.submit-order').click(); await expect(page.locator('.order-entry .transaction-status')).toContainText('Confirmed');
+  expect(state.writes).toHaveLength(1); expect(state.accounts[A].size).toBe(0n);
+  const order = decodeFunctionData({ abi: perpPoolAbi, data: state.writes[0].data });
+  expect(order.functionName).toBe('placeOrder');
+  if (order.functionName === 'placeOrder') {
+    expect(order.args[5]).toBe(0);
+    const remaining = Number(order.args[4] / 10n ** 9n) - Math.floor(Date.now() / 1000);
+    expect(remaining).toBeGreaterThan(280); expect(remaining).toBeLessThanOrEqual(300);
+  }
+});
+test('controlled portfolio reads pin health and positions to the same block', async ({ page }) => {
+  const state = await mockWallet(page); state.accounts[A].size = 10000n; await connectMock(page);
+  const reads = state.contractReads.filter(read => ['getAccountHealth', 'getAccountState', 'getPosition'].includes(read.name));
+  expect(reads.some(read => read.name === 'getPosition')).toBe(true);
+  // Standalone balances use latest; the portfolio snapshot explicitly pins all three.
+  for (const name of ['getAccountHealth', 'getAccountState', 'getPosition']) expect(reads.some(read => read.name === name && read.block === '0x64')).toBe(true);
+  await page.locator('#risk > summary').click(); await expect(page.locator('#risk')).toContainText('DISARMED');
+  await walletEvent(page, 'chain', '0xc488'); await page.locator('#risk > summary').click(); await expect(page.locator('#risk')).toContainText('DISARMED');
+});
+test('controlled reduced motion applies to price updates without a wallet send', async ({ page }) => {
+  const state = await mockWallet(page); await page.emulateMedia({ reducedMotion: 'reduce' }); await connectMock(page);
+  state.mark += 100n * 10n ** 18n;
+  await expect(page.locator('.market-stat.primary .animated-value')).toHaveAttribute('aria-label', /80,100/, { timeout: 10_000 });
+  expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true); expect(state.writes).toEqual([]);
+});

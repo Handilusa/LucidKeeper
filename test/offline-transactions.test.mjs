@@ -23,7 +23,12 @@ test('schema boundary rejects missing/extra fields and malformed numeric input',
   for (const change of [{ nonce: -1 }, { gas: 'NaN' }, { value: '-1' }, { description: '' }, { accessList: [] }])
     assert.throws(() => validateUnsignedEnvelope({ ...envelope, ...change }, intent));
 });
-test('zero nonce/priority fee work without silently defaulting missing fields', { skip: 'No captured allowlisted transaction with zero priority fee; do not fabricate a wire fixture.' }, () => {});
+test('zero nonce/priority fee work without silently defaulting missing fields (test-only envelope)', () => {
+  const zero = { ...envelope, nonce: 0, fees: { ...envelope.fees, maxPriorityFeePerGas: '0' } };
+  assert.equal(validateUnsignedEnvelope(zero, intent), 'approve');
+  const missing = structuredClone(zero); delete missing.fees.maxPriorityFeePerGas;
+  assert.throws(() => validateUnsignedEnvelope(missing, intent));
+});
 test('allowlist binds exact funding selector, destination, spender and amount', () => {
   assert.equal(amount, TEST_MARGIN_AMOUNT);
   for (const record of [approval, capture.execution[1]]) {

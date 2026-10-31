@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShieldAlert, Volume2, VolumeX, ShieldCheck, ShieldOff, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { useAccount, useWriteContract, usePublicClient } from 'wagmi';
+import { useTokyoReceipt } from '@/lib/useTokyoReceipt';
 import { formatUnits, zeroAddress } from 'viem';
 import { CONTRACT_ADDRESSES, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
@@ -114,10 +115,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
   // Wagmi On-Chain Contract Execution
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const { isLoading: isConfirming, data: receipt } = useWaitForTransactionReceipt({
-    hash,
-    chainId: 50383,
-  });
+  const { isLoading: isConfirming, data: receipt, isError: receiptError } = useTokyoReceipt(hash);
   const isConfirmed = receipt?.status === 'success';
 
   // Keep a user's hypothetical price stable while live marks refresh.
@@ -574,7 +572,9 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
             ? 'Transaction reverted'
             : isConfirmed
               ? 'Transaction confirmed · check refreshed positions for actual fills'
-              : 'Submitted · awaiting receipt'}{' '}
+               : receiptError
+                 ? 'Receipt unavailable · check this hash before retrying'
+                 : 'Submitted · awaiting receipt'}{' '}
           ·{' '}
           <a
             href={`https://explorer.testnet.somnia.network/tokyo/tx/${hash}`}

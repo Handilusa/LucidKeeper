@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { formatUnits } from 'viem';
-import { computeUnrealizedPnl, computeNotional, computeReturnOnMarginBps } from '../src/lib/math/pnl.ts';
+import { computeUnrealizedPnl, computeNotional, computeReturnOnMarginBps, computeAccruedFunding } from '../src/lib/math/pnl.ts';
 import { computeMarginRequirements, classifyMarginStatus, computeHealthFactor } from '../src/lib/math/margin.ts';
 import { computeLiquidationPrice } from '../src/lib/math/liquidation.ts';
 import { formatPrice, formatTokenAmount, formatPercent, shortenAddress, quantizeToGrid } from '../src/lib/math/format.ts';
@@ -28,7 +28,14 @@ test('Funding and Return on Margin', () => {
   assert.equal(computeReturnOnMarginBps(pnl, margin), Number((pnl * 10000n) / margin));
   assert.equal(computeReturnOnMarginBps(pnl, 0n), null);
 });
-test('accrued funding rounding branch', { skip: 'Previous invented cumulative funding indexes removed; capture contains funding rate, not both required cumulative indexes.' }, () => {});
+test('accrued funding rounding branch (test-only mathematical inputs)', () => {
+  assert.equal(computeAccruedFunding(1n, 1n, 0n, 1n), 1n);
+  assert.equal(computeAccruedFunding(-1n, 1n, 0n, 1n), 0n);
+  assert.equal(computeAccruedFunding(1n, 10n ** 18n, 0n, 1n), 1n);
+  assert.equal(computeAccruedFunding(-1n, 10n ** 18n, 0n, 1n), -1n);
+  assert.equal(computeAccruedFunding(0n, 1n, 0n, 1n), 0n);
+  assert.equal(computeAccruedFunding(1n, 1n, 0n, 0n), 0n);
+});
 test('Liquidation: exact formula matches protocol behavior for Long and Short', () => {
   // Real account health and historical size as a hypothetical risk scenario.
   const input = { equity: BigInt(capture.account.health[0]), mmReq: BigInt(capture.account.health[2]), size, markPrice: mark, maintenanceMarginBps: BigInt(btc.parameters.maintenanceMarginBps), oneBase };

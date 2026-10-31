@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { useWriteContract, usePublicClient } from 'wagmi';
+import { useTokyoReceipt } from '@/lib/useTokyoReceipt';
 import { useQuery } from '@tanstack/react-query';
 import * as Tabs from '@radix-ui/react-tabs';
 import { formatUnits, zeroAddress } from 'viem';
@@ -115,7 +116,7 @@ export function PositionsTable({
     refetchInterval: 15000,
   });
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash, chainId: 50383 });
+  const receipt = useTokyoReceipt(hash);
   const busy = preparing || isPending || receipt.isLoading;
   const notified = useRef<string | null>(null);
   const lastClose = useRef<{ pos: PositionItem; percent: number; quantity: number } | null>(null);
