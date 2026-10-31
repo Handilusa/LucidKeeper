@@ -108,9 +108,23 @@ for (const width of [375, 1440]) {
     const proof = page.locator('#proof');
     for (const record of PROOF) await expect(proof.locator(`a[href="${PROJECT.explorer}/tx/${record.hash}"]`)).toHaveCount(1);
     await expect(proof).toContainText('FOK execution; owner-relayed');
-    const close = page.getByRole('complementary', { name: 'DOGE close evidence' });
-    await expect(close).toContainText('not yet recorded');
-    await expect(close.getByRole('link')).toHaveCount(0);
+    const avax = proof.locator('.proof-card').filter({ hasText: 'AVAX long fully filled' });
+    await expect(avax.getByRole('heading', { name: '4.8 AVAX' })).toBeVisible();
+    await expect(avax).toContainText('31 Oct 2026 18:26:46 UTC');
+    await expect(avax).toContainText('IOC orderType=2');
+    await expect(avax).toContainText('8.588 USDso');
+    await expect(avax).toContainText('41.2224 USDso notional (not margin)');
+    await expect(avax).toContainText('zero remaining quantity');
+    await expect(avax).toContainText('Owner-confirmed execution through the current product flow');
+    await expect(avax).toContainText('independently verified read-only by receipt, fill, account events and a later position snapshot');
+    await expect(proof).toContainText(PROJECT.account);
+    for (const market of ['AVAX', 'DOGE']) {
+      const close = page.getByRole('complementary', { name: `${market} close evidence` });
+      await expect(close.getByRole('heading', { name: `${market} close — pending` })).toBeVisible();
+      await expect(close.getByRole('link')).toHaveCount(0);
+    }
+    await expect(avax).not.toContainText(/profit|PnL|fee/i);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await proof.scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath('proof.png') });
     await live.click();

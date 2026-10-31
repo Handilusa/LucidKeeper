@@ -1,6 +1,6 @@
 # Landing claims and evidence
 
-Reviewed 30 October 2026. Network design claims are attributed to Somnia, not independently measured application performance.
+Reviewed 31 October 2026 (AVAX proof added; prior network sources retained). Network design claims are attributed to Somnia, not independently measured application performance.
 
 | Claim | Official source | Scope |
 | --- | --- | --- |
@@ -15,6 +15,8 @@ Reviewed 30 October 2026. Network design claims are attributed to Somnia, not in
 - [`public/assets/product/terminal.jpg`](../public/assets/product/terminal.jpg) is an actual local production terminal capture. [Capture metadata](../public/assets/product/capture.json) records its time and disconnected public-account scope. Balances/prices are historical, not live. Capture code uses public services without financial response replacements.
 - 30 October deposit: **2 USDso**, transaction `0xf0308d749b0401b9fa0f31149af3dbbaaf9ff5e22ff6d25cf056819d01b89fc9`, block **37388613**; Transfer and Deposited events.
 - 30 October DOGE execution: **120 DOGE sold at 0.07525 USDso**, transaction `0x023d5bc0ab40df5a96ae322b36115b1889847ed4112c031be4077c862cab4e4c`, block **37392617**. Owner-relayed, independently audited **FOK (1)**, not IOC (2), and not demonstrated execution through this UI. [Complete audit](audit/012-owner-relayed-fok-ioc-mismatch.md).
+- **31 Oct 2026 18:26:46 UTC AVAX long:** [0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e](https://explorer.testnet.somnia.network/tokyo/tx/0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e), block **38179383**, account **0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA**. Decoded **IOC orderType=2**; owned OrderPlaced and matching OrderFilled/account PositionUpdated events plus indexed fill agree: **4.8 AVAX fully filled at 8.588 USDso**, **41.2224 USDso notional (not margin)**, **zero remaining quantity**. Later pinned position at block **38182895** was **+4.8 AVAX**, average entry **8.588 USDso**. Verified read-only at **18:32:39 UTC**; no new PnL/fee or close/settlement claim. The owner confirms execution through the **current product flow**; chain data alone does not independently identify the submitting UI. Local full receipt/decoded calldata/indexed response/snapshot: `.git/lucidkeeper-audit/avax-long-verification-2026-10-31T18-32-39-478Z.json` (not shipped; explorer is the public transaction link).
+- **AVAX close — pending; DOGE close — pending.** Add no close hash until the owner supplies a verified one. The historical BTC close below is neither close.
 - Historical BTC close: `0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6`, recorded in [STATE](STATE.md). It does not close DOGE; no new independent close audit was performed for the landing.
 - [STATUS](../STATUS.md) retains receipt timestamps, execution stages, costs and audit limitations. Explorer links use `https://explorer.testnet.somnia.network/tokyo/tx/`.
 

@@ -27,12 +27,21 @@ export const PROOF = [
       '30 Oct 2026 · Filled at 0.07525 USDso. FOK execution; owner-relayed, independently audited.',
   },
   {
+    label: 'AVAX long fully filled',
+    value: '4.8 AVAX',
+    hash: '0x9be2d311c11b274a49d75000d694f664e2fc9076ea74584b39b338a42f3f049e',
+    detail:
+      '31 Oct 2026 18:26:46 UTC · IOC orderType=2, fully filled at 8.588 USDso; 41.2224 USDso notional (not margin), zero remaining quantity. Owner-confirmed execution through the current product flow; independently verified read-only by receipt, fill, account events and a later position snapshot.',
+  },
+  {
     label: 'Earlier BTC close',
     value: 'Close → settlement',
     hash: '0x1cb959157297e2bfb7ee3c8f8b8a53e6b460d3d0f0be20b8f41785f8f69587f6',
-    detail: 'Historical BTC close recorded in STATE.md. This is not a DOGE close.',
+    detail: 'Historical BTC close recorded in STATE.md. This is neither the AVAX close nor the DOGE close.',
   },
 ] as const;
+
+export const PENDING_PROOF_CLOSES = ['AVAX', 'DOGE'] as const;
 
 export const SOMNIA_SOURCES = {
   overview: 'https://docs.somnia.network/readme',

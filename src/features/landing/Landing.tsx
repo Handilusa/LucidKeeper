@@ -16,7 +16,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Brand, TestnetBadge } from '@/components/Brand';
-import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PROJECT, PROOF, SOMNIA_SOURCES } from '@/content/project';
+import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PENDING_PROOF_CLOSES, PROJECT, PROOF, SOMNIA_SOURCES } from '@/content/project';
 import { ReceiptValue, Reveal, useLandingMotion, useMotionPreference } from './LandingMotion';
 import { WorkflowGraphic } from './WorkflowGraphic';
 import './landing.css';
@@ -551,14 +551,20 @@ export default function Landing() {
                 </article>
               ))}
             </div>
-            <aside className="proof-close" aria-label="DOGE close evidence">
-              <h3>DOGE close — not yet recorded</h3>
-              <p>No verified close hash is available. The earlier BTC close above is a separate historical action, not the DOGE close. A Tokyo explorer link will be added only after an actual close is verified.</p>
-            </aside>
+            {PENDING_PROOF_CLOSES.map((market) => (
+              <aside className="proof-close" aria-label={`${market} close evidence`} key={market}>
+                <h3>{market} close — pending</h3>
+                <p>No verified close hash has been provided. The earlier BTC close is a separate historical action, not the {market} close. A Tokyo explorer link will be added only when the owner provides a verified close.</p>
+              </aside>
+            ))}
             <p className="source-note">
-              Historical evidence for the bounty EOA. The deposit and DOGE execution were
+              Historical evidence for account {PROJECT.account} on Somnia Tokyo, chain 50383.
+              The owner confirms AVAX execution through the current product flow (IOC=2);
+              independent read-only checks verify receipt, fill, account events and a later position
+              snapshot, not the submitting UI by themselves. The snapshot is not live state or
+              close/settlement evidence. The deposit and DOGE FOK short (orderType=1) were
               owner-relayed and subsequently audited; they are not proof of execution through this
-              UI. No verified DOGE close is recorded here.{' '}
+              UI. AVAX close and DOGE close are pending.{' '}
               <a href={`${PROJECT.github}/blob/main/STATUS.md`} target="_blank" rel="noreferrer">
                 Audit context ↗
               </a>
