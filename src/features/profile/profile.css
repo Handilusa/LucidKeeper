@@ -1762,3 +1762,152 @@
     transition: none !important;
   }
 }
+
+
+/* ==========================================================================
+   Connected Wallet Funds Panel & Chart Telemetry HUD
+   ========================================================================== */
+
+.profile-funds-panel {
+  margin-bottom: 28px;
+  background: linear-gradient(180deg, #12101c 0%, #0c0b12 100%);
+  border: 1px solid rgba(188, 147, 243, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  transition: border-color 200ms ease;
+}
+
+.profile-funds-panel:hover {
+  border-color: rgba(188, 147, 243, 0.28);
+}
+
+.funds-scope-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(18, 16, 27, 0.8);
+  border-bottom: 1px solid rgba(188, 147, 243, 0.1);
+}
+
+.funds-scope-beacon {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #60cf9f;
+  box-shadow: 0 0 8px rgba(96, 207, 159, 0.6);
+  flex-shrink: 0;
+}
+
+.funds-scope-text {
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: #a49cb5;
+}
+
+.profile-funds-panel .account-summary {
+  background: transparent !important;
+  border-bottom: none !important;
+  padding: 18px 20px !important;
+}
+
+.profile-funds-panel .account-heading {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: #ece8f5;
+  margin-bottom: 14px;
+}
+
+.profile-funds-panel .account-heading span.numeric {
+  color: #bc93f3;
+  font-weight: 600;
+}
+
+.profile-funds-panel .account-values {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .profile-funds-panel .account-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.profile-funds-panel .account-values dt {
+  font-size: 11px;
+  color: #8d849f;
+  margin-bottom: 4px;
+}
+
+.profile-funds-panel .account-values dd {
+  font-family: var(--font-mono, monospace);
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.profile-funds-panel .account-values dd small {
+  font-size: 11px;
+  color: #bc93f3;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* Chart Telemetry HUD */
+.chart-telemetry-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  background: rgba(18, 16, 27, 0.75);
+  border: 1px solid rgba(188, 147, 243, 0.12);
+  border-radius: 8px;
+}
+
+.hud-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.hud-metric-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #8d849f;
+}
+
+.hud-metric-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hud-timestamp {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: #8d849f;
+}
+
+.text-positive {
+  color: #60cf9f;
+}
+
+.text-negative {
+  color: #f4808b;
+}
+
+.text-violet {
+  color: #bc93f3;
+}
+
+.chart-crosshair {
+  pointer-events: none;
+}

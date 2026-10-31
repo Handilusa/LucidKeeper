@@ -74,12 +74,11 @@ export default function Profile({ requestedAddress }: { requestedAddress?: strin
       </a>
       <AppHeader page="portfolio" />
 
-      {connected && <ConnectedCollateralFunds key={accountSessionKey(connected, chainId)} account={connected} />}
-
       {account ? (
         <ProfileAccount
           key={`${accountSessionKey(account, chainId)}:${isOwner}`}
           account={account}
+          connected={connected}
           chainId={chainId}
           isOwner={isOwner}
           lookup={lookup}
@@ -181,6 +180,7 @@ export default function Profile({ requestedAddress }: { requestedAddress?: strin
 
 function ProfileAccount({
   account,
+  connected,
   chainId,
   isOwner,
   lookup,
@@ -188,6 +188,7 @@ function ProfileAccount({
   onLookupSubmit,
 }: {
   account: Address;
+  connected?: Address;
   chainId?: number;
   isOwner: boolean;
   lookup: string;
@@ -831,58 +832,14 @@ function ProfileAccount({
         {message && <span key={message}>{message}</span>}
       </p>
 
-      {/* 3. Account Capital & Margin Metrics Grid (Account Now) */}
-      <div className="profile-section-title">
-        <div>
-          <h2>Account now</h2>
-          <p>
-            {live ? (
-              <>
-                Pinned block{' '}
-                <a
-                  href={`${PROJECT.explorer}/block/${live.margin.asOfBlock}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {live.margin.asOfBlock.toString()} ↗
-                </a>{' '}
-                · {utc(live.observedAt / 1000)} UTC
-              </>
-            ) : snapshot.isPending ? (
-              'Reading MarginBank…'
-            ) : (
-              'Account read unavailable / stale. Refresh reads to retry.'
-            )}
-          </p>
-        </div>
-      </div>
-
-      <div className="account-metrics">
-        <Metric
-          label="Account equity"
-          pending={snapshot.isPending}
-          value={live ? units(live.margin.equity) : null}
-          note="MarginBank equity, not wallet balance"
+      {/* 3. Connected Wallet Collateral Funds & Quick Actions */}
+      {connected && (
+        <ConnectedCollateralFunds
+          key={accountSessionKey(connected, chainId)}
+          account={connected}
+          className="profile-funds-panel"
         />
-        <Metric
-          label="Free collateral"
-          pending={snapshot.isPending}
-          value={live ? Math.max(0, units(live.margin.equity - live.margin.imReq)) : null}
-          note="max(0, equity − initial requirement)"
-        />
-        <Metric
-          label="Unlocked collateral"
-          pending={snapshot.isPending}
-          value={live ? units(live.margin.unlockedCollateralBalance) : null}
-          note="Unreserved collateral; not free margin"
-        />
-        <Metric
-          label="Maintenance required"
-          pending={snapshot.isPending}
-          value={live ? units(live.margin.mmReq) : null}
-          note={live ? `Current health: ${live.margin.marginStatus}` : 'Health unavailable'}
-        />
-      </div>
+      )}
 
       {/* 4. Performance & Visual Analytics Studio */}
       <section className="profile-history" aria-labelledby="history-title">
