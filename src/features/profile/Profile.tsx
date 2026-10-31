@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Address } from 'viem';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { connectedAccount, accountSessionKey, accountStorageKey } from '@/lib/data/accountScope';
+import { windowReturn, scopedProfileRows, ownsProfileRow, participatesInFill } from '@/lib/data/profileMetrics';
+import { ObservedLeaderboard } from './ObservedLeaderboard';
 import { AppHeader } from '@/features/terminal/AppHeader';
 import { PROJECT } from '@/content/project';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
@@ -29,23 +31,34 @@ type WindowKey = keyof typeof windows;
 type TableKey =
   'Positions' | 'Fills' | 'Order history' | 'Position changes' | 'Funding' | 'Transfers';
 
-export default function Profile() {
+export default function Profile({ requestedAddress }: { requestedAddress?: string }) {
   const { address, isConnected, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
-  const account = connectedAccount(address, isConnected);
+  const connected = connectedAccount(address, isConnected);
+  const account = requestedAddress === undefined ? connected : connectedAccount(requestedAddress, true);
+  const [lookup, setLookup] = useState('');
+  const isOwner = !!account && account === connected;
   return (
     <>
       <a className="skip-link" href="#main">
         Skip to portfolio
       </a>
       <AppHeader page="portfolio" />
-      {account ? <ProfileAccount key={accountSessionKey(account, chainId)} account={account} chainId={chainId} /> : (
+      <form className="alias-form content-page" aria-label="Look up a public portfolio" onSubmit={event => {
+        event.preventDefault(); const valid = connectedAccount(lookup.trim(), true);
+        if (valid) window.location.assign(`/app/profile/${valid}`);
+      }}>
+        <label htmlFor="profile-lookup">Public address on Tokyo</label>
+        <input id="profile-lookup" value={lookup} onChange={event => setLookup(event.target.value)} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
+        <button className="button" type="submit">View public portfolio</button>
+      </form>
+      {account ? <ProfileAccount key={`${accountSessionKey(account, chainId)}:${isOwner}`} account={account} chainId={chainId} isOwner={isOwner} /> : (
         <main className="content-page profile-page" id="main" tabIndex={-1}>
           <p className="eyebrow">YOUR ACTIVITY, WITH CONTEXT</p>
           <h1>Portfolio</h1>
           <section className="profile-empty" aria-label="Wallet connection required">
-            <h2>Connect your wallet to view your portfolio</h2>
-            <p>Positions, balances, history and exports belong to your connected address. No account is selected while disconnected.</p>
+            <h2>{requestedAddress === undefined ? 'Connect your wallet to view your portfolio' : 'Invalid public address'}</h2>
+            <p>{requestedAddress === undefined ? 'No default account is selected. Connect your wallet or look up an explicit public address above.' : 'Use a full 0x address with 40 hexadecimal characters. No account reads were started for this path.'}</p>
             <button className="button button-primary" onClick={openConnectModal}>Connect wallet</button>
           </section>
           <p className="profile-notice">On-chain activity is public. Wallet-scoped display is not on-chain privacy.</p>
@@ -59,9 +72,11 @@ export default function Profile() {
 function ProfileAccount({
   account,
   chainId,
+  isOwner,
 }: {
   account: Address;
   chainId?: number;
+  isOwner: boolean;
 }) {
   const rpc = usePublicClient({ chainId: 50383 });
   const queryClient = useQueryClient();
@@ -149,18 +164,19 @@ function ProfileAccount({
   const historyQueries = [changes, fills, orders, transfers, funding, fees];
   const historyReady = historyQueries.every((q) => !q.isPending);
   const inWindow = (time: string | bigint) => Number(time) >= start && Number(time) < end;
-  const changeRows = changes.isError ? [] : changes.data || [];
-  const fillRows = fills.isError ? [] : fills.data || [];
+  const pools = ALL_VERIFIED_PERP_MARKETS.map(market => market.poolAddress);
+  const changeRows = scopedProfileRows(changes.isError ? [] : changes.data || [], account, start, end, pools, ownsProfileRow);
+  const fillRows = scopedProfileRows(fills.isError ? [] : fills.data || [], account, start, end, pools, participatesInFill);
   const orderRows = orders.isError
     ? []
     : (orders.data || []).filter((r) => inWindow(r.lastUpdatedAtTimestamp));
   const fundingRows = funding.isError
     ? []
-    : (funding.data || []).filter((r) => inWindow(r.timestamp));
+    : scopedProfileRows(funding.data || [], account, start, end, pools, ownsProfileRow);
   const transferRows = transfers.isError
     ? []
-    : (transfers.data || []).filter((r) => inWindow(r.timestamp));
-  const feeRows = fees.isError ? [] : (fees.data || []).filter((r) => inWindow(r.timestamp));
+    : scopedProfileRows(transfers.data || [], account, start, end, pools, ownsProfileRow).filter(r => ['Deposit', 'Withdraw', 'Credited'].includes(r.kind));
+  const feeRows = fees.isError ? [] : scopedProfileRows(fees.data || [], account, start, end, pools, ownsProfileRow);
   const realized =
     changes.data && !changes.isError
       ? units(changeRows.reduce((sum, r) => sum + r.realizedPnl, 0n))
@@ -181,6 +197,8 @@ function ProfileAccount({
       : null;
   const truncated = historyQueries.some((q) => q.data?.length === HISTORY_LIMIT);
   const anyError = historyQueries.some((q) => q.isError);
+  // Current equity is not equity at either historical boundary. Never substitute it.
+  const roi = windowReturn({ start, end, startingValue: null, endingValue: null, cashFlows: [], completeCashFlows: false, verifiedBoundaryValues: false });
   const unitPrice = (value: bigint | string | null, pool: string, base = false) => {
     const market = marketFor(pool);
     return market && value !== null
@@ -386,7 +404,7 @@ function ProfileAccount({
       ctx.fillStyle = color('--muted');
       ctx.font = '16px "Plus Jakarta Sans"';
       ctx.fillText(
-        `Connected address · Block ${live.margin.asOfBlock}`,
+        `${isOwner ? 'Connected' : 'Public watch'} address · Block ${live.margin.asOfBlock}`,
         60,
         501
       );
@@ -445,7 +463,7 @@ function ProfileAccount({
           {account.slice(2, 4).toUpperCase()}
         </div>
         <div className="profile-account">
-          <h2>{alias || 'Connected account'}</h2>
+          <h2>{alias || (isOwner ? 'Connected account' : 'Public watch account')}</h2>
           <a
             href={`${PROJECT.explorer}/address/${account}`}
             target="_blank"
@@ -455,7 +473,7 @@ function ProfileAccount({
             {account} ↗
           </a>
           <div className="profile-badges">
-            <span>Connected address</span>
+            <span>{isOwner ? 'Connected address' : 'Public address · ownership not verified'}</span>
             <span>Read-only portfolio</span>
             <span>Tokyo 50383</span>
           </div>
@@ -472,7 +490,7 @@ function ProfileAccount({
           Copy address
         </button>
       </section>
-      {chainId !== 50383 && (
+      {chainId !== undefined && chainId !== 50383 && (
         <p className="profile-notice">
           Your wallet is on another network. Portfolio reads still refer exclusively to Somnia Tokyo
           50383.
@@ -582,6 +600,7 @@ function ProfileAccount({
           Up to {HISTORY_LIMIT.toLocaleString()} newest rows per source. Indexer lag or missing
           events can affect coverage.
         </p>
+        {anyError && <p role="status" className="profile-notice">{[...new Set(historyQueries.filter(q => q.isError).map(q => q.error?.message))].join(' · ')}. Endpoint protection may require a cooldown before Refresh reads succeeds.</p>}
         <div className="history-metrics">
           <Metric
             label="Realized price PnL"
@@ -606,9 +625,9 @@ function ProfileAccount({
           <Metric label="Net fees" value={netFees} tone="cost" pending={fees.isPending} note="Charges minus rebates; no STT gas" />
           <Metric
             label="ROI"
-            value={null}
-            unit=""
-            note="Starting equity and full net-deposit coverage unavailable"
+            value={roi.value === null ? null : roi.value * 100}
+            unit="%"
+            note={roi.reason || 'PnL / max(100, starting value + max net deposits)'}
           />
           <Metric
             label="Win rate"
@@ -680,8 +699,8 @@ function ProfileAccount({
             funding. All amounts are USDso unless a base-token size is named.
           </p>
           <p>
-            No leaderboard is shown because there is no verified cohort or comparable full-return
-            dataset. Badges describe read scope, not profitability, rank or ownership.
+             There is no verified global profit cohort. The browser-local observed-account leaderboard
+             ranks indexed fill volume only. Badges describe read scope, not profitability or ownership.
           </p>
           <a
             href={`${PROJECT.github}/blob/main/docs/PORTFOLIO_DATA.md`}
@@ -692,6 +711,7 @@ function ProfileAccount({
           </a>
         </details>
       </section>
+      <ObservedLeaderboard />
       <div className="profile-table-tabs" role="group" aria-label="Portfolio activity view">
         {(Object.keys(headers) as TableKey[]).map((name) => (
           <button key={name} aria-pressed={table === name} onClick={() => setTable(name)}>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { WagmiProvider } from 'wagmi';
+import { WagmiProvider, useAccount } from 'wagmi';
+import { observeAccount } from '@/lib/data/observedAccounts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { Toaster } from 'sonner';
@@ -19,6 +20,7 @@ const queryClient = new QueryClient({
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <WagmiProvider config={wagmiConfig}>
+      <ObservedAccountRegistry />
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           theme={darkTheme({
@@ -49,3 +51,11 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
     </WagmiProvider>
   );
 };
+
+function ObservedAccountRegistry() {
+  const { address, isConnected, chainId } = useAccount();
+  React.useEffect(() => {
+    if (isConnected && address && chainId === 50383) observeAccount(localStorage, address);
+  }, [address, isConnected, chainId]);
+  return null;
+}

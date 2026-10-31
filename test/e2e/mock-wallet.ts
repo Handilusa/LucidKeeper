@@ -8,6 +8,7 @@ export const A = '0x1111111111111111111111111111111111111111';
 export const B = '0x2222222222222222222222222222222222222222';
 const factory = '0xE631fAEE547baeE07353E290f0562ea67d856560';
 const factoryAbi = parseAbi(['function isDeployedByFactory(address) view returns (bool)']);
+const profileBankAbi = [...marginBankAbi, ...parseAbi(['function getWithdrawableCollateral(address) view returns (uint256)', 'function getMarginStatus(address) view returns (uint8)'])];
 const bank = CONTRACT_ADDRESSES.MARGIN_BANK.toLowerCase();
 const token = CONTRACT_ADDRESSES.COLLATERAL_USDSO.toLowerCase();
 const pool = CONTRACT_ADDRESSES.BTC_PERP_POOL;
@@ -22,7 +23,9 @@ export async function mockWallet(page: Page) {
     accounts, writes: [] as Tx[], blocked: [] as string[], reads: [] as string[],
     rejectNext: false, revertNext: false, simulationFailure: false, accountFailure: false, feeFailure: false, markFailure: false,
     candleMode: 'loaded' as 'loaded' | 'empty' | 'error' | 'old', historyFailure: false, historyCount: 0,
-    contractReads: [] as { name: string; block: unknown }[],
+    profileFailure: false,
+    profileRows: { Fill: [] as Record<string, unknown>[], PerpPositionChange: [] as Record<string, unknown>[], FundingPayment: [] as Record<string, unknown>[], PerpFeeRecord: [] as Record<string, unknown>[], MarginEvent: [] as Record<string, unknown>[] },
+    contractReads: [] as { name: string; block: unknown; args: readonly unknown[] }[],
     mark: parseUnits('80000', 18), holdReceipts: false, fillOrders: true,
   };
   const transactions = new Map<Hex, { tx: Tx; reverted: boolean; applied: boolean }>();
@@ -94,16 +97,27 @@ export async function mockWallet(page: Page) {
     if (['127.0.0.1', 'localhost'].includes(url.hostname)) return route.continue();
     if (url.hostname === 'hideki-dev.smk.somnia.host') {
       const { query, variables } = route.request().postDataJSON();
+      if (state.profileFailure && /UserFills|PerpPositionChanges|FundingPayments|PerpFees|MarginEvents/.test(query)) return route.fulfill({ status: 503, json: { error: 'Controlled profile source failure' } });
       if ((state.candleMode === 'error' && /Candles/.test(query)) || (state.historyFailure && /UserTradeHistory/.test(query))) return route.fulfill({ status: 503, json: { error: 'Controlled indexer failure' } });
       const interval = variables.interval || 3600;
       const end = Math.floor(Date.now() / 1000 / interval) * interval - (state.candleMode === 'old' ? 10 * interval : 0);
       const Candle = state.candleMode === 'empty' ? [] : Array.from({ length: 30 }, (_, i) => ({ bucketStart: end - i * interval, intervalSeconds: interval, openPrice: state.mark.toString(), high: (state.mark + parseUnits('10', 18)).toString(), low: (state.mark - parseUnits('10', 18)).toString(), closePrice: state.mark.toString(), baseVolume: '10000', quoteVolume: '8000000000000000000', tradeCount: 1 }));
       const MarginEvent = /UserTradeHistory/.test(query) ? Array.from({ length: state.historyCount }, (_, i) => ({ id: `${variables.account}-${i}`, txHash: toHex(i + 100, { size: 32 }), account: variables.account, kind: 'Deposit', amount: parseUnits('1', 18).toString(), timestamp: Math.floor(Date.now() / 1000) - i, blockNumber: 100 })).slice(variables.offset, variables.offset + variables.limit) : [];
-      return route.fulfill({ json: { data: { Candle, Order: [], Fill: [], PerpFill: [], MarginEvent } } });
+      return route.fulfill({ json: { data: { chain_metadata: [{ chain_id: 50383 }], _sdkWatermark: [{ chain_id: 50383, latest_processed_block: 100 }], PerpMarket: ALL_VERIFIED_PERP_MARKETS.map(m => ({ id: m.poolAddress.toLowerCase() })), SpotMarket: [], Candle, Order: [], PerpFill: [], ...state.profileRows, MarginEvent: /UserTradeHistory/.test(query) ? MarginEvent : state.profileRows.MarginEvent } } });
     }
     if (url.hostname !== 'api.hideki2.infra.testnet.somnia.network') { state.blocked.push(url.href); return route.abort(); }
     const request = route.request().postDataJSON();
-    const reply = (rpc: { id: number; method: string; params: unknown[] }) => {
+    return route.fulfill({ json: Array.isArray(request) ? request.map(reply) : reply(request) });
+  });
+  await page.routeWebSocket('**/*', socket => {
+    const url = new URL(socket.url());
+    if (url.hostname !== 'api.hideki2.infra.testnet.somnia.network') { state.blocked.push(socket.url()); socket.close(); return; }
+    socket.onMessage(message => {
+      const request = JSON.parse(String(message));
+      socket.send(JSON.stringify(Array.isArray(request) ? request.map(reply) : reply(request)));
+    });
+  });
+  function reply(rpc: { id: number; method: string; params: unknown[] }) {
       const { method, params } = rpc;
       state.reads.push(method);
       let result: unknown;
@@ -136,9 +150,9 @@ export async function mockWallet(page: Page) {
           }
         } else if (method === 'eth_call') {
           const tx = params[0] as Tx;
-          const abi: Abi = tx.to.toLowerCase() === factory.toLowerCase() ? factoryAbi : tx.to.toLowerCase() === token ? erc20Abi : tx.to.toLowerCase() === bank ? marginBankAbi : perpPoolAbi;
+          const abi: Abi = tx.to.toLowerCase() === factory.toLowerCase() ? factoryAbi : tx.to.toLowerCase() === token ? erc20Abi : tx.to.toLowerCase() === bank ? profileBankAbi : perpPoolAbi;
           const call = decodeFunctionData({ abi, data: tx.data });
-          state.contractReads.push({ name: call.functionName, block: params[1] });
+          state.contractReads.push({ name: call.functionName, block: params[1], args: call.args || [] });
           const args = call.args || [];
           const owner = accounts[String(args[0]).toLowerCase()] || accounts[A];
           const market = ALL_VERIFIED_PERP_MARKETS.find(m => m.poolAddress.toLowerCase() === tx.to.toLowerCase()) || ALL_VERIFIED_PERP_MARKETS[0];
@@ -151,6 +165,8 @@ export async function mockWallet(page: Page) {
             case 'getSystemConfig': value = { marginBank: bank, collateralToken: token, perpPoolFactory: factory, liquidationEngine: A, insuranceFund: A, feeRecipient: A, maxLeverageLimit: 20, fullyWired: true }; break;
             case 'getAccountState': value = { unlockedCollateralBalance: owner.margin, lockedCollateral: 0n, activePerpPools: owner.size ? [pool] : [] }; break;
             case 'getAccountHealth': value = [owner.margin, 0n, 0n, 0n]; break;
+            case 'getWithdrawableCollateral': value = owner.margin; break;
+            case 'getMarginStatus': value = 0; break;
             case 'getPosition': value = { size: String(args[1]).toLowerCase() === pool.toLowerCase() ? owner.size : 0n, avgEntryPrice: parseUnits('80000', 18), entryFundingIndex: 0n, lastUpdatedTimestampNs: 0n }; break;
             case 'balanceOf': value = owner.wallet; break;
             case 'allowance': value = owner.allowance; break;
@@ -172,9 +188,7 @@ export async function mockWallet(page: Page) {
         } else throw new Error(`Unmodelled RPC ${method}; no passthrough`);
         return { jsonrpc: '2.0', id: rpc.id, result };
       } catch (error) { return { jsonrpc: '2.0', id: rpc.id, error: { code: -32000, message: (error as Error).message } }; }
-    };
-    return route.fulfill({ json: Array.isArray(request) ? request.map(reply) : reply(request) });
-  });
+  }
   return state;
 }
 export async function connectMock(page: Page) {

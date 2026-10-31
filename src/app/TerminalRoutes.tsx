@@ -11,7 +11,7 @@ const Profile = lazy(() => import('@/features/profile/Profile'));
 export default function TerminalRoutes() {
   const path = window.location.pathname.replace(/\/$/, '');
   useEffect(() => {
-    document.title = `${path.endsWith('/profile') ? 'Portfolio' : path.endsWith('/docs') ? 'Field guide' : 'Trade'} | LucidKeeper`;
+    document.title = `${path === '/app/profile' || path.startsWith('/app/profile/') ? 'Portfolio' : path.endsWith('/docs') ? 'Field guide' : 'Trade'} | LucidKeeper`;
   }, [path]);
   return (
     <Providers>
@@ -19,7 +19,7 @@ export default function TerminalRoutes() {
         <App />
       ) : path === '/app/docs' ? (
         <DocsPage />
-      ) : path === '/app/profile' ? (
+      ) : path === '/app/profile' || path.startsWith('/app/profile/') ? (
         <Suspense
           fallback={
             <>
@@ -30,7 +30,7 @@ export default function TerminalRoutes() {
             </>
           }
         >
-          <Profile />
+          <Profile requestedAddress={path === '/app/profile' ? undefined : path.slice('/app/profile/'.length)} />
         </Suspense>
       ) : (
         <UnknownPage />

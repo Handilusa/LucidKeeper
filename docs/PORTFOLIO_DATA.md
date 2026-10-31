@@ -1,10 +1,10 @@
 # Read-only portfolio data contract
 
-30 October 2026 · `/app/profile` · Somnia Tokyo **50383** · SDK **0.32.1**.
+Updated 31 October 2026 · `/app/profile` and `/app/profile/:address` · Somnia Tokyo **50383** · SDK **0.32.1**.
 
 ## Identity and freshness
 
-Updated 31 October 2026: disconnected visits show a connect-wallet state and make no account/history queries. There is no fallback to the bounty EOA. Connected reads and caches are keyed by Tokyo 50383 and normalized address; switching/disconnecting remounts account UI, clearing dialogs, drafts and receipt presentation. Aliases are validated (2–24 ASCII letters/numbers/spaces/underscore/hyphen), wallet/network-scoped in this browser, and removable by saving an empty value. Legacy unscoped storage is not imported or deleted. No URL, alias, badge or share image verifies ownership or on-chain privacy.
+Disconnected `/app/profile` selects no account; explicit valid `/app/profile/:address` permits public reads while disconnected. Invalid paths start no account queries. Watching B while connected as A never chooses B as signer. Reads, aliases and caches are keyed by Tokyo 50383 and normalized **displayed** address; switching/disconnecting remounts transient account UI. Aliases are validated (2–24 ASCII letters/numbers/spaces/underscore/hyphen), browser-local, and removable. Legacy unscoped storage is not imported/deleted. No URL, alias, badge or share image verifies ownership or on-chain privacy.
 
 Account snapshots poll every 15 seconds. The SDK's `getMarginAccount` pins its fields to `asOfBlock`; position and mark reads use that same block. Failed snapshots or snapshots older than 45 seconds are hidden. Each view links the read block and shows the observation time. Wallet funds are excluded from MarginBank equity.
 
@@ -32,12 +32,13 @@ Existing terminal reads, ABI definitions, transaction construction, review, wall
 - Tables sort by unformatted values, paginate ten rows, and export all loaded rows for the selected table/window with account, chain and transaction hashes. CSV guards formula-like text. The new portfolio does not use the terminal's local receipt cache as financial history.
 - PnL chart steps sum observed realizing updates. It starts at the first returned update, with no fabricated baseline or prehistory. Volume bars show only days with observed fills. Values have an accessible text alternative.
 - A read failure hides its metrics and table, with a retry action; independent sources can remain usable.
+- Fills/changes/funding/fees/transfers are locally rechecked for owner/window/known pool/chain and duplicate IDs. SDK ended-order output omits owner; its reviewed `owner._eq` predicate scopes those rows. SDK chain reads use WebSocket; history errors may require the SDK's 30-second circuit cooldown.
 
 ## Unavailable metrics
 
 Requested ROI formula: `PnL / max(100, starting account value + max net deposits)` for the selected window, multiplied by 100 for a percentage. Max net deposits is the maximum cumulative net inflow during the window. No verified starting-equity/time-series feed or complete window-return reconstruction exists here; ROI and historical equity are unavailable. The formula is user-requested, **not verified as a Hyperliquid formula**.
 
-Win rate is unavailable because complete closed trade cycles have not been reconstructed. One order can have several fills/position changes; counting green updates as winning trades is incorrect. No leaderboard is displayed without a verified cohort and comparable performance coverage.
+Win rate is unavailable because complete closed trade cycles have not been reconstructed. One order can have several fills/position changes; counting green updates as winning trades is incorrect. The browser-local observed-account leaderboard ranks only bounded real indexed fill volume for up to five actually connected Tokyo accounts, never global profit/ROI. It can be cleared. Public lookups do not enroll an account. [Missing inputs and reviewed boundaries](DISCOVERIES.md).
 
 Share PNGs contain the displayed address, local alias, current equity, selected-window indexed price PnL/volume, read block, observation/end times and testnet/watch/coverage labels. They are snapshots, not execution or profit attestations.
 

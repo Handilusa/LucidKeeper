@@ -10,7 +10,11 @@ Task 1 committed locally as **`383b0ae`**:78 passed/21 skipped unit/service;22 p
 
 Task 2: **48 passed / 0 skipped / 0 failed** Chromium, including two test-only injected wallets and all17 former browser skips replaced with runnable checks. **80 passed / 19 skipped / 0 failed** unit/service; two pure-input skips re-enabled. Types, E2E types, lint and build pass. Canonical receipt hook fixes the reproduced reverted-order display defect ([feedback016](feedback/016-reverted-receipt-presentation.md)). Artifacts: `.git/lucidkeeper-audit/task2-final/`; failed initial harness runs preserved. No production fixture fallback, real signing or send. [Second-wallet manual QA](docs/MANUAL_QA.md) remains pending;19 historical offline-tooling/source unit gaps and actual liquidity/long-outage outcomes remain disclosed in [test methodology](docs/TEST_DATA_SOURCES.md).
 
-Tasks 3–6 remain pending. No push/deployment. Dated audit/policy records below describe the earlier restricted build and are superseded for the browser product, not current release readiness.
+Task 2 committed locally as **`079f6e7`**, no push. Task 3 adds `/app/profile/:address`, guarded window ROI accounting and a clearable browser-local indexed-volume leaderboard (five actually connected Tokyo addresses). Public watch never selects the signer. ROI/equity/win rate/global profit ranking remain unavailable for missing verified inputs ([discoveries](docs/DISCOVERIES.md)). **53/53 Chromium** pass; types/E2E types/lint/build pass. Five new profile cases cover public address, nonempty owned-window totals, failure/cooldown/recovery, aliases and watch-vs-signer. Test SDK WebSockets are now intercepted too. Unit source assertion updated for the new owner/watch lifetime key; final rerun recorded below after completion.
+
+Task 3 final unit/service rerun: **86 passed / 19 skipped / 0 failed**, 105 cases. No source changes after the passing 53-case browser run; only its outdated unit lifetime-key assertion was adjusted.
+
+Tasks 4–6 remain pending. No push/deployment. Dated records below describe the earlier restricted build, not current release readiness.
 
 ## Pre-push functionality audit — 31 October 2026
 

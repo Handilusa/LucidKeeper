@@ -34,7 +34,8 @@ Run the local build below, then visit:
 | --- | --- |
 | `/` | Product story, lifecycle, Somnia architecture, receipt trail and explicit limits. Every **Launch App** opens `/app`. |
 | `/app` | Public market prices and candles without connection. Positions, balances, history and risk load only for the connected wallet. |
-| `/app/profile` | Connect a wallet for its own portfolio, local alias, history windows, tables, CSV and PNG export. No default demo account. |
+| `/app/profile` | Connected portfolio or explicit public-address lookup; no default demo account. |
+| `/app/profile/:address` | Read-only public watch, address-scoped metrics/aliases/exports; never selects that address as signer. |
 | `/app/docs` | Field guide: funding, lifecycle, data sources, operational boundaries and evidence. |
 
 The persistent testnet badge applies to every route. Use **Pause motion** or your system’s reduced-motion preference to stop landing motion.
@@ -83,7 +84,7 @@ All entries concern the bounty EOA on Tokyo. They describe historical actions, n
 - **Current state:** SDK `getMarginAccount` plus positions/marks at the same `asOfBlock`. Polls every 15 seconds; failed or older-than-45-second snapshots are hidden.
 - **History:** up to 1,000 newest rows per source, UTC window boundaries, explicit coverage limits. Charts use observed realizing updates and filled notional, without synthetic points.
 - **Accounting:** realized **price** PnL excludes funding/fees. Funding is positive when paid and negative when received. Net fees are charges minus rebates; volume uses indexed quote notional.
-- **Identity:** account reads require connection and are keyed by Tokyo 50383 and the normalized wallet address. Disconnect/switch clears transient account controls and dialogs; local aliases, leverage and caches are wallet-scoped. Aliases, badges and share cards do not verify identity, ownership or privacy.
+- **Identity:** the terminal requires connection; explicit public profile routes are read-only. Reads/preferences use Tokyo 50383 and normalized displayed addresses. Watching B while connected as A does not select B as signer. Aliases, badges and cards do not verify ownership or privacy.
 - **Exports:** sorted, loaded table rows include account, chain and transaction hashes. Share images show observation time, block, history window and testnet/watch labels.
 
 Requested window ROI:
@@ -93,7 +94,7 @@ ROI = PnL / max(100, starting account value + max net deposits)
 Percent display = ROI × 100
 ```
 
-Max net deposits means the maximum cumulative net inflow during the window. **ROI is unavailable** because starting equity, complete cash flows and full window PnL are unverified. Historical equity, complete trade-cycle win rate and a comparable leaderboard are also unavailable. No Hyperliquid attribution is claimed. [Full data contract](docs/PORTFOLIO_DATA.md).
+Max net deposits means the maximum cumulative net inflow during the window. **ROI is unavailable** because historical boundary equity and complete ordered flows are unverified. A tested guarded calculator is implemented; production never substitutes current equity or price-only PnL. Equity curves, closed-cycle win rate and global profit ranking remain unavailable. A clearable browser-local leaderboard ranks bounded indexed volume for up to five actually connected Tokyo addresses, not profit/ROI. No Hyperliquid attribution. [Data contract](docs/PORTFOLIO_DATA.md) · [Discoveries](docs/DISCOVERIES.md).
 
 ## Architecture
 

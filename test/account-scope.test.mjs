@@ -78,7 +78,8 @@ test('production account views and compatibility service have no implicit bounty
   for (const path of ['src/app/App.tsx', 'src/features/profile/Profile.tsx']) {
     const code = source(path);
     assert.match(code, /connectedAccount\(address, isConnected\)/);
-    assert.match(code, /key=\{accountSessionKey\(/);
+    if (path.includes('/profile/')) assert.ok(code.includes('key={`${accountSessionKey(account, chainId)}:${isOwner}`}'));
+    else assert.match(code, /key=\{accountSessionKey\(/);
     assert.doesNotMatch(code, /address\s*\|\||0x1420cF8/);
   }
   const server = source('scripts/ui-server.mjs');
