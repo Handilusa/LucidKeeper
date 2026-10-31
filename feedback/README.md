@@ -1,6 +1,6 @@
 # Feedback del Builder Bounty
 
-Actualizado: **30 de octubre de 2026**. Un Markdown por incidencia; distinguir defecto reproducido, diagnóstico y verificación pendiente. Los tres informes originales siguen preparados sin envío; resolver un defecto local no prueba entrega, aceptación ni ausencia de duplicados. La falta de fondos no es un bug del protocolo.
+Actualizado: **31 de octubre de 2026**. Un Markdown por incidencia; distinguir defecto reproducido, diagnóstico y verificación pendiente. Los tres informes originales siguen preparados sin envío; resolver un defecto local no prueba entrega, aceptación ni ausencia de duplicados. La falta de fondos no es un bug del protocolo.
 
 ## Informes
 
@@ -19,8 +19,12 @@ Actualizado: **30 de octubre de 2026**. Un Markdown por incidencia; distinguir d
 | [010 — Stale partial-close snapshot](010-stale-partial-close-snapshot-risk.md) | Mitigado localmente en `baeeda5`: snapshot actual, preflight pinned y revalidación; no equivale a reduce-only del protocolo |
 | [011 — Operating policy divergence](011-operating-policy-runtime-divergence.md) | Corregido runtime en `c05b495`; posterior confirmación escrita libera HOLD solo para EOA/Tokyo, integración completa del envelope CLI aún pendiente |
 | [013 — Chart overlay disposal](013-chart-overlay-disposal.md) | Corregido y verificado localmente: regresión con posición real, 15 browser pass / 16 skips; no enviado |
+| [014 — Disconnected bounty-account fallback](014-disconnected-bounty-account-fallback.md) | Corregido localmente: sin cuenta por defecto en terminal, portfolio o HTTP; desktop/móvil y lecturas reales verificados; no desplegado |
+| [015 — Wallet state and review isolation](015-wallet-state-and-review-isolation.md) | Preferencias/estado separados por cuenta y red; guardas de wallet activa antes de enviar. Regresiones puras/cache/browser pasan; cambios reales de wallet y carreras de firma pendientes |
 
 **007–011 son hallazgos de la aplicación LucidKeeper, no bugs acreditados de dreamDEX ni entregas del bounty.** [Triage de dependencias](../docs/DEPENDENCY_TRIAGE.md): 27 entradas runtime afectadas, 0 dev-only, tres advisories; sin solución compatible no forzada ni explotabilidad confirmada. Alcance de entradas wallet/Zod sin resolver; JSON completo local, no publicar payloads de explotación.
+
+**013–015 también son incidencias locales de LucidKeeper, no defectos acreditados del protocolo.** La comprobación actual de aislamiento: 72 unit/integration pass / 21 skips y 22 Chromium pass / 17 skips, cero fallos. La nueva visita desconectada no lee una cuenta; el caso histórico de overlays no vacíos se conserva, pero ahora necesita una wallet realmente conectada. No firma, envío on-chain, publicación ni entrega en esta tarea.
 
 **Permiso operativo actualizado:** posterior confirmación escrita del propietario libera HOLD solo para EOA bounty/Tokyo50383; afirmación del propietario, no evidencia independiente. [Registro y límites](../STATUS.md#owner-authorization--2026-10-30). Sin transferencias/Arena; approve/deposit exactos2USDso e IOC revisados únicamente. Cada paso real requiere JSON completo y aprobación separada; CLI completo pendiente. Lecturas reales o capturas públicas con procedencia, nunca respuestas fabricadas. QA de fixes previo:56unit/integrationpass/21skips;14Chromiumpass/16skips;cero fallos. Despliegue/ciclo real de ejecución no recertificados aquí; borradores/raw fuera de Git, publicación/entrega del usuario.
 

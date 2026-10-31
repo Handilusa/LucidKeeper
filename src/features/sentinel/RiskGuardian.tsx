@@ -8,9 +8,11 @@ import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { formatDynamicPrice } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
 import { closeQuantity } from '@/lib/math/close';
-import { assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
-import { reviewBrowserWrite } from '@/lib/browser-policy';
+import { reviewBrowserWrite, assertBrowserAccount } from '@/lib/browser-policy';
+import { useWalletLifetime } from '@/lib/useWalletLifetime';
+import { walletError } from '@/lib/walletError';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
+import { connectedAccount, accountStorageKey } from '@/lib/data/accountScope';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
 import { TokenLogo } from '@/components/TokenLogo';
 
@@ -69,6 +71,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   onPanicExit,
 }) => {
   const { address, isConnected, chainId } = useAccount();
+  const lifetime = useWalletLifetime(address);
+  const submissionLock = useRef(false);
   const publicClient = usePublicClient({ chainId: 50383 });
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [inspectedSymbol, setInspectedSymbol] = useState<string>('');
@@ -112,6 +116,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, data: receipt } = useWaitForTransactionReceipt({
     hash,
+    chainId: 50383,
   });
   const isConfirmed = receipt?.status === 'success';
 
@@ -123,8 +128,8 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
     }
   }, [effectiveMark, effectiveSymbol, stressEdited]);
 
-  const storageKey = address && activePosition
-    ? `lucidkeeper_sltp_50383_${address.toLowerCase()}_${activePosition.poolAddress.toLowerCase()}`
+  const storageKey = activePosition
+    ? accountStorageKey('sltp', connectedAccount(address, isConnected), activePosition.poolAddress)
     : null;
 
   // Load and sync SL/TP config per active market
@@ -190,7 +195,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
   // Transaction Confirmation Effect
   useEffect(() => {
-    if (isConfirmed && hash && notifiedHashRef.current !== hash) {
+    if (lifetime.current() && isConfirmed && hash && notifiedHashRef.current !== hash) {
       notifiedHashRef.current = hash;
       if (soundEnabled) playAlertTone('success');
       if (lastOrderRef.current && address) {
@@ -256,7 +261,7 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
 
   // Real On-Chain Emergency Panic Execution (De-Risk 50% or Panic Exit 100%)
   const handlePanic = async (percent: number) => {
-    if (!canExecute || effectiveMark <= 0) return;
+    if (!canExecute || chainId !== 50383 || effectiveMark <= 0 || isPending || isConfirming || submissionLock.current) return;
     if (!isConnected) {
       toast.error('Please connect your wallet first');
       return;
@@ -266,9 +271,10 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
       return;
     }
 
+    submissionLock.current = true;
     try {
       if (!address || !publicClient) throw new Error('Configured signer unavailable');
-      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
+      lifetime.assert();
       setActivePanicPercent(percent);
       const actionName = activePosition.isLong ? 'Sell IOC' : 'Buy IOC';
       toast.info(
@@ -319,22 +325,25 @@ export const RiskGuardian: React.FC<RiskGuardianProps> = ({
         ],
         gas: 5_000_000n,
       } as const;
-      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${effectiveSymbol}-PERP`, size: formatUnits(targetExitQuantity, baseDecimals), description: `Request ${percent}% Guardian reduction by IOC; requires wallet approval, not autonomous signing.` });
+      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${effectiveSymbol}-PERP`, size: formatUnits(targetExitQuantity, baseDecimals), description: `Request ${percent}% Guardian reduction by IOC; requires wallet approval, not autonomous signing.` }, lifetime.assert);
       const finalPosition = await publicClient.readContract({ address: CONTRACT_ADDRESSES.MARGIN_BANK, abi: marginBankAbi, functionName: 'getPosition', args: [address, activePosition.poolAddress as `0x${string}`] });
       closeQuantity(current.size, finalPosition.size, percent, grid.lotSize);
-      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
+      lifetime.assert();
+      assertBrowserAccount(address);
       await writeContractAsync({ ...request, ...reviewed });
+      lifetime.assert();
 
       toast.info(
         `De-risk order submitted (${percent}% requested). Awaiting transaction confirmation…`
       );
     } catch (err: unknown) {
-      console.error('Panic exit error:', err);
+      if (!lifetime.current()) return;
       setActivePanicPercent(null);
-      const e = err as { shortMessage?: string; message?: string };
       toast.error(`Failed to execute Panic De-Risk for ${effectiveSymbol}`, {
-        description: e?.shortMessage || e?.message || 'Transaction reverted',
+        description: walletError(err),
       });
+    } finally {
+      submissionLock.current = false;
     }
   };
 

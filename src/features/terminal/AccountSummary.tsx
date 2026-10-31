@@ -11,7 +11,7 @@ export function AccountSummary({
   gas,
   onManage,
 }: {
-  account: string;
+  account?: string;
   connected: boolean;
   wallet: ReadDisplay;
   deposited: ReadDisplay;
@@ -23,10 +23,10 @@ export function AccountSummary({
     <section className="account-summary" aria-label="Account funds">
       <div className="account-heading">
         <span>
-          {connected ? 'Connected account' : 'Read-only bounty account'}{' '}
-          <span className="numeric">
+          {connected && account ? 'Connected account' : 'Connect your wallet to view account funds'}{' '}
+          {connected && account && <span className="numeric">
             {account.slice(0, 6)}…{account.slice(-4)}
-          </span>
+          </span>}
         </span>
         <button onClick={onManage} className="text-cyan-400">
           Manage collateral ↗

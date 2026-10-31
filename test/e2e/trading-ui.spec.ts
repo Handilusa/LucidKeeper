@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { terminalFixture, assertReadOnly, assertObservedPortfolio } from './terminal-fixture';
+import { terminalFixture, assertReadOnly, assertDisconnectedAccount } from './terminal-fixture';
 test('rendered product branding is consistently LucidKeeper', async ({ page }) => {
   const state = await terminalFixture(page); await page.goto('/app');
-  await expect(page).toHaveTitle(/^LucidKeeper/);
+  await expect(page).toHaveTitle('Trade | LucidKeeper');
   await expect(page.getByRole('link', { name: 'LucidKeeper home', exact: true })).toContainText('LucidKeeper');
   await expect(page.locator('.app-footer')).toContainText('LucidKeeper');
   await assertReadOnly(state);
@@ -29,16 +29,16 @@ test('collateral modal traps focus, closes with Escape, and restores its trigger
   await page.keyboard.press('Escape'); await expect(dialog).toBeHidden(); await expect(trigger).toBeFocused();
   await assertReadOnly(state);
 });
-test('activity tabs match observed positions and support keyboard navigation', async ({ page }, testInfo) => {
+test('disconnected activity tabs request no account data and support keyboard navigation', async ({ page }) => {
   const state = await terminalFixture(page); await page.goto('/app');
-  const snapshot = await assertObservedPortfolio(page, state);
-  await testInfo.attach('observed-pinned-portfolio', { body: JSON.stringify(snapshot, null, 2), contentType: 'application/json' });
-  await page.getByRole('tab', { name: /^Positions \(\d+\)$/ }).focus(); await page.keyboard.press('ArrowRight');
+  await assertDisconnectedAccount(page, state);
+  await page.getByRole('tab', { name: 'Positions', exact: true }).focus(); await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab', { name: 'Open orders' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByText('No resting orders', { exact: true })).toBeVisible();
+  await expect(page.getByText('Connect your wallet to view your activity', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Trade history' }).click();
-  await expect(page.locator('.history-row').first()).toBeVisible();
-  await expect(page.locator('.history-row').first().getByRole('link')).toHaveAttribute('href', /\/tokyo\/tx\/0x[0-9a-f]{64}/);
+  await expect(page.getByText('Connect your wallet to view your activity', { exact: true })).toBeVisible();
+  await expect(page.locator('.history-row')).toHaveCount(0);
+  expect(state.accountRequests).toEqual([]);
   await assertReadOnly(state);
 });
 for (const [width, height] of [[1440, 900], [390, 844]]) {
@@ -70,14 +70,13 @@ for (const [width, height] of [[1440, 900], [1280, 800], [390, 844], [768, 1024]
   test(`responsive workspace ${width}×${height}`, async ({ page }, testInfo) => {
     const state = await terminalFixture(page); await page.emulateMedia({ reducedMotion: 'reduce' }); await page.setViewportSize({ width, height }); await page.goto('/app');
     await expect(page.getByText('Indexed executions · refresh 15s', { exact: true })).toBeVisible();
-    const snapshot = await assertObservedPortfolio(page, state, width >= 1024);
-    await testInfo.attach('observed-pinned-portfolio', { body: JSON.stringify(snapshot, null, 2), contentType: 'application/json' });
+    await assertDisconnectedAccount(page, state, width >= 1024);
     await expect(page.locator('.chart-ohlc time')).toBeVisible();
     if (width < 1024) {
       const nav = page.getByRole('navigation', { name: 'Trading workspace' }); await nav.getByRole('button', { name: 'Trade', exact: true }).click();
       await expect(page.locator('.submit-order')).toHaveText('Connect wallet to trade');
-      await nav.getByRole('button', { name: 'Activity', exact: true }).click(); await assertObservedPortfolio(page, state);
-      await page.getByRole('tab', { name: 'Trade history' }).click(); await expect(page.locator('.history-row').first()).toBeVisible();
+      await nav.getByRole('button', { name: 'Activity', exact: true }).click(); await assertDisconnectedAccount(page, state);
+      await page.getByRole('tab', { name: 'Trade history' }).click(); await expect(page.getByText('Connect your wallet to view your activity', { exact: true })).toBeVisible();
     } else {
       // Short windows deliberately use document scrolling; keyboard focus must reveal the action.
       if (height <= 820) await page.locator('.submit-order').focus();

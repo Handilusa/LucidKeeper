@@ -7,11 +7,13 @@ import { perpPoolAbi } from '@/chain/abis';
 import type { MarketInfo } from '@/lib/data/indexer';
 import { quantizeToGrid } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
-import { AUTHORIZED_SIGNER, MARGIN_HOLD, assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
-import { reviewBrowserWrite } from '@/lib/browser-policy';
+import { reviewBrowserWrite, assertBrowserAccount } from '@/lib/browser-policy';
+import { useWalletLifetime } from '@/lib/useWalletLifetime';
+import { walletError } from '@/lib/walletError';
 import { positiveDecimal, validateOrderInput } from '@/lib/math/orderInput';
 import type { PositionItem } from '@/features/portfolio/PositionsTable';
 import { saveTradeHistoryItem } from '@/lib/data/tradeHistory';
+import { accountStorageKey, connectedAccount } from '@/lib/data/accountScope';
 import { HelpTip } from '@/components/HelpTip';
 import { AnimatedValue } from '@/components/AnimatedValue';
 import { ReadValue } from '@/components/ReadValue';
@@ -31,9 +33,11 @@ interface TradingBoxProps {
   onOrderSuccess?: () => void;
   onOpenMarginHub: () => void;
 }
-function savedLeverage(pool: string) {
+function savedLeverage(pool: string, account?: string) {
+  const key = accountStorageKey('leverage', account, pool);
+  if (!key) return 5;
   try {
-    const value = Number(localStorage.getItem(`lucidkeeper_leverage_${pool.toLowerCase()}`));
+    const value = Number(localStorage.getItem(key));
     return Number.isInteger(value) && value >= 1 && value <= 100 ? value : 5;
   } catch {
     return 5;
@@ -52,6 +56,8 @@ export function TradingBox({
   onOpenMarginHub,
 }: TradingBoxProps) {
   const { address, isConnected, chainId } = useAccount();
+  const account = connectedAccount(address, isConnected);
+  const lifetime = useWalletLifetime(account);
   const { openConnectModal } = useConnectModal();
   const publicClient = usePublicClient({ chainId: 50383 });
   const [simulating, setSimulating] = useState(false);
@@ -88,7 +94,7 @@ export function TradingBox({
   const [quantity, setQuantity] = useState(market.minQuantity);
   const [marginInput, setMarginInput] = useState('5.0');
   const [lastEdited, setLastEdited] = useState<'size' | 'margin'>('margin');
-  const [leverage, setLeverage] = useState(() => savedLeverage(market.poolAddress));
+  const [leverage, setLeverage] = useState(() => savedLeverage(market.poolAddress, account));
   const [submitError, setSubmitError] = useState('');
   const executionPrice = orderType === 'market' ? markPrice : positiveDecimal(limitPrice) || 0;
   const lotDecimals = market.lotSize.includes('.')
@@ -116,12 +122,12 @@ export function TradingBox({
   );
 
   React.useEffect(() => {
-    setLeverage(savedLeverage(market.poolAddress));
+    setLeverage(savedLeverage(market.poolAddress, account));
     setQuantity(market.minQuantity);
     setLimitPrice('');
     setLastEdited('margin');
     setSubmitError('');
-  }, [market.poolAddress, market.minQuantity]);
+  }, [market.poolAddress, market.minQuantity, account]);
   React.useEffect(() => {
     if (poolParams && leverage > maxLeverage) setLeverage(maxLeverage);
   }, [poolParams, maxLeverage, leverage]);
@@ -138,7 +144,7 @@ export function TradingBox({
   }, [lastEdited, quantity, executionPrice, leverage, orderType]);
 
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash });
+  const receipt = useWaitForTransactionReceipt({ hash, chainId: 50383 });
   const isConfirming = receipt.isLoading;
   const confirmed = receipt.data?.status === 'success';
   const notifiedHash = useRef<string | null>(null);
@@ -150,7 +156,7 @@ export function TradingBox({
     price: number;
   } | null>(null);
   React.useEffect(() => {
-    if (confirmed && hash && notifiedHash.current !== hash) {
+    if (lifetime.current() && confirmed && hash && notifiedHash.current !== hash) {
       notifiedHash.current = hash;
       const order = lastOrder.current;
       if (order)
@@ -234,11 +240,10 @@ export function TradingBox({
   };
   const changeLeverage = (value: number) => {
     setLeverage(value);
+    const key = accountStorageKey('leverage', account, market.poolAddress);
+    if (!key) return;
     try {
-      localStorage.setItem(
-        `lucidkeeper_leverage_${market.poolAddress.toLowerCase()}`,
-        String(value)
-      );
+      localStorage.setItem(key, String(value));
     } catch {
       /* Optional preference. */
     }
@@ -254,7 +259,7 @@ export function TradingBox({
     setSubmitError('');
     let stage = 'preparation';
     try {
-      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
+      lifetime.assert();
       const rawTickSize =
         orderBookParams?.tickSize ?? parseUnits(market.tickSize, market.quoteDecimals);
       const rawLotSize =
@@ -315,25 +320,26 @@ export function TradingBox({
       setSimulating(true);
       stage = 'simulation';
       await publicClient.simulateContract({ ...request, account: address });
+      lifetime.assert();
       setSimulating(false);
       stage = 'wallet';
       toast.info('Review the order transaction in your wallet');
-      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${market.baseSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Place ${side} IOC order on the official Tokyo pool; confirmation is not a fill.` });
-      assertOnchainActionAllowed('order', { chainId: chainId!, wallet: address });
+      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', address, { market: `${market.baseSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Place ${side} ${orderType === 'market' ? 'IOC' : 'limit'} order on the official Tokyo pool; confirmation is not a fill.` }, lifetime.assert);
+      lifetime.assert();
+      assertBrowserAccount(address);
       await writeContractAsync({ ...request, ...reviewed });
+      lifetime.assert();
       toast.info('Transaction submitted · awaiting confirmation');
     } catch (error) {
-      const detail =
-        (error as { shortMessage?: string; message?: string }).shortMessage ||
-        (error as Error).message ||
-        'Order submission failed';
+      if (!lifetime.current()) return;
+      const detail = walletError(error);
       const message = stage === 'simulation'
         ? `Order simulation failed. Refresh account data or reduce size before retrying. ${detail}`
         : detail;
       setSubmitError(message);
       toast.error('Order rejected or failed', { description: message });
     } finally {
-      setSimulating(false);
+      if (lifetime.current()) setSimulating(false);
       submissionLock.current = false;
     }
   };
@@ -565,7 +571,7 @@ export function TradingBox({
         <button
           className="submit-order"
           data-side={side}
-          disabled={simulating || isPending || isConfirming || (isConnected && (!!blocked || chainId !== 50383 || MARGIN_HOLD.active || address?.toLowerCase() !== AUTHORIZED_SIGNER.toLowerCase() || orderType !== 'market'))}
+          disabled={simulating || isPending || isConfirming || (isConnected && (!!blocked || chainId !== 50383))}
           onClick={handleExecuteOrder}
         >
           {(simulating || isPending || isConfirming) && <LoaderCircle size={16} className="state-spinner" aria-hidden="true" />}
@@ -581,8 +587,7 @@ export function TradingBox({
                  : `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} ${market.baseSymbol}`}
         </button>
         <p className="form-note">
-          {MARGIN_HOLD.active && `HOLD: ${MARGIN_HOLD.reason} `}
-          {orderType === 'limit' && 'Live limit signing is outside the reviewed IOC runtime allowlist. '}
+          {orderType === 'limit' && 'Limit orders expire after the reviewed five-minute window; unfilled amounts may rest until then. '}
           {orderType === 'market'
             ? 'Immediate-or-cancel. Unfilled quantity is cancelled.'
             : 'Limit orders may rest, partially fill, or expire.'}{' '}

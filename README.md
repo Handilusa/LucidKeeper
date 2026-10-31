@@ -12,9 +12,11 @@ Opening a position is only the first decision. LucidKeeper keeps market context,
 
 > **Delivery status — 31 October 2026:** the landing, dedicated portfolio and visual/motion passes are local on `feat/landing-and-profile`. The last independently checked production version is `0dce074` (30 October 15:43 UTC). New routes/features are not claimed as deployed; publication is owner-managed.
 
+> **Release-blocker work — 31 October:** any wallet can trade through its own browser wallet on Tokyo; no product account allowlist. Two-wallet browser verification, dependency remediation and capacity validation are being completed separately. Real second-wallet funding/fills require manual QA. **Not yet mass-scale verified.** [Audit](docs/PRE_PUSH_AUDIT.md).
+
 ![Actual LucidKeeper terminal capture from 30 October 2026](public/assets/product/terminal-1440.webp)
 
-*Historical, read-only terminal screenshot; its prices and balances are not live. [Original capture and metadata](public/assets/product/capture.json). The current interface adds the shared navy/violet/cyan palette.*
+*Historical, read-only terminal screenshot; its prices and balances are not live. [Original capture and metadata](public/assets/product/capture.json). The terminal retains its black/charcoal palette and violet accents.*
 
 ## What makes it useful
 
@@ -31,8 +33,8 @@ Run the local build below, then visit:
 | Route | Inspect |
 | --- | --- |
 | `/` | Product story, lifecycle, Somnia architecture, receipt trail and explicit limits. Every **Launch App** opens `/app`. |
-| `/app` | Live market reads, candle inspection, margin health and public bounty positions. No wallet connection is needed for inspection. |
-| `/app/profile` | Public watch view, local alias, 24H/7D/30D/all-indexed windows, six tables, CSV and PNG export. |
+| `/app` | Public market prices and candles without connection. Positions, balances, history and risk load only for the connected wallet. |
+| `/app/profile` | Connect a wallet for its own portfolio, local alias, history windows, tables, CSV and PNG export. No default demo account. |
 | `/app/docs` | Field guide: funding, lifecycle, data sources, operational boundaries and evidence. |
 
 The persistent testnet badge applies to every route. Use **Pause motion** or your system’s reduced-motion preference to stop landing motion.
@@ -41,12 +43,13 @@ The persistent testnet badge applies to every route. Use **Pause motion** or you
 
 **Approve → Deposit → Open → Monitor → Close → Settle**
 
-1. Review an exact USDso allowance to the official MarginBank.
-2. Confirm the approval before reviewing a deposit; verify the credited margin.
-3. Review the order, then distinguish its receipt from its actual fill events.
-4. Monitor current positions, margin and browser-local risk settings.
-5. Review an exit against freshly read remaining size; partial/no fills remain possible.
-6. Verify the position change and realized amounts in MarginBank.
+1. Connect your own wallet, switch/add Tokyo 50383 and obtain STT gas plus USDso collateral through the [official dreamDEX app](https://app.testnet.dreamdex.io/perps) / [funding guide](https://app.testnet.dreamdex.io/docs/developers/perps-testnet). Paper credit has eligibility and market restrictions; verify the receiving address.
+2. Choose and review an exact USDso allowance to the official MarginBank.
+3. Confirm the approval before reviewing a deposit; verify the credited margin.
+4. Review the order, then distinguish its receipt from its actual fill events.
+5. Monitor current positions, margin and browser-local risk settings.
+6. Review an exit against freshly read remaining size; partial/no fills remain possible.
+7. Verify the position change and realized amounts in MarginBank.
 
 This describes the product workflow. Historical receipts below are not permission for a new transaction; current runtime limits still apply.
 
@@ -80,7 +83,7 @@ All entries concern the bounty EOA on Tokyo. They describe historical actions, n
 - **Current state:** SDK `getMarginAccount` plus positions/marks at the same `asOfBlock`. Polls every 15 seconds; failed or older-than-45-second snapshots are hidden.
 - **History:** up to 1,000 newest rows per source, UTC window boundaries, explicit coverage limits. Charts use observed realizing updates and filled notional, without synthetic points.
 - **Accounting:** realized **price** PnL excludes funding/fees. Funding is positive when paid and negative when received. Net fees are charges minus rebates; volume uses indexed quote notional.
-- **Identity:** a validated 2–24-character alias is stored per address in this browser. Aliases, badges and share cards do not verify identity, ownership or privacy.
+- **Identity:** account reads require connection and are keyed by Tokyo 50383 and the normalized wallet address. Disconnect/switch clears transient account controls and dialogs; local aliases, leverage and caches are wallet-scoped. Aliases, badges and share cards do not verify identity, ownership or privacy.
 - **Exports:** sorted, loaded table rows include account, chain and transaction hashes. Share images show observation time, block, history window and testnet/watch labels.
 
 Requested window ROI:
@@ -111,7 +114,7 @@ Max net deposits means the maximum cumulative net inflow during the window. **RO
            receipts ≠ fills ≠ positions
 ```
 
-Trading dependencies are lazy-loaded behind `/app`; the landing does not start wallet or market services. The visual system retains Syne, Plus Jakarta Sans and JetBrains Mono, with shared navy/violet/cyan/magenta tokens. Optional motion uses transform/opacity, reduced-motion support and a pause control.
+Trading dependencies are lazy-loaded behind `/app`; the landing does not start wallet or market services. The visual system retains Syne, Plus Jakarta Sans and JetBrains Mono. Landing, portfolio and guide use navy/violet/cyan/magenta tokens; the terminal uses its original black/charcoal surfaces and violet accents. Optional motion uses transform/opacity, reduced-motion support and a pause control.
 
 Key source: `src/features/landing/`, `src/features/profile/`, `src/features/terminal/`, `src/features/sentinel/`, `src/lib/operating-policy.mjs`, `src/lib/offline-transactions.mjs`. The compatibility HTTP terminal remains in `public/index.html` and `scripts/ui-server.mjs`.
 
@@ -157,9 +160,9 @@ npm run check -- --address 0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA
 ## Security and current limits
 
 - No app-held keys or LucidKeeper custody vault. Collateral is deposited in dreamDEX MarginBank; activity is public.
-- Bounty execution is restricted to EOA **`0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA`**, Tokyo **50383**, exact-2-USDso funding and reviewed IOC orders to verified pools. No unlimited approval, claims, Arena funding or wallet-to-wallet transfers.
-- UI controls do not expand the runtime allowlist: cancel, withdrawal and limit signing remain outside it. Every executable action requires full unsigned review. Any restored funding HOLD also blocks orders that could pull collateral.
-- Agent-led signing uses a separate user-mediated offline signer. General preparation CLIs remain preview-only/fail-closed. The requested future 720-second DOGE close window still needs tested runtime support; the current IOC limit is 300 seconds. [Operating contract](docs/OFFLINE_SIGNING.md).
+- **Any wallet can trade** on Tokyo **50383**: exact-amount approvals/deposits, IOC and limit orders, close requests, Guardian exits, cancellations and protocol-permitted withdrawals. Every action requires unsigned review and the user's browser-wallet approval. No unlimited approvals, claims or wallet-to-wallet transfers in LucidKeeper.
+- Account/network switches reset dialogs, drafts and armed state. Late work from a previous lifetime cannot dispatch another action or display its result in the new account. IOC encoding **2**, limit encoding **0**, grid helpers and the **300-second** expiry are unchanged. Opposite-side close sizing is revalidated, but the direct call has no protocol reduce-only flag.
+- The agent does not sign, broadcast, use keys or move funds. Retained offline/CLI policy is historical agent tooling, not a browser product restriction. [Separation and historical contract](docs/OFFLINE_SIGNING.md).
 - Guardian monitoring needs an active tab and wallet approval. Local settings are not guaranteed execution, protocol reduce-only protection or on-chain privacy.
 - This is not a security-audit certification. Existing dependency findings, connected-wallet/race-path coverage gaps and human assistive-technology checks are documented in [STATUS](STATUS.md), [dependency triage](docs/DEPENDENCY_TRIAGE.md) and [test sources](docs/TEST_DATA_SOURCES.md).
 

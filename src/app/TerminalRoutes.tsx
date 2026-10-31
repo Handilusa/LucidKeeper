@@ -57,33 +57,35 @@ function DocsPage() {
         <section>
           <h2>Start with a read-only visit</h2>
           <p>
-            Launch the terminal without connecting. It shows the public bounty account as an
-            explicitly labeled watch view. Market prices, positions and account health come from
-            real public reads.
+            Launch the terminal without connecting to inspect public market prices and candles.
+            Connect your wallet to load its positions, balances, history and account health.
+            Disconnected visits do not select the bounty wallet or any other account. On-chain
+            activity remains public; wallet-scoped display is not privacy.
           </p>
           <p>
-            The bounty build permits execution only from <code>{PROJECT.account}</code>. Other
-            connected wallets are read-only. Wallet connection is not authorization to sign.
+            Any connected browser wallet can trade on Tokyo. LucidKeeper holds no keys; review
+            every transaction before approving it in your wallet.
           </p>
         </section>
         <section id="funding">
-          <h2>Funding the bounty wallet</h2>
+          <h2>Funding your wallet</h2>
           <p>
-            You need Tokyo STT for gas and USDso for dreamDEX margin. If either is missing, stop and
-            request bounty funding in the official support channels. Verify Tokyo 50383: a generic
-            Somnia faucet may use another network. Do not use Arena credit or move funds from
-            another wallet.
+            You need Tokyo STT for gas and USDso for dreamDEX margin. Use the official dreamDEX app
+            for funding instructions and the one-time paper USDso credit, subject to eligibility and
+            allowed-market restrictions. Verify the receiving address and Tokyo 50383: a generic
+            Somnia faucet may use another network. If funding is unavailable, use official support.
           </p>
           <a className="button" href={PROJECT.sdk} target="_blank" rel="noreferrer">
             Official dreamDEX testnet guide ↗
           </a>
+          <a className="button" href="https://app.testnet.dreamdex.io/perps" target="_blank" rel="noreferrer">Official funding / paper USDso ↗</a>
         </section>
         <section>
           <h2>From collateral to settlement</h2>
           <ol>
-            <li>Connect the authorized bounty EOA and select Somnia Tokyo.</li>
+            <li>Connect your own wallet and select Somnia Tokyo.</li>
             <li>
-              Open Manage collateral. Review the exact 2 USDso approval, then separately review the
+              Open Manage collateral. Choose an exact USDso amount and review its approval, then separately review the
               deposit after confirmation.
             </li>
             <li>
@@ -112,8 +114,9 @@ function DocsPage() {
             remaining size; a close is not a guaranteed reduce-only operation.
           </p>
           <p>
-            Limit, cancel and withdrawal controls may be visible in the terminal but are outside
-            this bounty build’s execution allowlist. No mainnet support or custody by LucidKeeper.
+            IOC, limit, cancellation and withdrawals require separate wallet reviews. Limit orders
+            use the existing five-minute expiry. Withdrawals depend on protocol health and credit
+            rules. No mainnet support or custody by LucidKeeper.
           </p>
         </section>
         <section>

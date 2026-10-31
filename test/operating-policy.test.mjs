@@ -25,10 +25,11 @@ test('written margin release permits only explicit bounty EOA/Tokyo context', ()
     assert.throws(() => assertOnchainActionAllowed(action, { chainId: MARGIN_HOLD.chainId, wallet: capture.account.address }), /outside the bounty allowlist/);
 });
 
-test('every browser write entry point imports the shared hard-stop and review rules', () => {
+test('browser write entry points use product review/lifetime rules, not agent policy', () => {
   for (const path of ['trade/TradingBox', 'portfolio/PositionsTable', 'margin/MarginHubModal', 'sentinel/RiskGuardian']) {
     const source = readFileSync(new URL(`../src/features/${path}.tsx`, import.meta.url), 'utf8');
-    assert.match(source, /assertOnchainActionAllowed\(/);
+    assert.doesNotMatch(source, /assertOnchainActionAllowed|operating-policy/);
+    assert.match(source, /lifetime\.assert\(/);
     assert.match(source, /reviewBrowserWrite\(/);
   }
   const source = readFileSync(new URL('../src/lib/browser-policy.ts', import.meta.url), 'utf8');

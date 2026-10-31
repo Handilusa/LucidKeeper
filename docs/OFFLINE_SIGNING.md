@@ -1,10 +1,12 @@
 # Offline signing contract
 
+> **Superseded operational instructions — 31 October 2026.** The current user directive forbids the agent from signing, broadcasting, using keys or moving funds. The browser product is independent: any connected wallet on Tokyo can review and sign supported contract actions itself. `browser-policy.ts` no longer imports `operating-policy.mjs`; the historical sole-EOA/HOLD/exact-2 restrictions below apply only to retained offline agent tooling, not the application. Historical records do not authorize a new handoff or send. Test-only mocked wallets and financial fixtures are now authorized; never use them for production data.
+
 ## Current operational state — 30 October 2026: wallet-scoped HOLD release
 
 The earlier general execution permission did not release HOLD. The owner's subsequent explicit written confirmation on **2026-10-30** states that dreamDEX permits these funds as margin for **`0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA` on Tokyo 50383 only**. Runtime release requires that explicit wallet/network context; missing/foreign context is rejected before transport. This is owner-reported permission, not independently verified team or wallet-history evidence; `[screenshot/date]` was a placeholder. [Full record](../STATUS.md#owner-authorization--2026-10-30). No live transaction executed in this update.
 
-The application supports the user's connected browser wallet or separate offline signer; OpenCode does not inspect signer secrets or configure another wallet. Both transports obey the same sole-EOA/chain/HOLD/allowlist rules. Historical receipts do not authorize transactions. Cancel, withdraw, limit orders and claims remain outside the currently reviewed runtime allowlist; adding UI controls does not authorize those actions. No Arena funding or wallet-to-wallet transfer is allowed.
+The following sections preserve the former offline signing contract. They are not current product restrictions. Browser signing uses the connected user's wallet and independent Tokyo contract validation; no offline handoffs or keys are accepted by the application.
 
 **Agent-led signing remains a user-mediated offline handoff**, with the user's separate signer; OpenCode does not use a signing key or operate a browser wallet. The implemented browser review/gates describe application capability, not authorization for agent browser signing. Earlier explicit authorization covered the completed push/deployment checks through `0dce074`; newly supplied local instructions reserve further publication to the user, with no agent push/login or credential inspection. The scoped HOLD release does not approve any individual transaction.
 

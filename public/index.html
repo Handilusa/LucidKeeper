@@ -18,7 +18,7 @@
   <main>
     <h1>LucidKeeper</h1>
     <p>Read-only compatibility terminal · Somnia Tokyo testnet · chain 50383</p>
-    <p id="account-address">Account: loading…</p>
+    <p id="account-address">No wallet connected. Open the active React frontend to view your account.</p>
     <p id="read-status" role="status">Loading public reads…</p>
     <dl class="metrics">
       <div class="panel"><dt>Block</dt><dd id="live-block">—</dd></div>
@@ -31,7 +31,7 @@
     </dl>
     <section class="panel" aria-labelledby="positions-title">
       <h2 id="positions-title">Positions</h2>
-      <p id="positions-status">Loading account state…</p>
+      <p id="positions-status">Connect your wallet in the active frontend to view your positions.</p>
       <p>Position details, PnL, risk controls and share cards require the active React frontend. Run <code>npm run build</code> and restart this server to serve it.</p>
     </section>
     <p><a href="/api/evidence">Historical execution evidence (27 October 2026)</a> — not a current position or balance.</p>
@@ -51,7 +51,11 @@
         const data = await response.json();
         const account = data.account;
         const market = data.market;
-        if (!account || account.error || !Array.isArray(account.activePools)) {
+        if (!account) {
+          clear(accountFields);
+          text('account-address', 'No wallet connected. Open the active React frontend to view your account.');
+          text('positions-status', 'Connect your wallet in the active frontend to view your positions.');
+        } else if (account.error || !Array.isArray(account.activePools)) {
           clear(accountFields);
           text('account-address', 'Account reads unavailable');
           text('positions-status', 'Positions unavailable — account read failed.');

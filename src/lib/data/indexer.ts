@@ -240,6 +240,7 @@ export async function fetchUserTradeHistory(
     // 1. Process Fills
     const fills = json?.data?.Fill || [];
     for (const f of fills) {
+      if (f.taker?.toLowerCase() !== normalizedAccount && f.maker?.toLowerCase() !== normalizedAccount) continue;
       const market = ALL_VERIFIED_PERP_MARKETS.find(
         (m) => m.poolAddress.toLowerCase() === f.pool?.toLowerCase()
       );
@@ -272,6 +273,7 @@ export async function fetchUserTradeHistory(
     // 2. Process Margin Events (filtering out internal lock/unlock bookkeeping to highlight deposits/withdrawals)
     const marginEvents = json?.data?.MarginEvent || [];
     for (const m of marginEvents) {
+      if (m.account?.toLowerCase() !== normalizedAccount) continue;
       const kindStr = String(m.kind || '');
       const isDeposit = /deposit/i.test(kindStr);
       const isWithdraw = /withdraw/i.test(kindStr);
@@ -303,7 +305,7 @@ export async function fetchUserTradeHistory(
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(
-          `lucidkeeper_cache_trades_${normalizedAccount}_${limit}_${offset}`,
+          `lucidkeeper_cache_trades_50383_${normalizedAccount}_${limit}_${offset}`,
           JSON.stringify(items)
         );
       } catch {
@@ -318,7 +320,7 @@ export async function fetchUserTradeHistory(
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem(
-          `lucidkeeper_cache_trades_${normalizedAccount}_${limit}_${offset}`
+          `lucidkeeper_cache_trades_50383_${normalizedAccount}_${limit}_${offset}`
         );
         if (cached) {
           const parsed = JSON.parse(cached);
@@ -354,6 +356,7 @@ export async function fetchUserActiveOrders(account: string): Promise<ActiveOrde
       ) {
         id
         orderId
+        owner
         pool
         isBid
         side
@@ -385,6 +388,7 @@ export async function fetchUserActiveOrders(account: string): Promise<ActiveOrde
 
     const activeOrders: ActiveOrderItem[] = [];
     for (const o of rawOrders) {
+      if (o.owner?.toLowerCase() !== normalizedAccount) continue;
       // Order ID is often pool_orderId or pool address in id
       let poolAddr = o.pool;
       if (!poolAddr && o.id && o.id.includes('_')) {

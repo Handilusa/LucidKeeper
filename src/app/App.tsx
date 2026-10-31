@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAccount, useReadContract, useBalance, useSwitchChain, usePublicClient } from 'wagmi';
+import { useAccount, useReadContract, useBalance, usePublicClient } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { AppHeader } from '@/features/terminal/AppHeader';
@@ -19,11 +19,19 @@ import { readDisplay } from '@/lib/data/readDisplay';
 import { normalizedFunding8h } from '@/lib/math/preview';
 import { computeLiquidationPrice } from '@/lib/math/liquidation';
 import { GuardianOverview } from '@/features/sentinel/GuardianOverview';
-import { AUTHORIZED_SIGNER, MARGIN_HOLD } from '@/lib/operating-policy.mjs';
+import { NetworkNotice } from '@/features/terminal/NetworkNotice';
+import { FundingGuide } from '@/features/terminal/FundingGuide';
+import { toast } from 'sonner';
+import { connectedAccount, accountSessionKey } from '@/lib/data/accountScope';
 
 export const App: React.FC = () => {
   const { address, isConnected, chainId } = useAccount();
-  const { switchChain } = useSwitchChain();
+  const account = connectedAccount(address, isConnected);
+  return <AccountTerminal key={accountSessionKey(account, chainId)} currentAccount={account} />;
+};
+
+const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ currentAccount }) => {
+  const { isConnected, chainId } = useAccount();
   const publicClient = usePublicClient({ chainId: 50383 });
   const [selectedMarket, setSelectedMarket] = useState<MarketInfo>(ALL_VERIFIED_PERP_MARKETS[0]);
   const [marginHubOpen, setMarginHubOpen] = useState(false);
@@ -33,43 +41,41 @@ export const App: React.FC = () => {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 15000);
-    return () => clearInterval(timer);
+    return () => { clearInterval(timer); toast.dismiss(); };
   }, []);
   const { data: markets = ALL_VERIFIED_PERP_MARKETS } = useQuery({
     queryKey: ['perpMarkets'],
     queryFn: fetchPerpMarkets,
     staleTime: 60000,
   });
-  const currentAccount = (address || '0x1420cF8Bb9D92C3fDb674ECc5A57295c59078fDA') as `0x${string}`;
-
   const gasQuery = useBalance({
     address: currentAccount,
     chainId: 50383,
-    query: { refetchInterval: 15000 },
+    query: { enabled: !!currentAccount, refetchInterval: 15000 },
   });
   const walletQuery = useReadContract({
     address: CONTRACT_ADDRESSES.COLLATERAL_USDSO,
     abi: erc20Abi,
     functionName: 'balanceOf',
-    args: [currentAccount],
+    args: currentAccount ? [currentAccount] : undefined,
     chainId: 50383,
-    query: { refetchInterval: 15000 },
+    query: { enabled: !!currentAccount, refetchInterval: 15000 },
   });
   const stateQuery = useReadContract({
     address: CONTRACT_ADDRESSES.MARGIN_BANK,
     abi: marginBankAbi,
     functionName: 'getAccountState',
-    args: [currentAccount],
+    args: currentAccount ? [currentAccount] : undefined,
     chainId: 50383,
-    query: { refetchInterval: 3000 },
+    query: { enabled: !!currentAccount, refetchInterval: 3000 },
   });
   const healthQuery = useReadContract({
     address: CONTRACT_ADDRESSES.MARGIN_BANK,
     abi: marginBankAbi,
     functionName: 'getAccountHealth',
-    args: [currentAccount],
+    args: currentAccount ? [currentAccount] : undefined,
     chainId: 50383,
-    query: { refetchInterval: 3000 },
+    query: { enabled: !!currentAccount, refetchInterval: 3000 },
   });
   const markQuery = useReadContract({
     address: selectedMarket.poolAddress as `0x${string}`,
@@ -155,7 +161,7 @@ export const App: React.FC = () => {
     refetchInterval: 60000,
     staleTime: 30000,
   });
-  const accountState = stateQuery.data;
+  const accountState = currentAccount ? stateQuery.data : undefined;
 
   const positionQuery = useQuery({
     queryKey: [
@@ -165,10 +171,10 @@ export const App: React.FC = () => {
       accountState?.activePerpPools,
       selectedMarket.poolAddress,
     ],
-    enabled: !!publicClient && !!accountState,
+    enabled: !!currentAccount && !!publicClient && !!accountState,
     refetchInterval: 3000,
     queryFn: async () => {
-      if (!publicClient || !accountState) throw new Error('Account state unavailable');
+      if (!currentAccount || !publicClient || !accountState) throw new Error('Connected account state unavailable');
       // A liquidation line must describe a single block, including portfolio health.
       const blockNumber = await publicClient.getBlockNumber();
       const [health, pinnedState] = await Promise.all([publicClient.readContract({
@@ -219,13 +225,6 @@ export const App: React.FC = () => {
             maintenanceMarginBps: BigInt(params.maintenanceMarginBps),
             oneBase: 10n ** BigInt(market.baseDecimals),
           }) : null;
-          let leverage = 5;
-          try {
-            const saved = Number(localStorage.getItem(`lucidkeeper_leverage_${poolAddress}`));
-            if (Number.isFinite(saved) && saved >= 1 && saved <= 100) leverage = saved;
-          } catch {
-            /* Storage is optional. */
-          }
           const matchingTrade = getTradeHistory(currentAccount).find(
             (h) => h.type === 'order' && h.marketSymbol === market.baseSymbol
           );
@@ -242,8 +241,6 @@ export const App: React.FC = () => {
             liquidationPrice: liquidation === null ? null : Number(formatUnits(liquidation, market.quoteDecimals)),
             readBlock: blockNumber.toString(),
             maintenanceMarginBps: params.maintenanceMarginBps,
-            margin: (size * entryPrice) / leverage,
-            leverage,
             openTxHash: matchingTrade?.hash || '',
             baseDecimals: market.baseDecimals,
             quoteDecimals: market.quoteDecimals,
@@ -257,28 +254,31 @@ export const App: React.FC = () => {
   });
 
   const marginReady =
-    !!healthQuery.data && !healthQuery.isError && now - healthQuery.dataUpdatedAt < 30000;
+    !!currentAccount && !!healthQuery.data && !healthQuery.isError && now - healthQuery.dataUpdatedAt < 30000;
   const unlockedMargin = accountState
     ? Number(formatUnits(accountState.unlockedCollateralBalance, 18))
     : 0;
-  const freeCollateral = healthQuery.data
+  const freeCollateral = currentAccount && healthQuery.data
     ? Math.max(0, Number(formatUnits(healthQuery.data![0] - healthQuery.data![1], 18)))
     : 0;
-  const availableRead = readDisplay(healthQuery.data ? freeCollateral : null, healthQuery.dataUpdatedAt, healthQuery.isError, now, 30000);
-   const positions = positionQuery.data?.items || [];
+  const availableRead = readDisplay(currentAccount && healthQuery.data ? freeCollateral : null, healthQuery.dataUpdatedAt, healthQuery.isError, now, 30000);
   const positionsError =
-    stateQuery.isError ||
+    !!currentAccount && (stateQuery.isError ||
     positionQuery.isError ||
     (!stateQuery.isPending && now - stateQuery.dataUpdatedAt > 30000) ||
-    (!positionQuery.isPending && now - positionQuery.dataUpdatedAt > 30000);
-  const canManage = isConnected && address?.toLowerCase() === AUTHORIZED_SIGNER.toLowerCase() && chainId === 50383 && !MARGIN_HOLD.active && !positionsError && !!positionQuery.data;
+    (!positionQuery.isPending && now - positionQuery.dataUpdatedAt > 30000));
+  const portfolio = currentAccount && !positionsError ? positionQuery.data : undefined;
+  const positions = portfolio?.items || [];
+  const accountLoading = !!currentAccount && (stateQuery.isPending || positionQuery.isPending);
+  const canManage = isConnected && !!currentAccount && chainId === 50383 && !positionsError && !!positionQuery.data;
   const refreshAccount = React.useCallback(() => {
+    if (!currentAccount) return;
     void stateQuery.refetch();
     void healthQuery.refetch();
     void positionQuery.refetch();
     void walletQuery.refetch();
     void gasQuery.refetch();
-  }, [stateQuery.refetch, healthQuery.refetch, positionQuery.refetch, walletQuery.refetch, gasQuery.refetch]);
+  }, [currentAccount, stateQuery.refetch, healthQuery.refetch, positionQuery.refetch, walletQuery.refetch, gasQuery.refetch]);
   const navigate = (view: 'chart' | 'activity' | 'risk') => {
     if (view === 'risk') {
       if (riskRef.current) {
@@ -294,14 +294,7 @@ export const App: React.FC = () => {
         Skip to trading workspace
       </a>
       <AppHeader onNavigate={navigate} />
-      {isConnected && chainId !== 50383 && (
-        <div className="network-alert" role="alert">
-          <span>Wrong network. Trading requires Somnia Tokyo testnet (50383).</span>
-          <button className="button" onClick={() => switchChain({ chainId: 50383 })}>
-            Switch to Tokyo
-          </button>
-        </div>
-      )}
+      <NetworkNotice />
       <main className="terminal" id="terminal" tabIndex={-1}>
         <MarketHeader
           markets={markets}
@@ -335,12 +328,12 @@ export const App: React.FC = () => {
         <div className="workspace" data-mobile-view={mobileView}>
           <div className="guardian-area">
             <GuardianOverview
-              equity={positionQuery.data ? Number(formatUnits(positionQuery.data.health[0], 18)) : null}
-              maintenance={positionQuery.data ? Number(formatUnits(positionQuery.data.health[2], 18)) : null}
-              loading={!positionsError && (stateQuery.isPending || positionQuery.isPending)}
+              equity={portfolio ? Number(formatUnits(portfolio.health[0], 18)) : null}
+              maintenance={portfolio ? Number(formatUnits(portfolio.health[2], 18)) : null}
+              loading={!positionsError && accountLoading}
               stale={positionsError}
               updatedAt={positionQuery.dataUpdatedAt}
-              connected={isConnected}
+              connected={!!currentAccount}
               onOpen={() => { navigate('risk'); riskRef.current?.scrollIntoView({ block: 'start' }); }}
               onRetry={refreshAccount}
             />
@@ -372,13 +365,14 @@ export const App: React.FC = () => {
             />
           </section>
           <section className="activity-area" id="activity" aria-label="Portfolio activity">
+            {currentAccount && <FundingGuide gas={gasQuery.isError ? undefined : gasQuery.data?.value} wallet={walletQuery.isError ? undefined : walletQuery.data} margin={marginReady ? freeCollateral : null} onManage={() => setMarginHubOpen(true)} />}
             <AccountSummary
               account={currentAccount}
               connected={isConnected}
-              wallet={readDisplay(walletQuery.data !== undefined ? Number(formatUnits(walletQuery.data, 18)) : null, walletQuery.dataUpdatedAt, walletQuery.isError, now, 45000)}
+              wallet={readDisplay(currentAccount && walletQuery.data !== undefined ? Number(formatUnits(walletQuery.data, 18)) : null, walletQuery.dataUpdatedAt, walletQuery.isError, now, 45000)}
               deposited={readDisplay(accountState ? unlockedMargin : null, stateQuery.dataUpdatedAt, stateQuery.isError, now, 30000)}
               available={availableRead}
-              gas={readDisplay(gasQuery.data ? Number(gasQuery.data.formatted) : null, gasQuery.dataUpdatedAt, gasQuery.isError, now, 45000)}
+              gas={readDisplay(currentAccount && gasQuery.data ? Number(gasQuery.data.formatted) : null, gasQuery.dataUpdatedAt, gasQuery.isError, now, 45000)}
               onManage={() => setMarginHubOpen(true)}
             />
             <PositionsTable
@@ -387,7 +381,7 @@ export const App: React.FC = () => {
               markPrice={markPrice}
               account={currentAccount}
               canManage={canManage}
-              loading={stateQuery.isPending || positionQuery.isPending}
+              loading={accountLoading}
               error={positionsError}
               onOpenCardModal={setCardPosition}
               onPositionClosed={refreshAccount}
@@ -440,6 +434,7 @@ export const App: React.FC = () => {
         isOpen={marginHubOpen}
         onClose={() => setMarginHubOpen(false)}
         unlockedMargin={accountState && !stateQuery.isError ? unlockedMargin : null}
+        onConfirmed={refreshAccount}
       />
       <TradeCardModal
         isOpen={!!cardPosition}

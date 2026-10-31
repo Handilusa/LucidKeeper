@@ -15,7 +15,7 @@ type ObservedPortfolio = {
 };
 const bountyAccount = '0x1420cf8bb9d92c3fdb674ecc5a57295c59078fda';
 export async function terminalFixture(page: Page) {
-  const state = { pageErrors: [] as string[], consoleErrors: [] as string[], blocked: [] as string[], reads: [] as { functionName: string; block: string }[], candleRequests: [] as { pool: string; interval: number }[], portfolios: {} as Record<string, ObservedPortfolio>, observationErrors: [] as string[] };
+  const state = { pageErrors: [] as string[], consoleErrors: [] as string[], blocked: [] as string[], accountRequests: [] as string[], reads: [] as { functionName: string; block: string }[], candleRequests: [] as { pool: string; interval: number }[], portfolios: {} as Record<string, ObservedPortfolio>, observationErrors: [] as string[] };
   page.on('pageerror', error => state.pageErrors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') state.consoleErrors.push(message.text()); });
   page.on('response', async response => {
@@ -55,6 +55,7 @@ export async function terminalFixture(page: Page) {
     if (url.hostname === 'api.hideki2.infra.testnet.somnia.network') {
       const body = request.postDataJSON();
       for (const call of (Array.isArray(body) ? body : [body]) as RpcRequest[]) {
+        if (call.method === 'eth_getBalance' || call.method === 'eth_getLogs') state.accountRequests.push(call.method);
         if (!['eth_chainId', 'eth_blockNumber', 'eth_getBalance', 'eth_getCode', 'eth_getLogs', 'eth_getTransactionCount', 'eth_getTransactionReceipt', 'eth_getTransactionByHash', 'eth_getBlockByNumber', 'eth_getBlockByHash', 'eth_call'].includes(call.method)) {
           state.blocked.push(call.method); return route.abort('blockedbyclient');
         }
@@ -62,6 +63,7 @@ export async function terminalFixture(page: Page) {
           try {
             const tx = call.params?.[0] as { data: Hex };
             const { functionName } = decodeFunctionData({ abi, data: tx.data });
+            if (['balanceOf', 'allowance', 'getAccountState', 'getAccountHealth', 'getPosition'].includes(functionName)) state.accountRequests.push(functionName);
             if (!readNames.has(functionName)) throw new Error('Non-read selector');
             state.reads.push({ functionName, block: String(call.params?.[1]) });
           } catch { state.blocked.push('unknown/non-read eth_call'); return route.abort('blockedbyclient'); }
@@ -71,10 +73,23 @@ export async function terminalFixture(page: Page) {
       const body = request.postDataJSON();
       if (!body || /\bmutation\b/i.test(body.query)) { state.blocked.push('GraphQL mutation'); return route.abort('blockedbyclient'); }
       if (body.query.includes('query Candles')) state.candleRequests.push(body.variables);
+      if (body.variables?.account || /\b(UserTradeHistory|UserActiveOrders)\b/.test(body.query)) state.accountRequests.push('account GraphQL');
     }
     return route.continue();
   });
   return state;
+}
+
+export async function assertDisconnectedAccount(page: Page, state: Awaited<ReturnType<typeof terminalFixture>>, positionsVisible = true) {
+  await expect(page.locator('.guardian-identity h2')).toHaveText('Connect wallet to view risk');
+  await expect(page.locator('.guardian-health dd')).toHaveText(['— USDso', '— USDso']);
+  await expect(page.locator('.account-heading')).not.toContainText('0x1420');
+  if (positionsVisible) {
+    await expect(page.getByRole('tab', { name: 'Positions', exact: true })).toBeVisible();
+    await expect(page.getByText('Connect your wallet to view your activity', { exact: true })).toBeVisible();
+    await expect(page.locator('[role="tabpanel"] tbody tr')).toHaveCount(0);
+  }
+  expect(state.accountRequests).toEqual([]);
 }
 export async function assertReadOnly(state: Awaited<ReturnType<typeof terminalFixture>>) {
   expect(state.blocked).toEqual([]);

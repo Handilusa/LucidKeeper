@@ -5,6 +5,7 @@ import { terminalFixture, assertObservedPortfolio, assertReadOnly } from './term
 test('switching away from an observed position disposes chart overlays cleanly', async ({ page }, testInfo) => {
   const state = await terminalFixture(page);
   await page.goto('/app');
+  test.skip(await page.locator('.guardian-identity h2').textContent() === 'Connect wallet to view risk', 'Requires a real connected wallet: disconnected visits no longer inspect bounty positions. Historical overlay regression retained, no wallet injection.');
   const snapshot = await assertObservedPortfolio(page, state);
   const openPool = Object.entries(snapshot.positions).find(([, size]) => BigInt(size) !== 0n)?.[0];
   test.skip(!openPool, 'No real open position available to exercise overlay disposal.');

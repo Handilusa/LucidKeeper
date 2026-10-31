@@ -9,8 +9,9 @@ import { CONTRACT_ADDRESSES, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 import { formatDynamicPrice } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
 import { closeQuantity, positionByPool } from '@/lib/math/close';
-import { assertOnchainActionAllowed } from '@/lib/operating-policy.mjs';
-import { reviewBrowserWrite } from '@/lib/browser-policy';
+import { reviewBrowserWrite, assertBrowserAccount } from '@/lib/browser-policy';
+import { useWalletLifetime } from '@/lib/useWalletLifetime';
+import { walletError } from '@/lib/walletError';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import {
   fetchUserTradeHistory,
@@ -41,8 +42,6 @@ export interface PositionItem {
   liquidationPrice?: number | null;
   readBlock?: string;
   maintenanceMarginBps?: number;
-  margin: number;
-  leverage?: number;
   openTxHash: string;
   baseDecimals?: number;
   quoteDecimals?: number;
@@ -71,6 +70,7 @@ export function PositionsTable({
   onSelectMarket,
 }: PositionsTableProps) {
   const publicClient = usePublicClient({ chainId: 50383 });
+  const lifetime = useWalletLifetime(account);
   const [activeTab, setActiveTab] = useState('positions');
   const [page, setPage] = useState(0);
   const [closePool, setClosePool] = useState<string | null>(null);
@@ -79,9 +79,10 @@ export function PositionsTable({
   const closeLock = useRef(false);
   const [percent, setPercent] = useState(100);
   const history = useQuery({
-    queryKey: ['tradeHistory', account, page],
+    queryKey: ['tradeHistory', 50383, account, page],
     enabled: activeTab === 'history' && !!account,
     queryFn: async () => {
+      if (!account) throw new Error('Connect a wallet to view history');
       let failed = false;
       let items: TradeHistoryItem[] | undefined;
       try {
@@ -105,18 +106,21 @@ export function PositionsTable({
     },
   });
   const orders = useQuery({
-    queryKey: ['activeOrders', account],
-    queryFn: () => fetchUserActiveOrders(account),
+    queryKey: ['activeOrders', 50383, account],
+    queryFn: () => {
+      if (!account) throw new Error('Connect a wallet to view orders');
+      return fetchUserActiveOrders(account);
+    },
     enabled: activeTab === 'orders' && !!account,
     refetchInterval: 15000,
   });
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash });
+  const receipt = useWaitForTransactionReceipt({ hash, chainId: 50383 });
   const busy = preparing || isPending || receipt.isLoading;
   const notified = useRef<string | null>(null);
   const lastClose = useRef<{ pos: PositionItem; percent: number; quantity: number } | null>(null);
   useEffect(() => {
-    if (receipt.data?.status !== 'success' || !hash || notified.current === hash) return;
+    if (!lifetime.current() || receipt.data?.status !== 'success' || !hash || notified.current === hash) return;
     notified.current = hash;
     if (lastClose.current) {
       const { pos, percent: value, quantity } = lastClose.current;
@@ -145,7 +149,7 @@ export function PositionsTable({
     closeLock.current = true;
     setPreparing(true);
     try {
-      assertOnchainActionAllowed('order', { chainId: 50383, wallet: account });
+      lifetime.assert();
       const market = ALL_VERIFIED_PERP_MARKETS.find(
         (m) => m.poolAddress.toLowerCase() === pos.poolAddress.toLowerCase()
       );
@@ -168,37 +172,56 @@ export function PositionsTable({
         args: [current.size < 0n, 0n, rawPrice, rawQuantity, expiry, 2, 0, zeroAddress, 0n],
         gas: 5_000_000n,
       } as const;
-      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', account as `0x${string}`, { market: `${pos.marketSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Request ${value}% position reduction with opposite-side IOC; fill is not guaranteed.` });
+      const reviewed = await reviewBrowserWrite(publicClient, request, 'order', account as `0x${string}`, { market: `${pos.marketSymbol}-PERP`, size: formatUnits(rawQuantity, market.baseDecimals), description: `Request ${value}% position reduction with opposite-side IOC; fill is not guaranteed.` }, lifetime.assert);
       // Wallet review can take time: recheck position after approval and stop on change.
       const finalPosition = await publicClient.readContract({ address: CONTRACT_ADDRESSES.MARGIN_BANK, abi: marginBankAbi, functionName: 'getPosition', args: [account as `0x${string}`, pos.poolAddress as `0x${string}`] });
       closeQuantity(current.size, finalPosition.size, value, grid.lotSize);
-      assertOnchainActionAllowed('order', { chainId: 50383, wallet: account });
+      lifetime.assert();
       lastClose.current = { pos, percent: value, quantity: Number(formatUnits(rawQuantity, market.baseDecimals)) };
+      assertBrowserAccount(account);
       await writeContractAsync({ ...request, ...reviewed });
+      lifetime.assert();
       toast.info('Close order submitted · awaiting confirmation');
     } catch (e) {
+      if (!lifetime.current()) return;
       toast.error('Close order rejected or failed', {
-        description: (e as { shortMessage?: string }).shortMessage || (e as Error).message,
+        description: walletError(e),
       });
       onPositionClosed?.();
     } finally {
       closeLock.current = false;
-      setPreparing(false);
+      if (lifetime.current()) setPreparing(false);
     }
   }
   async function cancelOrder(order: ActiveOrderItem) {
-    if (!canManage || busy) return;
+    if (!canManage || busy || closeLock.current || !publicClient) return;
+    closeLock.current = true;
+    setPreparing(true);
     lastClose.current = null;
     try {
-      assertOnchainActionAllowed('cancel', { chainId: 50383, wallet: account });
-      throw new Error(`Cancellation #${order.orderId} requires a separately approved runtime allowlist change`);
+      lifetime.assert();
+      const latest = await fetchUserActiveOrders(account);
+      lifetime.assert();
+      if (!latest.some(item => item.orderId === order.orderId && item.poolAddress.toLowerCase() === order.poolAddress.toLowerCase())) throw new Error('Order is no longer active. Refresh open orders.');
+      const request = { chainId: 50383, address: order.poolAddress as `0x${string}`, abi: perpPoolAbi, functionName: 'cancelOrder', args: [BigInt(order.orderId)] } as const;
+      const reviewed = await reviewBrowserWrite(publicClient, request, 'cancel', account as `0x${string}`, { market: order.marketSymbol, size: order.orderId, description: `Cancel your resting order #${order.orderId}; it may fill before cancellation confirms.` }, lifetime.assert);
+      lifetime.assert();
+      assertBrowserAccount(account);
+      await writeContractAsync({ ...request, ...reviewed });
+      lifetime.assert();
+      toast.info('Cancellation submitted · awaiting confirmation');
     } catch (e) {
+      if (!lifetime.current()) return;
       toast.error('Cancellation rejected or failed', {
-        description: (e as { shortMessage?: string }).shortMessage || (e as Error).message,
+        description: walletError(e),
       });
+    } finally {
+      closeLock.current = false;
+      if (lifetime.current()) setPreparing(false);
     }
   }
   const refresh = () => {
+    if (!account) return;
     if (activeTab === 'positions') onPositionClosed?.();
     else if (activeTab === 'orders') void orders.refetch();
     else void history.refetch();
@@ -209,17 +232,17 @@ export function PositionsTable({
       <div className="activity-tabs">
         <Tabs.List className="tab-list" aria-label="Account activity">
           <Tabs.Trigger value="positions">
-            Positions {!loading && !error ? `(${positions.length})` : ''}
+            Positions {account && !loading && !error ? `(${positions.length})` : ''}
           </Tabs.Trigger>
           <Tabs.Trigger value="orders">Open orders</Tabs.Trigger>
           <Tabs.Trigger value="history">Trade history</Tabs.Trigger>
         </Tabs.List>
-        <button className="icon-button" aria-label="Refresh activity" onClick={refresh}>
+        <button className="icon-button" aria-label="Refresh activity" disabled={!account} onClick={refresh}>
           <RefreshCw size={14} aria-hidden="true" />
         </button>
       </div>
       <Tabs.Content value="positions">
-        {error ? (
+        {!account ? <DisconnectedActivity /> : error ? (
           <div className="empty-state" role="status">
             <strong>Positions unavailable</strong>
             <span>Account reads failed or became stale. Refresh to try again.</span>
@@ -324,7 +347,7 @@ export function PositionsTable({
         )}
       </Tabs.Content>
       <Tabs.Content value="orders">
-        {orders.isPending ? (
+        {!account ? <DisconnectedActivity /> : orders.isPending ? (
           <div className="empty-state" role="status">
             <LoadingState label="Loading indexed orders…" onRetry={refresh} />
           </div>
@@ -383,8 +406,8 @@ export function PositionsTable({
                     <td>
                       <button
                         className="button text-rose-400"
-                        disabled
-                        title="Cancellation is outside the runtime bounty allowlist"
+                        disabled={!canManage || busy}
+                        title="Review cancellation in your connected wallet"
                         onClick={() => void cancelOrder(order)}
                       >
                         Cancel
@@ -398,7 +421,7 @@ export function PositionsTable({
         )}
       </Tabs.Content>
       <Tabs.Content value="history">
-        {history.isPending ? (
+        {!account ? <DisconnectedActivity /> : history.isPending ? (
           <div className="empty-state" role="status">
             <LoadingState label="Loading execution history…" onRetry={refresh} />
           </div>
@@ -452,7 +475,7 @@ export function PositionsTable({
             ))}
           </div>
         )}
-        <div className="flex items-center justify-between px-4 py-3" role="group" aria-label="History pages">
+        {account && <div className="flex items-center justify-between px-4 py-3" role="group" aria-label="History pages">
           <button className="button" disabled={!page} onClick={() => setPage((value) => value - 1)}>
             Previous
           </button>
@@ -470,7 +493,7 @@ export function PositionsTable({
           >
             Next
           </button>
-        </div>
+        </div>}
       </Tabs.Content>
       {hash && (
         <div className="transaction-status px-4 pb-3" role="status">
@@ -530,4 +553,11 @@ export function PositionsTable({
       </Modal>
     </Tabs.Root>
   );
+}
+
+function DisconnectedActivity() {
+  return <div className="empty-state" role="status">
+    <strong>Connect your wallet to view your activity</strong>
+    <span>Your positions, open orders and trade history are loaded only for your connected address.</span>
+  </div>;
 }

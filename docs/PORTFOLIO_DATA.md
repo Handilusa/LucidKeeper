@@ -4,7 +4,7 @@
 
 ## Identity and freshness
 
-Disconnected visits inspect the explicitly labeled public bounty account. A connected address switches the read scope; no URL, alias, badge or share image verifies ownership. Aliases are validated (2–24 ASCII letters/numbers/spaces/underscore/hyphen), stored per address in this browser, and removable by saving an empty value. No on-chain identity or privacy claim.
+Updated 31 October 2026: disconnected visits show a connect-wallet state and make no account/history queries. There is no fallback to the bounty EOA. Connected reads and caches are keyed by Tokyo 50383 and normalized address; switching/disconnecting remounts account UI, clearing dialogs, drafts and receipt presentation. Aliases are validated (2–24 ASCII letters/numbers/spaces/underscore/hyphen), wallet/network-scoped in this browser, and removable by saving an empty value. Legacy unscoped storage is not imported or deleted. No URL, alias, badge or share image verifies ownership or on-chain privacy.
 
 Account snapshots poll every 15 seconds. The SDK's `getMarginAccount` pins its fields to `asOfBlock`; position and mark reads use that same block. Failed snapshots or snapshots older than 45 seconds are hidden. Each view links the read block and shows the observation time. Wallet funds are excluded from MarginBank equity.
 

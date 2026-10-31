@@ -34,11 +34,11 @@ const faq = [
   ],
   [
     'Can any wallet trade?',
-    'Anyone can inspect the public demo. This bounty build only permits execution from the configured bounty EOA on Tokyo. Connecting another wallet does not authorize it to trade.',
+    'Yes. Connect your own browser wallet on Somnia Tokyo (50383), obtain STT gas and eligible USDso collateral, and review each action in your wallet. LucidKeeper never holds your keys. Protocol funding and market restrictions still apply.',
   ],
   [
     'Where do I get test collateral?',
-    'Request bounty USDso and Tokyo STT through the official dreamDEX/Somnia support channels. Confirm the network and token before funding. Arena credit and other wallets are not funding sources for this build.',
+    'Open the official dreamDEX testnet app for paper USDso and Tokyo STT guidance. Verify the receiving address, chain and credit eligibility. Paper credit has market restrictions; use official support if funding is unavailable. See the funding guide in the app.',
   ],
   [
     'Does a confirmed order mean I have a position?',
@@ -583,7 +583,7 @@ export default function Landing() {
                   <strong>USDso</strong> funds dreamDEX margin.
                 </p>
                 <p>
-                  Request bounty funding through official support. Generic Somnia faucets may target
+                  Follow official dreamDEX funding guidance. Generic Somnia faucets may target
                   a different testnet; verify Tokyo 50383. This app does not use USDC or Arena
                   credit as a substitute.
                 </p>
@@ -617,8 +617,8 @@ export default function Landing() {
                   <Braces aria-hidden="true" />
                   <h3>Review before approval</h3>
                   <p>
-                    Executable actions show an unsigned transaction review. The bounty build
-                    restricts the wallet, network and permitted actions.
+                    Any connected wallet can review supported actions on Tokyo. Each action shows
+                    its unsigned transaction; only verified contracts are used.
                   </p>
                 </article>
                 <article>

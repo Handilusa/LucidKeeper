@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAccount, usePublicClient } from 'wagmi';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Address } from 'viem';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { connectedAccount, accountSessionKey, accountStorageKey } from '@/lib/data/accountScope';
 import { AppHeader } from '@/features/terminal/AppHeader';
 import { PROJECT } from '@/content/project';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
@@ -29,25 +31,36 @@ type TableKey =
 
 export default function Profile() {
   const { address, isConnected, chainId } = useAccount();
-  const account = address || PROJECT.account;
+  const { openConnectModal } = useConnectModal();
+  const account = connectedAccount(address, isConnected);
   return (
     <>
       <a className="skip-link" href="#main">
         Skip to portfolio
       </a>
       <AppHeader page="portfolio" />
-      <ProfileAccount key={account} account={account} connected={isConnected} chainId={chainId} />
+      {account ? <ProfileAccount key={accountSessionKey(account, chainId)} account={account} chainId={chainId} /> : (
+        <main className="content-page profile-page" id="main" tabIndex={-1}>
+          <p className="eyebrow">YOUR ACTIVITY, WITH CONTEXT</p>
+          <h1>Portfolio</h1>
+          <section className="profile-empty" aria-label="Wallet connection required">
+            <h2>Connect your wallet to view your portfolio</h2>
+            <p>Positions, balances, history and exports belong to your connected address. No account is selected while disconnected.</p>
+            <button className="button button-primary" onClick={openConnectModal}>Connect wallet</button>
+          </section>
+          <p className="profile-notice">On-chain activity is public. Wallet-scoped display is not on-chain privacy.</p>
+          <a className="button" href="/app">Browse markets</a>
+        </main>
+      )}
     </>
   );
 }
 
 function ProfileAccount({
   account,
-  connected,
   chainId,
 }: {
   account: Address;
-  connected: boolean;
   chainId?: number;
 }) {
   const rpc = usePublicClient({ chainId: 50383 });
@@ -57,7 +70,7 @@ function ProfileAccount({
   const [now, setNow] = useState(Date.now);
   const [table, setTable] = useState<TableKey>('Positions');
   const [chart, setChart] = useState<'pnl' | 'volume' | 'equity'>('pnl');
-  const storageKey = `lucidkeeper_profile_alias_${account.toLowerCase()}`;
+  const storageKey = accountStorageKey('profile_alias', account)!;
   const [alias, setAlias] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey) || '';
@@ -76,7 +89,7 @@ function ProfileAccount({
   const start = windows[windowKey] === null ? 0 : end - windows[windowKey];
   const options = { staleTime: 60000, retry: 1 } as const;
   const snapshot = useQuery({
-    queryKey: ['profile', account, 'snapshot'],
+    queryKey: ['profile', 50383, account, 'snapshot'],
     queryFn: () => {
       if (!rpc) throw new Error('Tokyo reader unavailable');
       return readProfileSnapshot(account, rpc);
@@ -87,7 +100,7 @@ function ProfileAccount({
   });
   const changes = useQuery({
     ...options,
-    queryKey: ['profile', account, 'changes', start, end],
+    queryKey: ['profile', 50383, account, 'changes', start, end],
     queryFn: () =>
       profileClient.listPerpPositionChanges({
         account,
@@ -98,7 +111,7 @@ function ProfileAccount({
   });
   const fills = useQuery({
     ...options,
-    queryKey: ['profile', account, 'fills', start, end],
+    queryKey: ['profile', 50383, account, 'fills', start, end],
     queryFn: () =>
       profileClient.getUserFills(account, {
         since: start,
@@ -109,12 +122,12 @@ function ProfileAccount({
   });
   const orders = useQuery({
     ...options,
-    queryKey: ['profile', account, 'orders'],
+    queryKey: ['profile', 50383, account, 'orders'],
     queryFn: () => profileClient.listPerpOrderHistory(account, { limit: HISTORY_LIMIT }),
   });
   const transfers = useQuery({
     ...options,
-    queryKey: ['profile', account, 'transfers'],
+    queryKey: ['profile', 50383, account, 'transfers'],
     queryFn: () =>
       profileClient.getMarginEvents(account, {
         kinds: ['Deposit', 'Withdraw', 'Credited'],
@@ -123,12 +136,12 @@ function ProfileAccount({
   });
   const funding = useQuery({
     ...options,
-    queryKey: ['profile', account, 'funding'],
+    queryKey: ['profile', 50383, account, 'funding'],
     queryFn: () => profileClient.getFundingPayments(account, { limit: HISTORY_LIMIT }),
   });
   const fees = useQuery({
     ...options,
-    queryKey: ['profile', account, 'fees'],
+    queryKey: ['profile', 50383, account, 'fees'],
     queryFn: () => profileClient.listPerpFees({ account, limit: HISTORY_LIMIT }),
   });
   const liveReady = !!snapshot.data && !snapshot.isError && now - snapshot.dataUpdatedAt < 45000;
@@ -179,7 +192,7 @@ function ProfileAccount({
   const fresh = () => {
     setEnd(Math.floor(Date.now() / 1000));
     setNow(Date.now());
-    void queryClient.invalidateQueries({ queryKey: ['profile', account] });
+    void queryClient.invalidateQueries({ queryKey: ['profile', 50383, account] });
   };
   let cumulative = 0n;
   const pnlPoints = [...changeRows]
@@ -373,7 +386,7 @@ function ProfileAccount({
       ctx.fillStyle = color('--muted');
       ctx.font = '16px "Plus Jakarta Sans"';
       ctx.fillText(
-        `${connected ? 'Connected address' : 'Public watch view; not proof of ownership'} · Block ${live.margin.asOfBlock}`,
+        `Connected address · Block ${live.margin.asOfBlock}`,
         60,
         501
       );
@@ -432,7 +445,7 @@ function ProfileAccount({
           {account.slice(2, 4).toUpperCase()}
         </div>
         <div className="profile-account">
-          <h2>{alias || (connected ? 'Connected account' : 'Public bounty account')}</h2>
+          <h2>{alias || 'Connected account'}</h2>
           <a
             href={`${PROJECT.explorer}/address/${account}`}
             target="_blank"
@@ -442,7 +455,7 @@ function ProfileAccount({
             {account} ↗
           </a>
           <div className="profile-badges">
-            <span>{connected ? 'Connected address' : 'Watch view · not your wallet'}</span>
+            <span>Connected address</span>
             <span>Read-only portfolio</span>
             <span>Tokyo 50383</span>
           </div>
@@ -459,7 +472,7 @@ function ProfileAccount({
           Copy address
         </button>
       </section>
-      {connected && chainId !== 50383 && (
+      {chainId !== 50383 && (
         <p className="profile-notice">
           Your wallet is on another network. Portfolio reads still refer exclusively to Somnia Tokyo
           50383.

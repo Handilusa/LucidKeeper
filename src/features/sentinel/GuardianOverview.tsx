@@ -7,17 +7,17 @@ export function GuardianOverview({ equity, maintenance, loading, stale, updatedA
   equity: number | null; maintenance: number | null; loading: boolean; stale: boolean;
   updatedAt: number; connected: boolean; onOpen: () => void; onRetry: () => void;
 }) {
-  const available = equity !== null && maintenance !== null && !stale;
+  const available = connected && equity !== null && maintenance !== null && !stale;
   const ratio = available && maintenance > 0 ? equity / maintenance : null;
   const noExposure = available && maintenance === 0;
   const warning = ratio !== null && ratio < 1.5;
-  const status = loading ? 'Reading account health' : !available ? 'Health unavailable' : noExposure ? 'No maintenance exposure' : ratio! <= 1 ? 'Below maintenance' : warning ? 'Low margin buffer' : 'Margin buffer';
+  const status = !connected ? 'Connect wallet to view risk' : loading ? 'Reading account health' : !available ? 'Health unavailable' : noExposure ? 'No maintenance exposure' : ratio! <= 1 ? 'Below maintenance' : warning ? 'Low margin buffer' : 'Margin buffer';
   const angle = ratio === null ? null : Math.max(0, Math.min(1, ratio / 5)) * 180;
   return <section className="guardian-overview" aria-label="Guardian overview" data-warning={warning}>
     <div className="guardian-identity">
       <span className="guardian-label"><Shield size={17} aria-hidden="true" /> LUCIDKEEPER GUARDIAN</span>
       <h2>{status}</h2>
-      <p>{connected ? 'Connected account' : 'Read-only bounty account'} · Cross-margin health</p>
+      <p>{connected ? 'Connected account · Cross-margin health' : 'Your account health appears after connection'}</p>
     </div>
     <div className="guardian-gauge" role="img" aria-label={`Account health: ${ratio === null ? status : `${ratio.toFixed(2)} times maintenance`}. Gauge scale 0 to 5 times.`}>
       <svg viewBox="0 0 160 94" aria-hidden="true">
@@ -34,13 +34,13 @@ export function GuardianOverview({ equity, maintenance, loading, stale, updatedA
           <div><dt>Account equity</dt><dd>{available ? equity.toFixed(2) : '—'} <small>USDso</small></dd></div>
           <div><dt>Maintenance <HelpTip label="account health">Health = total account equity ÷ maintenance requirement. Both are read from MarginBank at one block. A ratio of 1× is the maintenance threshold. No requirement means no gauge ratio, not infinite safety.</HelpTip></dt><dd>{available ? maintenance.toFixed(2) : '—'} <small>USDso</small></dd></div>
         </dl>
-        <Freshness updatedAt={updatedAt} stale={stale} label="account health read" />
+        {connected && <Freshness updatedAt={updatedAt} stale={stale} label="account health read" />}
       </>}
     </div>
     <div className="guardian-action">
       <button className="button guardian-button" onClick={onOpen}>Open risk controls <ArrowUpRight size={15} aria-hidden="true" /></button>
       <span>Browser-local triggers · wallet approval</span>
-      {!loading && !available && <button className="text-violet-300" onClick={onRetry}>Retry account reads</button>}
+      {connected && !loading && !available && <button className="text-violet-300" onClick={onRetry}>Retry account reads</button>}
     </div>
   </section>;
 }

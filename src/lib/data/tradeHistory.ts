@@ -2,6 +2,7 @@ import type { PublicClient } from 'viem';
 import { parseAbiItem, formatUnits } from 'viem';
 import { CONTRACT_ADDRESSES } from '@/chain/abis';
 import type { TradeHistoryItem } from './indexer';
+import { accountStorageKey } from './accountScope';
 
 export type { TradeHistoryItem };
 
@@ -12,7 +13,8 @@ export type { TradeHistoryItem };
 export function getTradeHistory(account: string): TradeHistoryItem[] {
   if (typeof window === 'undefined' || !account) return [];
   const normalizedAccount = account.toLowerCase();
-  const key = `lucidkeeper_cache_trades_${normalizedAccount}`;
+  const key = accountStorageKey('cache_trades', normalizedAccount);
+  if (!key) return [];
   try {
     const stored = localStorage.getItem(key);
     if (stored) {
@@ -31,13 +33,15 @@ export function getTradeHistory(account: string): TradeHistoryItem[] {
 export function saveTradeHistoryItem(account: string, item: TradeHistoryItem): void {
   if (typeof window === 'undefined' || !account) return;
   const normalizedAccount = account.toLowerCase();
+  const key = accountStorageKey('cache_trades', normalizedAccount);
+  if (!key) return;
   const current = getTradeHistory(normalizedAccount);
   if (current.some((t) => t.hash.toLowerCase() === item.hash.toLowerCase())) {
     return;
   }
   const updated = [item, ...current];
   try {
-    localStorage.setItem(`lucidkeeper_cache_trades_${normalizedAccount}`, JSON.stringify(updated));
+    localStorage.setItem(key, JSON.stringify(updated));
   } catch {
     // Ignore storage quota errors
   }

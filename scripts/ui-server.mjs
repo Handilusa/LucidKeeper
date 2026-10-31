@@ -2,8 +2,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { formatUnits, formatEther, erc20Abi, parseAbi } from 'viem';
-import { openTokyo, verifyNetwork, verifiedMarket, readAccount, BOUNTY_EOA } from '../src/lib/dreamdex.mjs';
+import { formatUnits, formatEther, erc20Abi, parseAbi, isAddress } from 'viem';
+import { openTokyo } from '../src/lib/dreamdex.mjs';
 import { MARGIN_BANK, COLLATERAL } from '../src/lib/offline-transactions.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,7 +54,8 @@ async function getLiveMarketData() {
   }
 }
 
-async function getAccountData(address = BOUNTY_EOA) {
+async function getAccountData(address) {
+  if (!isAddress(address)) throw new Error('A valid explicit address is required');
   const { exchange, rpc } = openTokyo();
   try {
     const marginBankReadAbi = parseAbi([
@@ -124,10 +125,16 @@ const server = http.createServer(async (req, res) => {
 
   // API endpoints
   if (pathname === '/api/status') {
+    res.setHeader('Cache-Control', 'no-store');
     try {
-      const address = url.searchParams.get('address') || BOUNTY_EOA;
+      const address = url.searchParams.get('address');
+      if (address !== null && !isAddress(address)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid account address' }));
+        return;
+      }
       const [account, marketData] = await Promise.all([
-        getAccountData(address).catch(e => ({ error: e.message })),
+        address ? getAccountData(address).catch(e => ({ error: e.message })) : Promise.resolve(null),
         getLiveMarketData().catch(e => ({ error: e.message })),
       ]);
 
