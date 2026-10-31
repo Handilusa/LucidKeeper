@@ -18,7 +18,7 @@ Trading on Tokyo testnet needs STT (gas) and USDso collateral distributed by the
 
 > **Delivery status — 31 October 2026:** the landing, dedicated portfolio and visual/motion passes are local on `feat/landing-and-profile`. The last independently checked production version is `0dce074` (30 October 15:43 UTC). New routes/features are not claimed as deployed; publication is owner-managed.
 
-> **Current funding/UI checks — 31 October:** **88/88 Chromium**, **99 passed / 19 historical skipped / 0 failed** unit/service; app/E2E types, lint and build pass. Includes mobile/desktop zero-funds, read-failure, deposited-margin and read-only proof regressions. No push, deploy or live transaction in this update. [Current status](STATUS.md).
+> **Current collateral/UI checks — 31 October, 22:31 UTC:** complete **121/121 Chromium**, **112 passed / 19 historical skipped / 0 failed** unit/service; app/E2E types, lint and build pass. Includes 22 deposit cases at 375/1440 px and actual-driver pause/preference/tab regressions. Captures visually reviewed; documentation, public-text/history scan and protected execution checks pass. Local only: no push, deploy or live transaction. [Current status](STATUS.md).
 
 > **Earlier six-task release checks — 31 October (`755e6f3`):** independent Tokyo wallets, two-wallet lifecycle tests, address-scoped profiles and bounded read resilience are implemented. **79/79 Chromium**, **94 passed / 19 skipped / 0 failed** unit/service; types, lint and build pass. Prior publication check: 211 tracked paths, 13 documents, 103 local-link destinations, zero issues (not security certification). Dependencies remain **38 affected entries**; real second-wallet funding/fills and deployed parity require human QA. Static 240-request check is **not multi-user/RPC capacity certification**. [Audit](docs/PRE_PUSH_AUDIT.md) · [Deploy](docs/DEPLOYMENT.md).
 
@@ -41,8 +41,8 @@ Run the local build below, then visit:
 | Route | Inspect |
 | --- | --- |
 | `/` | Product story, lifecycle, Somnia architecture, receipt trail and explicit limits. Every **Launch App** opens `/app`. |
-| `/app` | Public market prices and candles without connection. Positions, balances, history and risk load only for the connected wallet. |
-| `/app/profile` | Connected portfolio or explicit public-address lookup; no default demo account. |
+| `/app` | Connect, then **Deposit collateral** in **Your Tokyo funding** above the Chart/Trade/Activity tabs, in the Trade panel, or Account funds (mobile: Activity). Wallet USDso, free/locked margin, Max, separate Approve → Deposit status/hash links and Withdraw are in the shared collateral dialog. Public markets need no connection. |
+| `/app/profile` | **Deposit collateral** and **Withdraw** in the connected-wallet funds area, followed by sourced portfolio metrics/history; no default demo account. Public watch routes keep funds actions explicitly scoped to the connected wallet. |
 | `/app/profile/:address` | Read-only public watch, address-scoped metrics/aliases/exports; never selects that address as signer. |
 | `/app/docs` | Field guide: funding, lifecycle, data sources, operational boundaries and evidence. |
 
@@ -74,7 +74,7 @@ For judges without funds, the main full-flow verification path is **record the f
 **Approve → Deposit → Open → Monitor → Close → Settle**
 
 1. Connect your own funded wallet and switch/add Tokyo 50383. Trading requires STT gas and program-distributed USDso collateral; verify the receiving address. Missing funds? Request them from the official bounty team, or take the read-only tour above. [Official testnet documentation](https://app.testnet.dreamdex.io/docs/developers/perps-testnet).
-2. Choose and review an exact USDso allowance to the official MarginBank.
+2. Click **Deposit collateral** (terminal funding panel, Trade, Account funds, or Portfolio connected-wallet funds). Enter USDso or choose **Max**, then review an exact USDso allowance to the official MarginBank. Unknown/failed reads show **Unavailable**; missing STT blocks actions, missing USDso explains bounty funding, and a wrong network offers the Tokyo switch prompt.
 3. Confirm the approval before reviewing a deposit; verify the credited margin.
 4. Review the order, then distinguish its receipt from its actual fill events.
 5. Monitor current positions, margin and browser-local risk settings.

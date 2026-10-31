@@ -13,34 +13,36 @@
 
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { useAmbientMotion } from './LandingMotion';
 
 /* ─── tiny text-scramble helper ─────────────────────────────────────────── */
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789·/';
 function scramble(el: HTMLElement, finalText: string, duration = 0.6, delay = 0) {
   let frame = 0;
+  let interval: ReturnType<typeof setInterval> | undefined;
   const totalFrames = Math.round(duration * 60);
   const timeout = setTimeout(() => {
-    const id = setInterval(() => {
+    interval = setInterval(() => {
       const progress = frame / totalFrames;
       const revealed = Math.floor(progress * finalText.length);
       el.textContent =
         finalText.slice(0, revealed) +
         [...finalText.slice(revealed)].map(() => CHARS[Math.floor(Math.random() * CHARS.length)]).join('');
       if (frame >= totalFrames) {
-        clearInterval(id);
+        clearInterval(interval);
         el.textContent = finalText;
       }
       frame++;
     }, 1000 / 60);
   }, delay * 1000);
-  return () => clearTimeout(timeout);
+  return () => { clearTimeout(timeout); clearInterval(interval); el.textContent = finalText; };
 }
 
 /* ─── orbit angle state ──────────────────────────────────────────────────── */
 let outerAngle = 0;
 let innerAngle = 0;
 
-export function SigilGSAP() {
+export function SigilGSAP({ disabled = false }: { disabled?: boolean }) {
   const rootRef     = useRef<HTMLDivElement>(null);
   const stageRef    = useRef<HTMLDivElement>(null);
   const emblemRef   = useRef<HTMLDivElement>(null);
@@ -52,9 +54,10 @@ export function SigilGSAP() {
   const hudRef      = useRef<HTMLDivElement>(null);
   const hudLine1    = useRef<HTMLSpanElement>(null);
   const hudLine2    = useRef<HTMLSpanElement>(null);
+  const enabled = useAmbientMotion(rootRef, disabled);
 
   useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!enabled) return;
 
     const root    = rootRef.current;
     const stage   = stageRef.current;
@@ -69,6 +72,7 @@ export function SigilGSAP() {
     const line2   = hudLine2.current;
     if (!root || !stage || !emblem || !gCore || !gPulse1 || !gPulse2 || !oOuter || !oInner || !hud || !line1 || !line2) return;
 
+    const context = gsap.context(() => {
     gsap.set([oOuter, oInner, emblem, gPulse1, gPulse2, gCore, hud], { opacity: 0 });
     gsap.set(emblem, { scale: 0.82, y: 14 });
     gsap.set([oOuter, oInner], { scale: 0.88 });
@@ -193,6 +197,7 @@ export function SigilGSAP() {
       tl.kill();
       levTween.kill();
       microDrift.kill();
+      gsap.killTweensOf([oOuter, oInner, emblem, gPulse1, gPulse2, gCore, hud]);
       gsap.ticker.remove(tickFn);
       cancel1();
       cancel2();
@@ -200,10 +205,12 @@ export function SigilGSAP() {
       root.removeEventListener('pointerleave', onLeave);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, []);
+    }, root);
+    return () => context.revert();
+  }, [enabled]);
 
   return (
-    <div className="hero-brand-sigil" ref={rootRef} aria-hidden="true">
+    <div className="hero-brand-sigil" ref={rootRef} data-ambient-motion={enabled} aria-hidden="true">
       <div className="sigil-stage" ref={stageRef}>
         {/* Glow layers */}
         <div className="sigil-glow-core" ref={glowCoreRef} />

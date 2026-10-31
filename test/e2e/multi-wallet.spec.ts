@@ -28,7 +28,7 @@ test('exact 7 USDso approval confirms before deposit; amounts and receiving acco
   await walletEvent(page, 'account', B);
   await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('0x2222');
   page.on('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Manage margin collateral' }).click();
+  await page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true }).click();
   await page.getByLabel('Amount', { exact: true }).fill('7');
   await page.getByRole('button', { name: 'Deposit 7 USDso' }).click();
   await expect(page.getByRole('dialog', { name: 'Manage collateral' })).toContainText('Deposit transaction confirmed');
@@ -41,7 +41,7 @@ test('reject wallet approval, insufficient collateral and gas never become depos
   const state = await mockWallet(page); await connectMock(page);
   page.on('dialog', dialog => dialog.accept());
   state.rejectNext = true;
-  await page.getByRole('button', { name: 'Manage margin collateral' }).click();
+  await page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true }).click();
   await page.getByLabel('Amount', { exact: true }).fill('7');
   await page.getByRole('button', { name: 'Deposit 7 USDso' }).click();
   await expect(page.getByRole('dialog', { name: 'Manage collateral' })).toContainText('Request declined');
@@ -110,7 +110,7 @@ test('Guardian arms per account, reload disarms and threshold requests exactly o
 test('switch during approval receipt cancels dependent deposit, late hash and toast do not leak', async ({ page }) => {
   const state = await mockWallet(page); await connectMock(page);
   page.on('dialog', dialog => dialog.accept()); state.holdReceipts = true;
-  await page.getByRole('button', { name: 'Manage margin collateral' }).click();
+  await page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true }).click();
   await page.getByLabel('Amount', { exact: true }).fill('7');
   await page.getByRole('button', { name: 'Deposit 7 USDso' }).click();
   await expect.poll(() => state.writes.length).toBe(1);

@@ -98,7 +98,7 @@ export default function Landing() {
   return (
     <div className="landing" ref={root}>
       <div className="landing-atmosphere" aria-hidden="true">
-        <AtmosphereCanvas />
+        <AtmosphereCanvas disabled={reducedMotion || paused} />
       </div>
       <a className="skip-link" href="#main">
         Skip to content
@@ -122,7 +122,7 @@ export default function Landing() {
       <main id="main" tabIndex={-1}>
         <section className="hero wrap" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <SigilGSAP />
+            <SigilGSAP disabled={reducedMotion || paused} />
             <p className="section-kicker">
               <span className="signal-dot" /> DREAMDEX PERPS · BUILT WITH A GUARDIAN
             </p>
@@ -441,7 +441,7 @@ export default function Landing() {
                       loading="lazy"
                     />
                   </div>
-                  <MultiStreamDiagram />
+                  <MultiStreamDiagram disabled={reducedMotion || paused} />
                   <p>
                     According to Somnia’s MultiStream documentation, validators publish independent
                     data chains. A separate consensus chain agrees their heads and produces a

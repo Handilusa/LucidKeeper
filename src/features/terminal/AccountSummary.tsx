@@ -1,6 +1,7 @@
 import { HelpTip } from '@/components/HelpTip';
 import { ReadValue } from '@/components/ReadValue';
 import type { ReadDisplay } from '@/lib/data/readDisplay';
+import { CollateralActions, type CollateralAction } from '@/features/margin/CollateralActions';
 
 export function AccountSummary({
   account,
@@ -8,6 +9,7 @@ export function AccountSummary({
   wallet,
   deposited,
   available,
+  locked,
   gas,
   onManage,
 }: {
@@ -16,8 +18,9 @@ export function AccountSummary({
   wallet: ReadDisplay;
   deposited: ReadDisplay;
   available: ReadDisplay;
+  locked: ReadDisplay;
   gas: ReadDisplay;
-  onManage: () => void;
+  onManage: (action?: CollateralAction) => void;
 }) {
   return (
     <section className="account-summary" aria-label="Account funds">
@@ -28,15 +31,16 @@ export function AccountSummary({
             {account.slice(0, 6)}…{account.slice(-4)}
           </span>}
         </span>
-        <button onClick={onManage} className="text-cyan-400">
+        <button onClick={() => onManage()} className="text-cyan-400">
           Manage collateral ↗
         </button>
       </div>
+      {connected && account && <CollateralActions onAction={onManage} />}
       <dl className="account-values">
         <div>
           <dt>Wallet assets</dt>
           <dd>
-            <ReadValue read={wallet} /> <small>USDso</small>
+            {wallet.value == null || wallet.stale ? 'Unavailable' : <ReadValue read={wallet} />} <small>USDso</small>
           </dd>
         </div>
         <div>
@@ -48,7 +52,7 @@ export function AccountSummary({
             </HelpTip>
           </dt>
           <dd>
-            <ReadValue read={deposited} /> <small>USDso</small>
+            {deposited.value == null || deposited.stale ? 'Unavailable' : <ReadValue read={deposited} />} <small>USDso</small>
           </dd>
         </div>
         <div>
@@ -60,13 +64,17 @@ export function AccountSummary({
             </HelpTip>
           </dt>
           <dd>
-            <ReadValue read={available} /> <small>USDso</small>
+            {available.value == null || available.stale ? 'Unavailable' : <ReadValue read={available} />} <small>USDso</small>
           </dd>
+        </div>
+        <div>
+          <dt>Locked collateral</dt>
+          <dd>{locked.value == null || locked.stale ? 'Unavailable' : <ReadValue read={locked} />} <small>USDso</small></dd>
         </div>
         <div>
           <dt>Gas funds</dt>
           <dd className={gas.value === 0 ? 'caution' : ''}>
-            <ReadValue read={gas} decimals={4} /> <small>STT</small>
+            {gas.value == null || gas.stale ? 'Unavailable' : <ReadValue read={gas} decimals={4} />} <small>STT</small>
           </dd>
         </div>
       </dl>

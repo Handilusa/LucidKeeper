@@ -1,6 +1,6 @@
 # Project status
 
-Updated **31 October 2026** · local three-close documentation on **`feat/landing-and-profile`**, based on **`81ac509`** · **this update is uncommitted; not pushed or deployed**. The owner reports the preceding version deployed; this documentation task does not independently verify deployed parity. Previously recorded independent production check: **`0dce074`**, 30 October 15:43 UTC. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
+Updated **31 October 2026** · local collateral UX on **`fix/deposit-collateral-ux`**, based on **`a8bbf99`**, in an isolated worktree · **not pushed or deployed**. Original unrelated work remains untouched. Previously recorded independent production check: **`0dce074`**, 30 October 15:43 UTC. Historical chronology/evidence is retained in [STATUS_HISTORY](STATUS_HISTORY.md).
 
 ## Release outcome
 
@@ -16,6 +16,14 @@ Updated **31 October 2026** · local three-close documentation on **`feat/landin
 Earlier six-task release checks (`755e6f3`): **79 passed / 0 skipped / 0 failed Chromium**, **94 passed / 19 skipped / 0 failed** unit/service (113 cases); typecheck/E2E types/lint/build pass. Prior publication: **211 tracked paths / 13 documents / 103 local links, zero issues** (not full-history/security certification). Prior local static check: **240/240**, 12 concurrent, p95 **42.65 ms**; not users/RPC capacity. [Exact results and boundaries](docs/PRE_PUSH_AUDIT.md).
 
 ## Funding and unfunded-judge tour — 31 October
+
+### Deposit collateral discoverability — local UI fix
+
+- Reproduced at 375/1440 px with an isolated mock wallet holding USDso/STT and zero margin: no explicit Deposit collateral label; mobile Chart hides Trade/Account entries and the funding entry is inside closed details. The deposit flow was not removed.
+- Deposit collateral/Withdraw now appear above mobile tabs, in Trade, Account funds and connected Portfolio funds. The shared tested modal adds exact-wallet Max, wallet/free/locked/gas balances, approval/deposit step states and explorer hashes; unavailable reads, missing gas/USDso and wrong-network guidance are explicit. Zero-margin funded trade CTA opens Deposit.
+- Existing approval → successful receipt → separate deposit and tested withdrawal are reused; order execution, IOC2/limit0, pricing/grid/sizing/close helpers, 300-second expiry, chain config/dependencies/public evidence unchanged. No live wallet action, signature, broadcast, push or deploy.
+- Accepted local verification **22:31 UTC**: unit **112 passed / 19 historical skipped / 0 failed**, complete Chromium **121 passed / 0 skipped / 0 failed** (including 22 deposit cases); app/E2E types, lint and build pass (55.32s; existing warnings). Funding/modal/Portfolio and edge-state captures visually reviewed at 375/1440 px. Docs: **257 tracked paths / 13 documents / 119 links**, zero issues; scan: **218 public text paths / 107 reachable commits**, zero issues; ignore boundaries and **43 protected paths**, identical order body and collateral sequence except UI observers pass. Not deployed, real-wallet or security certification. [Issue](feedback/017-deposit-collateral-discoverability.md) · [Judge tour](README.md#a-60-second-judge-tour) · [Human QA](docs/MANUAL_QA.md).
+- Historical complete Chromium runs remain preserved: **114 passed / 5 failed**, then **120 passed / 1 failed**; all 22 deposit cases passed in each. Narrow pause/cleanup/canvas bounds, cached plasma sprites, HUD timer cleanup and an obsolete theme expectation are corrected without importing unfinished landing work or weakening assertions. The accepted complete rerun also passes actual canvas/GSAP/HUD drivers and inherited workflow checks at all four widths. [Local motion issue](feedback/018-landing-motion-pause.md).
 
 - Local UI/docs now explain STT gas and bounty-program USDso distribution to whitelisted wallets. **Known limitation: independent-wallet trading requires program-distributed funds. Do not use Arena funds.** This is the owner's latest product guidance, not a new independently obtained team confirmation.
 - Empty wallets get a prominent neutral read-only state with profile/history/docs and Guardian inspection. Failed reads stay distinct from zero; deposited/locked margin and existing positions are not erased by zero wallet USDso. Guardian stress requires a real fresh position; no exposure is invented.

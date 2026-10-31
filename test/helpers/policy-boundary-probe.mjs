@@ -3,6 +3,8 @@ import { Session } from 'node:inspector/promises';
 import { registerHooks } from 'node:module';
 import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 
 // Isolated child-process policy-state injection only. Production exports/gates,
 // transports, filesystem functions, financial captures and RPC are not replaced.
@@ -59,7 +61,8 @@ try {
   // avoiding races with other tests' evidence-directory snapshot assertions.
   createPublicClient({ transport: http(TOKYO_RPC, { retryCount: 0 }) });
   await assert.rejects(saveEvidence(Symbol('observer calibration'), capture.provenance), TypeError);
-  const calibrationFile = new URL(`../../.git/test-policy-observer-${randomUUID()}.txt`, import.meta.url);
+  const gitDirectory = execFileSync('git', ['rev-parse', '--absolute-git-dir'], { cwd: new URL('../../', import.meta.url), encoding: 'utf8' }).trim();
+  const calibrationFile = join(gitDirectory, `test-policy-observer-${randomUUID()}.txt`);
   try {
     await writeFile(calibrationFile, 'Function-entry observer calibration, not transaction evidence.\n', { flag: 'wx' });
   } finally { await unlink(calibrationFile); }

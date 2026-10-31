@@ -14,6 +14,7 @@
 
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { useAmbientMotion } from './LandingMotion';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Minimal 2D Perlin noise  (no extra deps)
@@ -90,11 +91,12 @@ const PALETTE: [number, number, number][] = [
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
-export function AtmosphereCanvas() {
+export function AtmosphereCanvas({ disabled = false }: { disabled?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const enabled = useAmbientMotion(ref, disabled);
 
   useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!enabled) return;
 
     const canvas = ref.current;
     if (!canvas) return;
@@ -102,11 +104,14 @@ export function AtmosphereCanvas() {
     if (!ctx) return;
 
     // ── resize ───────────────────────────────────────────────────────────────
-    let W = 0, H = 0;
+    let W = 0, H = 0, density = 1;
     const resize = () => {
-      const dpr = Math.min(devicePixelRatio, 2);
       W = canvas.offsetWidth;
       H = canvas.offsetHeight;
+      // This decorative canvas spans the whole landing, not just the viewport.
+      // Bound its backing bitmap instead of allocating/repainting tens of megapixels.
+      const dpr = Math.min(devicePixelRatio, 2, 4096 / Math.max(W, H, 1), Math.sqrt(2000000 / Math.max(W * H, 1)));
+      density = dpr;
       canvas.width  = W * dpr;
       canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -172,6 +177,32 @@ export function AtmosphereCanvas() {
       { ox: 0.40, oy: 0.85, cx: 0, cy: 0, ax: 0.10, ay: 0.05,  fx: 3.141, fy: 1.732, px: 0,            py: Math.PI*0.7, rw: 600, rh: 380, r: 188, g: 147, b: 243, blur: 70 },
     ];
 
+    // Blur these invariant shapes once, not six whole-page surfaces every frame.
+    // Positions/orbits and the original drift model remain unchanged.
+    let spriteDensity = 0;
+    let sprites: { canvas: HTMLCanvasElement; width: number; height: number }[] = [];
+    const prepareSprites = () => {
+      spriteDensity = density;
+      sprites = blobs.map(b => {
+        const width = b.rw + b.blur * 4, height = b.rh + b.blur * 4;
+        const sprite = document.createElement('canvas');
+        sprite.width = Math.max(1, Math.ceil(width * density));
+        sprite.height = Math.max(1, Math.ceil(height * density));
+        const surface = sprite.getContext('2d')!;
+        surface.setTransform(density, 0, 0, density, 0, 0);
+        const gradient = surface.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(b.rw, b.rh) * 0.5);
+        gradient.addColorStop(0, `rgba(${b.r},${b.g},${b.b},0.38)`);
+        gradient.addColorStop(0.45, `rgba(${b.r},${b.g},${b.b},0.18)`);
+        gradient.addColorStop(1, `rgba(${b.r},${b.g},${b.b},0)`);
+        surface.filter = `blur(${b.blur}px)`;
+        surface.beginPath();
+        surface.ellipse(width / 2, height / 2, b.rw * 0.5, b.rh * 0.5, 0, 0, Math.PI * 2);
+        surface.fillStyle = gradient;
+        surface.fill();
+        return { canvas: sprite, width, height };
+      });
+    };
+
     // ── loop state ────────────────────────────────────────────────────────────
     let t = 0;
     let active = true;
@@ -193,21 +224,12 @@ export function AtmosphereCanvas() {
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
       const s = 0.00040;
-      for (const b of blobs) {
+      if (spriteDensity !== density) prepareSprites();
+      for (const [index, b] of blobs.entries()) {
         b.cx = b.ox * W + Math.sin(t * s * b.fx + b.px) * b.ax * W;
         b.cy = b.oy * H + Math.sin(t * s * b.fy + b.py) * b.ay * H;
-        const R = Math.max(b.rw, b.rh) * 0.5;
-        const g = ctx.createRadialGradient(b.cx, b.cy, 0, b.cx, b.cy, R);
-        g.addColorStop(0,    `rgba(${b.r},${b.g},${b.b},0.38)`);
-        g.addColorStop(0.45, `rgba(${b.r},${b.g},${b.b},0.18)`);
-        g.addColorStop(1,    `rgba(${b.r},${b.g},${b.b},0)`);
-        ctx.save();
-        ctx.filter = `blur(${b.blur}px)`;
-        ctx.beginPath();
-        ctx.ellipse(b.cx, b.cy, b.rw * 0.5, b.rh * 0.5, 0, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-        ctx.restore();
+        const sprite = sprites[index];
+        ctx.drawImage(sprite.canvas, b.cx - sprite.width / 2, b.cy - sprite.height / 2, sprite.width, sprite.height);
       }
       ctx.restore();
 
@@ -290,7 +312,7 @@ export function AtmosphereCanvas() {
       ro.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, []);
+  }, [enabled]);
 
   return (
     <canvas

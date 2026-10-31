@@ -11,19 +11,21 @@
  */
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { useAmbientMotion } from './LandingMotion';
 
 const CHAIN_COUNT = 4;
 const BLOCKS_PER_CHAIN = 4;
 
 const CHAIN_LABELS = ['Datachain 1', 'Datachain 2', 'Datachain 3', 'Datachain 4'];
 
-export function MultiStreamDiagram() {
+export function MultiStreamDiagram({ disabled = false }: { disabled?: boolean }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const enabled = useAmbientMotion(rootRef, disabled);
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!enabled) return;
 
     const blocks   = root.querySelectorAll<HTMLElement>('.ms-block');
     const connLine = root.querySelector<HTMLElement>('.ms-consensus-line');
@@ -31,6 +33,7 @@ export function MultiStreamDiagram() {
     const validators = root.querySelectorAll<HTMLElement>('.ms-validator');
     const arrows   = root.querySelectorAll<HTMLElement>('.ms-arrow');
 
+    const context = gsap.context(() => {
     // Initial hidden state
     gsap.set(blocks,     { opacity: 0, y: 14, scale: 0.88 });
     gsap.set(connLine,   { scaleX: 0, transformOrigin: 'left center', opacity: 0 });
@@ -82,7 +85,9 @@ export function MultiStreamDiagram() {
     });
 
     return () => { tl.kill(); gsap.killTweensOf([blocks, connLine, badge, validators, arrows, headBlocks]); };
-  }, []);
+    }, root);
+    return () => context.revert();
+  }, [enabled]);
 
   return (
     <div className="ms-diagram" ref={rootRef} aria-hidden="true">

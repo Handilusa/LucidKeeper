@@ -7,6 +7,7 @@ import { connectedAccount, accountSessionKey, accountStorageKey } from '@/lib/da
 import { windowReturn, scopedProfileRows, ownsProfileRow, participatesInFill } from '@/lib/data/profileMetrics';
 import { ObservedLeaderboard } from './ObservedLeaderboard';
 import { AppHeader } from '@/features/terminal/AppHeader';
+import { ConnectedCollateralFunds } from '@/features/margin/ConnectedCollateralFunds';
 import { PROJECT } from '@/content/project';
 import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { ProfileTable } from './ProfileTable';
@@ -52,6 +53,7 @@ export default function Profile({ requestedAddress }: { requestedAddress?: strin
         <input id="profile-lookup" value={lookup} onChange={event => setLookup(event.target.value)} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
         <button className="button" type="submit">View public portfolio</button>
       </form>
+      {connected && <ConnectedCollateralFunds key={accountSessionKey(connected, chainId)} account={connected} />}
       {account ? <ProfileAccount key={`${accountSessionKey(account, chainId)}:${isOwner}`} account={account} chainId={chainId} isOwner={isOwner} /> : (
         <main className="content-page profile-page" id="main" tabIndex={-1}>
           <p className="eyebrow">YOUR ACTIVITY, WITH CONTEXT</p>

@@ -57,7 +57,7 @@ test('account read failure with zero wallet does not claim missing deposited col
   const guide = page.getByRole('region', { name: 'Funding guidance' });
   await expect(guide).toContainText('Margin or position reads unavailable');
   await expect(guide).not.toContainText('Missing: program-distributed');
-  await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('Bank collateral — USDso');
+  await expect(page.getByRole('region', { name: 'Account funds' })).toContainText('Bank collateral Unavailable USDso');
   expect(state.writes).toEqual([]);
 });
 
@@ -127,7 +127,7 @@ for (const width of [375, 1440]) {
       await expect(close.getByRole('link')).toHaveAttribute('href', `${PROJECT.explorer}/tx/${record.hash}`);
       await expect(close).not.toContainText(/profit|PnL|fee/i);
     }
-    await expect(proof.getByRole('complementary')).toHaveCount(0);
+    await expect(proof.getByRole('complementary', { name: /close evidence$/ })).toHaveCount(0);
     await expect(proof).not.toContainText('close — pending');
     await expect(avax).not.toContainText(/profit|PnL|fee/i);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);

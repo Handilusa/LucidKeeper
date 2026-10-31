@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import 'lenis/dist/lenis.css';
 
 const preference = '(prefers-reduced-motion: reduce)';
@@ -8,6 +8,25 @@ const subscribe = (callback: () => void) => {
   return () => media.removeEventListener('change', callback);
 };
 export const useMotionPreference = () => useSyncExternalStore(subscribe, () => matchMedia(preference).matches, () => true);
+
+// GSAP/canvas/SMIL are not controlled by CSS or the Web Animations API.
+export function useAmbientMotion(ref: RefObject<Element | null>, disabled: boolean) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || disabled) { setVisible(false); return; }
+    let intersecting = false;
+    const update = () => setVisible(intersecting && !document.hidden);
+    const observer = new IntersectionObserver(entries => {
+      intersecting = entries[0]?.isIntersecting ?? false;
+      update();
+    });
+    observer.observe(node);
+    document.addEventListener('visibilitychange', update);
+    return () => { observer.disconnect(); document.removeEventListener('visibilitychange', update); };
+  }, [disabled, ref]);
+  return !disabled && visible;
+}
 
 export function Reveal({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={className} data-reveal>{children}</div>;

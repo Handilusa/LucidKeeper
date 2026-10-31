@@ -18,7 +18,7 @@ for (const width of [375, 1440]) {
     await expect(page.getByRole('button', { name: 'Refresh activity', exact: true })).toBeDisabled();
     await page.locator('.account-summary').getByRole('button', { name: /^Manage collateral/ }).click();
     const dialog = page.getByRole('dialog', { name: 'Manage collateral' });
-    await expect(dialog.locator('.account-values dd')).toHaveText(['— USDso', '— USDso']);
+    await expect(dialog.locator('.account-values dd')).toHaveText(['Unavailable USDso', 'Unavailable USDso', 'Unavailable USDso', 'Unavailable USDso', 'Unavailable STT']);
     await expect(dialog.getByRole('button', { name: 'Connect your wallet first' })).toBeDisabled();
     await page.keyboard.press('Escape');
     await page.screenshot({ path: testInfo.outputPath(`account-disconnected-${width}.png`), fullPage: true });

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAmbientMotion } from './LandingMotion';
 import { Activity, Braces, CheckCircle2, Pause, Play, ShieldCheck, Wallet, Zap, Sparkles } from 'lucide-react';
 import './workflow.css';
 
@@ -80,6 +81,18 @@ export function WorkflowGraphic({
   const [internalActiveNode, setInternalActiveNode] = useState<FlowNodeId | null>('wallet');
   const [isSimulating, setIsSimulating] = useState(false);
   const [simStep, setSimStep] = useState<number>(-1);
+  const root = useRef<HTMLElement>(null);
+  const enabled = useAmbientMotion(root, paused || reducedMotion);
+
+  useEffect(() => {
+    if (!isSimulating || !enabled) return;
+    const timer = setTimeout(() => {
+      if (simStep === 0) { setSimStep(1); setInternalActiveNode('guardian'); onSelectNode?.('guardian'); }
+      else if (simStep === 1) { setSimStep(2); setInternalActiveNode('chain'); onSelectNode?.('chain'); }
+      else { setSimStep(3); setIsSimulating(false); }
+    }, simStep === 0 ? 700 : simStep === 1 ? 800 : 900);
+    return () => clearTimeout(timer);
+  }, [isSimulating, simStep, enabled, onSelectNode]);
 
   const activeNode = externalActiveNode !== undefined ? externalActiveNode : internalActiveNode;
   const selectNode = (id: FlowNodeId | null) => {
@@ -93,20 +106,6 @@ export function WorkflowGraphic({
     setSimStep(0);
     selectNode('wallet');
 
-    setTimeout(() => {
-      setSimStep(1);
-      selectNode('guardian');
-    }, 700);
-
-    setTimeout(() => {
-      setSimStep(2);
-      selectNode('chain');
-    }, 1500);
-
-    setTimeout(() => {
-      setSimStep(3);
-      setIsSimulating(false);
-    }, 2400);
   };
 
   const activeSpec = activeNode ? NODE_SPECS[activeNode] : null;
@@ -114,6 +113,7 @@ export function WorkflowGraphic({
   return (
     <figure
       className="architecture-map topology-glass-mesh"
+      ref={root}
       data-flow
       aria-label="Interactive LucidKeeper architecture topology: Trader wallet connects through local Guardian and dreamDEX SDK to Somnia Tokyo contracts"
     >
@@ -132,7 +132,7 @@ export function WorkflowGraphic({
             type="button"
             className={`topology-btn topology-sim-btn ${isSimulating ? 'active' : ''}`}
             onClick={handleSimulate}
-            disabled={isSimulating}
+            disabled={isSimulating || !enabled}
             title="Simulate live order flow through the architecture"
           >
             <Zap size={12} className={isSimulating ? 'sim-pulse' : ''} aria-hidden="true" />
@@ -223,7 +223,7 @@ export function WorkflowGraphic({
           />
 
           {/* Flowing animated photons along conduits */}
-          {!paused && !reducedMotion && (
+          {enabled && (
             <>
               <circle r="4" className="conduit-photon photon-left">
                 <animateMotion

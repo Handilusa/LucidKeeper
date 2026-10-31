@@ -20,7 +20,8 @@ import { AnimatedValue } from '@/components/AnimatedValue';
 import { ReadValue } from '@/components/ReadValue';
 import type { ReadDisplay } from '@/lib/data/readDisplay';
 import { sizingLiquidation } from '@/lib/math/preview';
-import { Check, LoaderCircle, Plus } from 'lucide-react';
+import { Check, LoaderCircle } from 'lucide-react';
+import { CollateralActions, type CollateralAction } from '@/features/margin/CollateralActions';
 
 interface TradingBoxProps {
   market: MarketInfo;
@@ -33,7 +34,7 @@ interface TradingBoxProps {
   totalUnlockedMargin?: number;
   currentPosition?: PositionItem;
   onOrderSuccess?: () => void;
-  onOpenMarginHub: () => void;
+  onOpenMarginHub: (action?: CollateralAction) => void;
 }
 function savedLeverage(pool: string, account?: string) {
   const key = accountStorageKey('leverage', account, pool);
@@ -207,6 +208,7 @@ export function TradingBox({
   });
   const hasInsufficientMargin = marginReady && effectiveMarginRequired > availableMargin;
   const estimateValid = !inputError && executionPrice > 0 && Number.isFinite(notional);
+  const needsDeposit = isConnected && marginReady && availableMargin === 0 && !currentPosition && !fundingNotice && chainId === 50383;
   const liquidation = estimateValid && parametersReady && takerFeeRate !== null ? sizingLiquidation({
     price: executionPrice, quantity: numericQty, leverage, isLong: side === 'buy',
     maintenanceBps: poolParams!.maintenanceMarginBps, feeRate: takerFeeRate,
@@ -350,6 +352,7 @@ export function TradingBox({
 
   return (
     <div className="order-entry">
+      <CollateralActions onAction={onOpenMarginHub} />
       <div className="panel-heading">
         <h2>Place order</h2>
         <span className="eyebrow">{market.baseSymbol}-PERP</span>
@@ -553,13 +556,6 @@ export function TradingBox({
           <strong>
             {isConnected ? <><ReadValue read={availableRead} /> USDso</> : '—'}
           </strong>
-          <button
-            aria-label="Manage margin collateral"
-            className="collateral-action text-cyan-400"
-            onClick={onOpenMarginHub}
-          >
-            <Plus size={16} aria-hidden="true" />
-          </button>
         </div>
         <div id="order-validation" aria-live="polite">
           {(inputError || (isConnected && blocked)) && (
@@ -575,8 +571,8 @@ export function TradingBox({
         <button
           className="submit-order"
           data-side={side}
-          disabled={simulating || isPending || isConfirming || (isConnected && (!!blocked || chainId !== 50383))}
-          onClick={handleExecuteOrder}
+          disabled={simulating || isPending || isConfirming || (!needsDeposit && isConnected && (!!blocked || chainId !== 50383))}
+          onClick={needsDeposit ? () => onOpenMarginHub('deposit') : handleExecuteOrder}
         >
           {(simulating || isPending || isConfirming) && <LoaderCircle size={16} className="state-spinner" aria-hidden="true" />}
           {confirmed && !simulating && !isPending && !isConfirming && <Check size={16} className="confirmed-check" aria-hidden="true" />}
@@ -588,8 +584,10 @@ export function TradingBox({
                 ? 'Connect wallet to trade'
                  : chainId !== 50383
                    ? 'Switch to Tokyo to trade'
-                   : fundingNotice
-                     ? 'Funding needed · read-only'
+                    : fundingNotice
+                      ? 'Funding needed · read-only'
+                    : needsDeposit
+                      ? 'Deposit collateral to trade'
                   : `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} ${market.baseSymbol}`}
         </button>
         <p className="form-note">

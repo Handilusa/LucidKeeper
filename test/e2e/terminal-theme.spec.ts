@@ -24,7 +24,7 @@ for (const width of [375, 768, 1280, 1920]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.screenshot({ path: testInfo.outputPath(`terminal-${width}.png`), fullPage: true });
 
-    const trigger = page.getByRole('button', { name: 'Manage margin collateral' });
+    const trigger = page.locator('.order-entry').getByRole('button', { name: 'Deposit collateral', exact: true });
     await trigger.click();
     const dialog = page.getByRole('dialog', { name: 'Manage collateral' });
     await expect(dialog).toBeVisible();
@@ -51,7 +51,8 @@ test('classic palette stays isolated through terminal and other route navigation
       expect(await page.evaluate(() => {
         const style = getComputedStyle(document.documentElement);
         return [style.getPropertyValue('--bg-panel').trim(), style.getPropertyValue('--color-cyan').trim()];
-      })).toEqual(['#101625', '#6ce5f2']);
+      // a8bbf99 changed the shared landing/profile tokens; the terminal override stays isolated.
+      })).toEqual(['#111114', '#bc93f3']);
     }
   }
   await assertReadOnly(state);
