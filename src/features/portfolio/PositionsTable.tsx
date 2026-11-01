@@ -482,10 +482,15 @@ export function PositionsTable({
                         </div>
                       </td>
                     </tr>
-                    {isExpanded && currentFills.length > 0 && (
-                      <tr key={`${pos.id}-breakdown`} className="position-breakdown-row">
+                    {currentFills.length > 0 && (
+                      <tr
+                        key={`${pos.id}-breakdown`}
+                        className={`position-breakdown-row ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}
+                      >
                         <td colSpan={6}>
-                          <div className="breakdown-card">
+                          <div className="breakdown-collapsible">
+                            <div className="breakdown-collapsible-inner">
+                              <div className="breakdown-card">
                             <div className="breakdown-header">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="breakdown-badge">
@@ -510,7 +515,7 @@ export function PositionsTable({
                                 const fillNum = idx + 1;
                                 return (
                                   <div key={fill.hash || fill.id || idx} className="breakdown-item">
-                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                    <div className="breakdown-item-main">
                                       <span className={`breakdown-order-tag ${fill.side === 'buy' ? 'positive' : 'negative'}`}>
                                         Fill #{fillNum} · {fill.side === 'buy' ? 'Buy / Long' : 'Sell / Short'}
                                       </span>
@@ -520,17 +525,17 @@ export function PositionsTable({
                                       <span className="muted">@</span>
                                       <span className="text-white">${formatDynamicPrice(fillPrice)}</span>
                                     </div>
-                                    <div className="flex items-center gap-3.5 text-xs flex-wrap">
-                                      <span className="muted" title={`Leveraged market exposure: ${fill.size} ${pos.marketSymbol} × ${formatDynamicPrice(fillPrice)}. This is the total value of assets controlled, not your deposited collateral.`}>
-                                        Position value (Notional): <strong className="text-neutral-200">${fillNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                                    <div className="breakdown-item-meta">
+                                      <span title={`Leveraged market exposure: ${fill.size} ${pos.marketSymbol} × ${formatDynamicPrice(fillPrice)}. This is the total value of assets controlled, not your deposited collateral.`}>
+                                        Notional: <strong className="text-neutral-200">${fillNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                                       </span>
                                       {pos.initialMarginBps && (
-                                        <span className="muted" title="Minimum initial margin required by protocol for this execution at max leverage (IMF).">
-                                          Protocol IM req: <strong className="text-cyan-400 font-normal">${(fillNotional * pos.initialMarginBps / 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                                        <span title="Minimum initial margin required by protocol for this execution at max leverage (IMF).">
+                                          IM req: <strong className="text-cyan-400 font-normal">${(fillNotional * pos.initialMarginBps / 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                                         </span>
                                       )}
                                       {fill.timestamp > 0 && (
-                                        <time className="muted text-[11px]" dateTime={new Date(fill.timestamp).toISOString()}>
+                                        <time dateTime={new Date(fill.timestamp).toISOString()}>
                                           {new Date(fill.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                         </time>
                                       )}
@@ -539,7 +544,7 @@ export function PositionsTable({
                                           href={`${explorer}${fill.hash}`}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="breakdown-link text-cyan-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                                          className="breakdown-link flex items-center gap-0.5"
                                           title="View execution transaction on Somnia Tokyo Explorer"
                                         >
                                           <span>{fill.hash.slice(0, 6)}…{fill.hash.slice(-4)}</span>
@@ -552,9 +557,11 @@ export function PositionsTable({
                               })}
                             </div>
                           </div>
-                        </td>
-                      </tr>
-                    )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
                   </Fragment>
                 );
               })}
