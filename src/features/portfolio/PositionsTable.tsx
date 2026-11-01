@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
 import { useWriteContract, usePublicClient } from 'wagmi';
 import { useTokyoReceipt } from '@/lib/useTokyoReceipt';
 import { useQuery } from '@tanstack/react-query';
 import * as Tabs from '@radix-ui/react-tabs';
 import { formatUnits, zeroAddress } from 'viem';
 import { toast } from 'sonner';
-import { RefreshCw, ChartNoAxesCombined, ListOrdered, History } from 'lucide-react';
+import { RefreshCw, ChartNoAxesCombined, ListOrdered, History, Layers } from 'lucide-react';
 import { CONTRACT_ADDRESSES, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 import { formatDynamicPrice } from '@/lib/math/format';
 import { iocPrice } from '@/lib/math/ioc';
@@ -88,7 +88,7 @@ export function PositionsTable({
   const [percent, setPercent] = useState(100);
   const history = useQuery({
     queryKey: ['tradeHistory', 50383, account, page],
-    enabled: activeTab === 'history' && !!account,
+    enabled: !!account,
     retry: 0,
     queryFn: async () => {
       if (!account) throw new Error('Connect a wallet to view history');
@@ -120,6 +120,30 @@ export function PositionsTable({
       return { items: fallback, limited: fallback.length > 0 };
     },
   });
+  const [expandedPositions, setExpandedPositions] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (posId: string, currentlyExpanded: boolean) => {
+    setExpandedPositions((prev) => ({
+      ...prev,
+      [posId]: !currentlyExpanded,
+    }));
+  };
+
+  const allHistoryItems = useMemo(() => {
+    const fromQuery = history.data?.items || [];
+    const fromCache = account ? getTradeHistory(account) : [];
+    const map = new Map<string, TradeHistoryItem>();
+    for (const item of fromCache) {
+      if (item.hash) map.set(item.hash.toLowerCase(), item);
+      else if (item.id) map.set(item.id, item);
+    }
+    for (const item of fromQuery) {
+      if (item.hash) map.set(item.hash.toLowerCase(), item);
+      else if (item.id) map.set(item.id, item);
+    }
+    return Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp);
+  }, [history.data?.items, account]);
+
   const orders = useQuery({
     queryKey: ['activeOrders', 50383, account],
     queryFn: () => {
@@ -297,19 +321,51 @@ export function PositionsTable({
                     pos.markPrice > 0
                       ? (pos.markPrice - pos.entryPrice) * pos.size * (pos.isLong ? 1 : -1)
                       : null;
+
+                  const posSym = pos.marketSymbol.replace(/-PERP$/i, '').toUpperCase();
+                  const expectedSide = pos.isLong ? 'buy' : 'sell';
+                  const lastCloseTime = allHistoryItems.find(
+                    (item) => item.type === 'close' && item.marketSymbol?.replace(/-PERP$/i, '').toUpperCase() === posSym
+                  )?.timestamp || 0;
+                  const currentFills = allHistoryItems
+                    .filter((item) => {
+                      if (item.type !== 'order') return false;
+                      const itemSym = item.marketSymbol?.replace(/-PERP$/i, '').toUpperCase();
+                      if (itemSym !== posSym) return false;
+                      if (item.timestamp < lastCloseTime) return false;
+                      return item.side === expectedSide;
+                    })
+                    .sort((a, b) => a.timestamp - b.timestamp);
+
+                  const isExpanded = expandedPositions[pos.id] ?? (currentFills.length > 1);
+
                   return (
-                    <tr key={pos.id}>
-                      <td>
-                        <button
-                          className="market-cell font-semibold"
-                          onClick={() => onSelectMarket?.(pos.marketSymbol)}
-                        >
-                          <TokenLogo symbol={pos.marketSymbol} />{pos.marketSymbol}-PERP
-                        </button>
-                        <div className={`mt-1 ${pos.isLong ? 'positive' : 'negative'}`}>
-                          {pos.isLong ? 'Long' : 'Short'} <span className="muted">· Cross</span>
-                        </div>
-                      </td>
+                    <Fragment key={pos.id}>
+                      <tr>
+                        <td>
+                          <button
+                            className="market-cell font-semibold"
+                            onClick={() => onSelectMarket?.(pos.marketSymbol)}
+                          >
+                            <TokenLogo symbol={pos.marketSymbol} />{pos.marketSymbol}-PERP
+                          </button>
+                          <div className={`mt-1 flex items-center gap-1.5 ${pos.isLong ? 'positive' : 'negative'}`}>
+                            <span>{pos.isLong ? 'Long' : 'Short'} <span className="muted">· Cross</span></span>
+                            {currentFills.length > 0 && (
+                              <button
+                                type="button"
+                                className="fills-badge-btn"
+                                onClick={() => toggleExpand(pos.id, isExpanded)}
+                                title="Toggle cross-margin executions breakdown"
+                                aria-expanded={isExpanded}
+                              >
+                                <Layers size={10} className="inline opacity-80" />
+                                <span>{currentFills.length} {currentFills.length === 1 ? 'fill' : 'fills'}</span>
+                                <span className="text-[8px] opacity-70">{isExpanded ? '▲' : '▼'}</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       <td>
                         {pos.size}
                         <div className="muted mt-1">{pos.marketSymbol}</div>
@@ -378,8 +434,77 @@ export function PositionsTable({
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
+                    {isExpanded && currentFills.length > 0 && (
+                      <tr key={`${pos.id}-breakdown`} className="position-breakdown-row">
+                        <td colSpan={6}>
+                          <div className="breakdown-card">
+                            <div className="breakdown-header">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="breakdown-badge">
+                                  <Layers size={11} className="inline mr-1 opacity-80" />
+                                  Cross-margin breakdown
+                                </span>
+                                <span className="breakdown-summary">
+                                  {currentFills.length} fills merged into <strong>{pos.size} {pos.marketSymbol}</strong>
+                                </span>
+                                <span className="breakdown-avg">
+                                  Weighted avg entry: <strong>${formatDynamicPrice(pos.entryPrice)}</strong>
+                                </span>
+                              </div>
+                              <span className="breakdown-explainer">
+                                Protocol netting: multiple orders in the same market combine into a single on-chain position.
+                              </span>
+                            </div>
+                            <div className="breakdown-list">
+                              {currentFills.map((fill, idx) => {
+                                const fillPrice = fill.price || pos.entryPrice;
+                                const fillNotional = (fill.size || 0) * fillPrice;
+                                const fillNum = idx + 1;
+                                return (
+                                  <div key={fill.hash || fill.id || idx} className="breakdown-item">
+                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                      <span className={`breakdown-order-tag ${fill.side === 'buy' ? 'positive' : 'negative'}`}>
+                                        Fill #{fillNum} · {fill.side === 'buy' ? 'Buy / Long' : 'Sell / Short'}
+                                      </span>
+                                      <span className="font-semibold text-white">
+                                        {fill.size} {pos.marketSymbol}
+                                      </span>
+                                      <span className="muted">@</span>
+                                      <span className="text-white">${formatDynamicPrice(fillPrice)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3.5 text-xs flex-wrap">
+                                      <span className="muted">
+                                        Notional: <strong className="text-neutral-200">${fillNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                                      </span>
+                                      {fill.timestamp > 0 && (
+                                        <time className="muted text-[11px]" dateTime={new Date(fill.timestamp).toISOString()}>
+                                          {new Date(fill.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        </time>
+                                      )}
+                                      {fill.hash && (
+                                        <a
+                                          href={`${explorer}${fill.hash}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="breakdown-link text-cyan-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                                          title="View execution transaction on Somnia Tokyo Explorer"
+                                        >
+                                          <span>{fill.hash.slice(0, 6)}…{fill.hash.slice(-4)}</span>
+                                          <span aria-hidden="true">↗</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
               </tbody>
             </table>
             <p className="form-note mb-3">
