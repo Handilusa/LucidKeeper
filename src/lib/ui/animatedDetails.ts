@@ -1,5 +1,15 @@
 import type React from 'react';
 
+function getDetailsBody(details: HTMLDetailsElement): HTMLElement | null {
+  for (let i = 0; i < details.children.length; i++) {
+    const child = details.children[i];
+    if (child.tagName.toLowerCase() !== 'summary') {
+      return child as HTMLElement;
+    }
+  }
+  return null;
+}
+
 export function animateDetailsToggle(
   e: React.MouseEvent<HTMLElement>,
   onStateChange?: (open: boolean) => void
@@ -29,7 +39,7 @@ export function animateDetailsToggle(
     const startHeight = details.offsetHeight;
     const endHeight = summary.offsetHeight;
 
-    const body = details.querySelector<HTMLElement>('.funding-body, .risk-body, div:not(summary)');
+    const body = getDetailsBody(details);
 
     const animTiming: KeyframeAnimationOptions = {
       duration: 240,
@@ -71,7 +81,7 @@ export function animateDetailsToggle(
     const startHeight = summary.offsetHeight;
     const endHeight = details.offsetHeight;
 
-    const body = details.querySelector<HTMLElement>('.funding-body, .risk-body, div:not(summary)');
+    const body = getDetailsBody(details);
 
     const animTiming: KeyframeAnimationOptions = {
       duration: 280,
