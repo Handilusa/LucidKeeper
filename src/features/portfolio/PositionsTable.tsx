@@ -132,16 +132,11 @@ export function PositionsTable({
   const allHistoryItems = useMemo(() => {
     const fromQuery = history.data?.items || [];
     const fromCache = account ? getTradeHistory(account) : [];
-    const map = new Map<string, TradeHistoryItem>();
-    for (const item of fromCache) {
-      if (item.hash) map.set(item.hash.toLowerCase(), item);
-      else if (item.id) map.set(item.id, item);
-    }
-    for (const item of fromQuery) {
-      if (item.hash) map.set(item.hash.toLowerCase(), item);
-      else if (item.id) map.set(item.id, item);
-    }
-    return Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp);
+    // Keep all indexed fills (which each have distinct item.id even if in the same transaction)
+    // Only supplement with optimistic cache items if their transaction has not been indexed yet
+    const queryHashes = new Set(fromQuery.map((q) => q.hash?.toLowerCase()).filter(Boolean));
+    const pendingCache = fromCache.filter((c) => !c.hash || !queryHashes.has(c.hash.toLowerCase()));
+    return [...fromQuery, ...pendingCache].sort((a, b) => b.timestamp - a.timestamp);
   }, [history.data?.items, account]);
 
   const orders = useQuery({
@@ -377,13 +372,14 @@ export function PositionsTable({
                   for (const t of candidateTrades) {
                     if (accumulated >= targetSize - 1e-6) break;
                     const remainingNeeded = targetSize - accumulated;
-                    const taking = Math.min(t.size, remainingNeeded);
+                    const rawTaking = Math.min(t.size, remainingNeeded);
+                    const taking = parseFloat(rawTaking.toFixed(pos.baseDecimals || 6));
                     activeTrades.push({
                       ...t,
                       size: taking,
-                      notional: taking * t.price,
+                      notional: parseFloat((taking * t.price).toFixed(2)),
                     });
-                    accumulated += taking;
+                    accumulated += rawTaking;
                   }
 
                   // Reverse back to chronological order (Fill #1 = earliest, Fill #2 = newest)
