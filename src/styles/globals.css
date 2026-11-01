@@ -972,7 +972,86 @@ input[type='range'] {
   padding-right: 0;
 }
 .trading-table tr:hover td {
-  background: #ffffff02;
+  background: transparent;
+}
+.trading-table .market-cell {
+  transition: color 150ms ease, opacity 150ms ease;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.trading-table .market-cell:hover {
+  color: var(--accent-bright);
+}
+
+/* Action buttons in trading table */
+.trading-table td .button,
+.button-table-action {
+  min-height: 28px;
+  padding: 4px 11px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  box-shadow: none;
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.trading-table td .button:not(:disabled):hover,
+.button-table-action:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.trading-table td .button.button-table-share:not(:disabled):hover,
+.button-table-share:not(:disabled):hover {
+  background: rgba(188, 147, 243, 0.14);
+  border-color: rgba(188, 147, 243, 0.45);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(188, 147, 243, 0.25);
+}
+
+.trading-table td .button.button-partial:not(:disabled):hover,
+.button-table-action.button-partial:not(:disabled):hover {
+  background: rgba(188, 147, 243, 0.12);
+  border-color: rgba(188, 147, 243, 0.4);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(188, 147, 243, 0.22);
+}
+
+.trading-table td .button.text-rose-400,
+.button-table-danger {
+  color: var(--color-rose, #f4808b);
+  border-color: rgba(244, 128, 139, 0.22);
+  background: rgba(244, 128, 139, 0.06);
+}
+
+.trading-table td .button.text-rose-400:not(:disabled):hover,
+.button-table-danger:not(:disabled):hover {
+  background: rgba(244, 128, 139, 0.2);
+  border-color: rgba(244, 128, 139, 0.55);
+  color: #ffb4bc;
+  box-shadow: 0 0 14px rgba(244, 128, 139, 0.32);
+  transform: translateY(-1px);
+}
+
+.trading-table td .button:not(:disabled):active,
+.button-table-action:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.trading-table td .button:disabled,
+.button-table-action:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: none;
+  transform: none;
 }
 .empty-state {
   min-height: 125px;
@@ -1569,7 +1648,6 @@ input[type='range'] {
   background: var(--gradient-accent); transform: scaleX(0); transform-origin: left;
 }
 .tab-list button[data-state='active']::after { transform: scaleX(1); }
-.trading-table tbody tr:is(:hover, :focus-within) { background: var(--bg-surface); }
 .loading-track::after { background: var(--gradient-accent); }
 @media (prefers-reduced-motion: no-preference) {
   .tab-list button::after { transition: transform 180ms var(--ease-out); }

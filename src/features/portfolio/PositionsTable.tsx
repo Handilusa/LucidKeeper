@@ -317,16 +317,16 @@ export function PositionsTable({
                         <div className="muted mt-1">USDso</div>
                       </td>
                       <td>
-                        <div className="flex justify-end gap-1">
+                        <div className="flex justify-end gap-1.5">
                           <button
-                            className="button"
+                            className="button button-table-action button-table-share"
                             onClick={() => onOpenCardModal(pos)}
                             aria-label={`Share ${pos.marketSymbol} position`}
                           >
                             Share
                           </button>
                           <button
-                            className="button"
+                            className="button button-table-action button-partial"
                             disabled={!canManage || busy || pos.markPrice <= 0}
                             onClick={() => {
                               setPercent(50);
@@ -336,7 +336,7 @@ export function PositionsTable({
                             Partial
                           </button>
                           <button
-                            className="button text-rose-400"
+                            className="button button-table-action button-table-danger text-rose-400"
                             disabled={!canManage || busy || pos.markPrice <= 0}
                             onClick={() => void executeClose(pos, 100)}
                           >
@@ -414,7 +414,7 @@ export function PositionsTable({
                     </td>
                     <td>
                       <button
-                        className="button text-rose-400"
+                        className="button button-table-action button-table-danger text-rose-400"
                         disabled={!canManage || busy}
                         title="Review cancellation in your connected wallet"
                         onClick={() => void cancelOrder(order)}
