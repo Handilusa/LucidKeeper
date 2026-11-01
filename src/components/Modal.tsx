@@ -7,12 +7,14 @@ export function Modal({
   onClose,
   title,
   description,
+  contentClassName,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description: string;
+  contentClassName?: string;
   children: React.ReactNode;
 }) {
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -26,7 +28,7 @@ export function Modal({
       <Dialog.Portal>
         <Dialog.Overlay className="modal-overlay" />
         <Dialog.Content
-          className="modal-content"
+          className={`modal-content${contentClassName ? ` ${contentClassName}` : ''}`}
           onOpenAutoFocus={() => {
             returnFocus.current = document.activeElement as HTMLElement;
           }}
