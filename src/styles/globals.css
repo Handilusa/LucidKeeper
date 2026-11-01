@@ -863,7 +863,7 @@ input[type='range'] {
   margin-block: 14px;
 }
 .funding-requirements-nested {
-  margin: 10px 6px 4px;
+  margin: 6px 6px 4px;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 4px;
