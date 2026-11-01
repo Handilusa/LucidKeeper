@@ -500,7 +500,7 @@ export function PositionsTable({
                                 </span>
                               </div>
                               <span className="breakdown-explainer">
-                                Protocol netting: multiple orders in the same market combine into a single on-chain position.
+                                Protocol cross-margin netting: multiple fills in this market combine into a single on-chain position. Position value (notional) reflects total leveraged market exposure backed by your shared collateral.
                               </span>
                             </div>
                             <div className="breakdown-list">
@@ -521,9 +521,14 @@ export function PositionsTable({
                                       <span className="text-white">${formatDynamicPrice(fillPrice)}</span>
                                     </div>
                                     <div className="flex items-center gap-3.5 text-xs flex-wrap">
-                                      <span className="muted">
-                                        Notional: <strong className="text-neutral-200">${fillNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                                      <span className="muted" title={`Leveraged market exposure: ${fill.size} ${pos.marketSymbol} × ${formatDynamicPrice(fillPrice)}. This is the total value of assets controlled, not your deposited collateral.`}>
+                                        Position value (Notional): <strong className="text-neutral-200">${fillNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                                       </span>
+                                      {pos.initialMarginBps && (
+                                        <span className="muted" title="Minimum initial margin required by protocol for this execution at max leverage (IMF).">
+                                          Protocol IM req: <strong className="text-cyan-400 font-normal">${(fillNotional * pos.initialMarginBps / 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                                        </span>
+                                      )}
                                       {fill.timestamp > 0 && (
                                         <time className="muted text-[11px]" dateTime={new Date(fill.timestamp).toISOString()}>
                                           {new Date(fill.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
