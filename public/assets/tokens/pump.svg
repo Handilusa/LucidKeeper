@@ -2,8 +2,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" width="32" height="32">
   <!-- Background circle -->
   <circle cx="16" cy="16" r="16" fill="#ffffff"/>
-  <!-- pump.fun logo scaled to fit 32x32: original viewBox 386.858x398.1602 → scale ~0.0807, translate to center -->
-  <g transform="translate(2.85, 2.45) scale(0.068)">
+  <!-- pump.fun logo scaled and centered mathematically at (16, 16) -->
+  <g transform="translate(6.13, 6.65) scale(0.049)">
     <defs>
       <mask id="pump-b" x="0" y="107.6423" width="292.1095" height="290.5179" maskUnits="userSpaceOnUse">
         <g id="pump-c">
