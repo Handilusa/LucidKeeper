@@ -249,6 +249,7 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
             liquidationPrice: liquidation === null ? null : Number(formatUnits(liquidation, market.quoteDecimals)),
             readBlock: blockNumber.toString(),
             maintenanceMarginBps: params.maintenanceMarginBps,
+            initialMarginBps: params.initialMarginBps,
             openTxHash: matchingTrade?.hash || '',
             baseDecimals: market.baseDecimals,
             quoteDecimals: market.quoteDecimals,

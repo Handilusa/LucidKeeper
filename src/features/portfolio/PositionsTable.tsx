@@ -43,6 +43,7 @@ export interface PositionItem {
   liquidationPrice?: number | null;
   readBlock?: string;
   maintenanceMarginBps?: number;
+  initialMarginBps?: number;
   openTxHash: string;
   baseDecimals?: number;
   quoteDecimals?: number;
@@ -280,6 +281,7 @@ export function PositionsTable({
                   <th scope="col">Quantity</th>
                   <th scope="col">Entry / mark</th>
                   <th scope="col">Unrealized PnL</th>
+                  <th scope="col">Margin / Lev</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -315,6 +317,23 @@ export function PositionsTable({
                       <td className={pnl == null ? 'muted' : pnl >= 0 ? 'positive' : 'negative'}>
                         {pnl == null ? '—' : <>{pnl >= 0 ? '+' : ''}<AnimatedValue value={pnl} digits={4} flash /></>}
                         <div className="muted mt-1">USDso</div>
+                      </td>
+                      <td>
+                        {(() => {
+                          const imBps = pos.initialMarginBps;
+                          if (!imBps) return <span className="muted">—</span>;
+                          const notional = pos.size * pos.entryPrice;
+                          const im = notional * imBps / 10000;
+                          const lev = imBps > 0 ? (10000 / imBps) : null;
+                          return (
+                            <>
+                              {im.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              <div className="muted mt-1">
+                                {lev !== null ? `${Math.round(lev)}× IMF` : '—'}
+                              </div>
+                            </>
+                          );
+                        })()}
                       </td>
                       <td>
                         <div className="flex justify-end gap-1.5">
