@@ -1,1 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"><g fill="none"><circle cx="16" cy="16" r="16" fill="#0A1E17"/><g transform="rotate(-45 16 16)"><path d="M12 16 V11.5 A4 4 0 0 1 20 11.5 V16 Z" fill="#10B981"/><path d="M12 16 V20.5 A4 4 0 0 0 20 20.5 V16 Z" fill="#FFFFFF"/><line x1="12" y1="16" x2="20" y2="16" stroke="#0A1E17" stroke-width="0.8"/></g></g></svg>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Clip for green left half -->
+    <clipPath id="pump-left">
+      <rect x="2" y="10" width="14" height="12"/>
+    </clipPath>
+    <!-- Clip for white right half -->
+    <clipPath id="pump-right">
+      <rect x="16" y="10" width="14" height="12"/>
+    </clipPath>
+    <!-- Clip to pill shape for highlights -->
+    <clipPath id="pump-pill">
+      <rect x="3" y="11" width="26" height="10" rx="5" ry="5"/>
+    </clipPath>
+  </defs>
+
+  <!-- Dark green background circle -->
+  <circle cx="16" cy="16" r="16" fill="#0F2A1C"/>
+
+  <!-- Rotate the whole pill group ~15° -->
+  <g transform="rotate(-15 16 16)">
+    <!-- Dark green border/outline pill -->
+    <rect x="3" y="11" width="26" height="10" rx="5" ry="5" fill="#1A3A28"/>
+
+    <!-- Green left half -->
+    <rect x="3" y="11" width="26" height="10" rx="5" ry="5"
+          fill="#4DB87A" clip-path="url(#pump-left)"/>
+
+    <!-- White/light grey right half -->
+    <rect x="3" y="11" width="26" height="10" rx="5" ry="5"
+          fill="#E0ECE7" clip-path="url(#pump-right)"/>
+
+    <!-- Darker green gradient effect on green half — inner shadow -->
+    <rect x="3" y="15" width="13" height="6" rx="0"
+          fill="#2E9A60" opacity="0.55" clip-path="url(#pump-left)"/>
+
+    <!-- Dividing line between halves -->
+    <line x1="16" y1="11" x2="16" y2="21"
+          stroke="#1A3A28" stroke-width="1.2"/>
+
+    <!-- Specular highlight on green side (small oval, top-left area) -->
+    <ellipse cx="9" cy="13.5" rx="2.2" ry="1"
+             fill="#ffffff" opacity="0.55" clip-path="url(#pump-pill)"/>
+
+    <!-- Light reflection on white/grey side -->
+    <ellipse cx="22" cy="13" rx="2.5" ry="1.2"
+             fill="#ffffff" opacity="0.7" clip-path="url(#pump-pill)"/>
+  </g>
+</svg>
