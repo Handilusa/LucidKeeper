@@ -1,7 +1,30 @@
 import { useState } from 'react';
 
-// Only symbols actually bundled from cryptocurrency-icons; no remote image requests.
-const available = new Set(['BTC', 'ETH', 'SOL', 'DOGE', 'BNB', 'XRP', 'ADA', 'LINK', 'XLM', 'ZEC', 'AVAX']);
+// Verified market symbols bundled locally; no remote image requests.
+const available = new Set([
+  'BTC',
+  'ETH',
+  'SOL',
+  'DOGE',
+  'BNB',
+  'XRP',
+  'ADA',
+  'LINK',
+  'XLM',
+  'ZEC',
+  'AVAX',
+  'SUI',
+  'HYPE',
+  'TAO',
+  'NEAR',
+  'ZRO',
+  'LIT',
+  'VVV',
+  '1000PEPE',
+  'PEPE',
+  'PUMP',
+  'WLD',
+]);
 export function TokenLogo({ symbol, size = 22 }: { symbol: string; size?: number }) {
   const [failed, setFailed] = useState('');
   const name = symbol.toUpperCase();
