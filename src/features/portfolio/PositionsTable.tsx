@@ -324,18 +324,70 @@ export function PositionsTable({
 
                   const posSym = pos.marketSymbol.replace(/-PERP$/i, '').toUpperCase();
                   const expectedSide = pos.isLong ? 'buy' : 'sell';
-                  const lastCloseTime = allHistoryItems.find(
-                    (item) => item.type === 'close' && item.marketSymbol?.replace(/-PERP$/i, '').toUpperCase() === posSym
-                  )?.timestamp || 0;
-                  const currentFills = allHistoryItems
-                    .filter((item) => {
-                      if (item.type !== 'order') return false;
-                      const itemSym = item.marketSymbol?.replace(/-PERP$/i, '').toUpperCase();
-                      if (itemSym !== posSym) return false;
-                      if (item.timestamp < lastCloseTime) return false;
-                      return item.side === expectedSide;
-                    })
-                    .sort((a, b) => a.timestamp - b.timestamp);
+
+                  // Group fills by transaction hash to merge multi-level book matches
+                  const txMap = new Map<string, {
+                    id: string;
+                    hash: string;
+                    timestamp: number;
+                    side: 'buy' | 'sell';
+                    size: number;
+                    notional: number;
+                    price: number;
+                  }>();
+
+                  for (const item of allHistoryItems) {
+                    if (item.type !== 'order') continue;
+                    const itemSym = item.marketSymbol?.replace(/-PERP$/i, '').toUpperCase();
+                    if (itemSym !== posSym || item.side !== expectedSide) continue;
+
+                    const key = item.hash ? item.hash.toLowerCase() : item.id;
+                    const qty = item.size || 0;
+                    const pr = item.price || pos.entryPrice;
+                    const notional = qty * pr;
+
+                    if (!txMap.has(key)) {
+                      txMap.set(key, {
+                        id: item.id,
+                        hash: item.hash || '',
+                        timestamp: item.timestamp,
+                        side: item.side,
+                        size: qty,
+                        notional,
+                        price: pr,
+                      });
+                    } else {
+                      const existing = txMap.get(key)!;
+                      const totalQty = existing.size + qty;
+                      const totalNotional = existing.notional + notional;
+                      existing.size = totalQty;
+                      existing.notional = totalNotional;
+                      existing.price = totalQty > 0 ? totalNotional / totalQty : pr;
+                    }
+                  }
+
+                  // Sort transactions descending (newest executions first)
+                  const candidateTrades = Array.from(txMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+
+                  // Accumulate backwards from newest until matching the open position size
+                  const targetSize = pos.size;
+                  let accumulated = 0;
+                  const activeTrades: typeof candidateTrades = [];
+
+                  for (const t of candidateTrades) {
+                    if (accumulated >= targetSize - 1e-6) break;
+                    const remainingNeeded = targetSize - accumulated;
+                    const taking = Math.min(t.size, remainingNeeded);
+                    activeTrades.push({
+                      ...t,
+                      size: taking,
+                      notional: taking * t.price,
+                    });
+                    accumulated += taking;
+                  }
+
+                  // Reverse back to chronological order (Fill #1 = earliest, Fill #2 = newest)
+                  const currentFills = activeTrades.reverse();
 
                   const isExpanded = expandedPositions[pos.id] ?? (currentFills.length > 1);
 
