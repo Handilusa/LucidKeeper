@@ -792,6 +792,7 @@ input[type='range'] {
   font-size: 12px;
   line-height: 1.65;
   transition: border-color 0.2s ease;
+  overflow: hidden;
 }
 .funding-disclosure:hover {
   border-color: rgba(119, 27, 232, 0.45);
@@ -996,6 +997,7 @@ input[type='range'] {
   margin-top: 16px;
   background: var(--bg-panel);
   scroll-margin-top: 12px;
+  overflow: hidden;
 }
 .risk-disclosure > summary {
   padding: 17px 20px;

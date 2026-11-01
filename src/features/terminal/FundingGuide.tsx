@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BOUNTY_FUNDING, LIVE_TEST_ACCOUNT_PATH, PROJECT } from '@/content/project';
 import { fundingState } from '@/lib/data/fundingState';
+import { animateDetailsToggle } from '@/lib/ui/animatedDetails';
 
 export function FundingGuide({ account, gas, wallet, deposited, margin, hasPositions, onGuardian }: {
   account: string; gas: bigint | undefined; wallet: bigint | undefined;
@@ -24,7 +25,10 @@ export function FundingGuide({ account, gas, wallet, deposited, margin, hasPosit
       open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
-      <summary className="funding-summary">
+      <summary
+        className="funding-summary"
+        onClick={(e) => animateDetailsToggle(e, setOpen)}
+      >
         <div className="funding-summary-title">
           <h2>{notice || 'Your Tokyo funding & exploration'}</h2>
           <span className="muted text-xs">

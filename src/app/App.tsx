@@ -17,6 +17,7 @@ import { ALL_VERIFIED_PERP_MARKETS } from '@/lib/data/markets';
 import { CONTRACT_ADDRESSES, erc20Abi, marginBankAbi, perpPoolAbi } from '@/chain/abis';
 import { getTradeHistory } from '@/lib/data/tradeHistory';
 import { readDisplay } from '@/lib/data/readDisplay';
+import { animateDetailsToggle } from '@/lib/ui/animatedDetails';
 import { normalizedFunding8h } from '@/lib/math/preview';
 import { computeLiquidationPrice } from '@/lib/math/liquidation';
 import { GuardianOverview } from '@/features/sentinel/GuardianOverview';
@@ -426,7 +427,7 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
           />
         )}
         <details className="risk-disclosure" id="risk" ref={riskRef}>
-          <summary>
+          <summary onClick={(e) => animateDetailsToggle(e)}>
             <strong>Risk Guardian</strong>
             <span className="muted">Browser-local triggers · wallet approval required</span>
           </summary>
