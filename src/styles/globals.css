@@ -846,7 +846,7 @@ input[type='range'] {
   white-space: nowrap;
 }
 .funding-body {
-  padding: 6px 20px 10px;
+  padding: 6px 20px 4px;
   border-top: 1px solid var(--border-color);
 }
 .funding-body p {
@@ -863,7 +863,7 @@ input[type='range'] {
   margin-block: 14px;
 }
 .funding-requirements-nested {
-  margin-top: 12px;
+  margin-top: 8px;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 4px;
