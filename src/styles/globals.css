@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+﻿@import 'tailwindcss';
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -864,15 +864,28 @@ input[type='range'] {
 }
 .funding-requirements-nested {
   margin-top: 12px;
-  padding: 10px 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 4px;
+  overflow: hidden;
 }
-.funding-requirements-nested summary {
+.funding-requirements-nested > summary {
   cursor: pointer;
   font-weight: 600;
   color: var(--text);
+  padding: 8px 12px;
+  list-style: none;
+  user-select: none;
+}
+.funding-requirements-nested > summary::-webkit-details-marker { display: none; }
+.funding-requirements-nested > summary::before {
+  content: '\25B8 ';
+  font-size: 10px;
+  color: var(--muted);
+}
+.funding-requirements-nested[open] > summary::before { content: '\25BE '; }
+.funding-req-body {
+  padding: 0 12px 10px;
 }
 .funding-requirements-nested a {
   color: var(--color-cyan);

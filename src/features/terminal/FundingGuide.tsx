@@ -79,12 +79,14 @@ export function FundingGuide({ account, gas, wallet, deposited, margin, hasPosit
           <button className="button" onClick={onGuardian}>Inspect Guardian</button>
         </nav>
         <details className="funding-requirements-nested">
-          <summary>Trading funding requirements</summary>
-          <p>{BOUNTY_FUNDING}</p>
-          <p>Missing funds? Request Tokyo STT and Builder Bounty USDso from the official bounty team in Discord for your own whitelisted wallet. Do not use Arena funds.</p>
-          <p>
-            <a href={PROJECT.sdk} target="_blank" rel="noreferrer">Official dreamDEX testnet documentation ↗</a> · Verify Tokyo 50383 and your receiving address. LucidKeeper does not distribute funds or offer a claim.
-          </p>
+          <summary onClick={(e) => animateDetailsToggle(e)}>Trading funding requirements</summary>
+          <div className="funding-req-body">
+            <p>{BOUNTY_FUNDING}</p>
+            <p>Missing funds? Request Tokyo STT and Builder Bounty USDso from the official bounty team in Discord for your own whitelisted wallet. Do not use Arena funds.</p>
+            <p>
+              <a href={PROJECT.sdk} target="_blank" rel="noreferrer">Official dreamDEX testnet documentation ↗</a> · Verify Tokyo 50383 and your receiving address. LucidKeeper does not distribute funds or offer a claim.
+            </p>
+          </div>
         </details>
       </div>
     </details>
