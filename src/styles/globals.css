@@ -876,12 +876,12 @@ input[type='range'] {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
-  padding: 8px 14px;
+  padding: 6px 14px 8px;
   list-style: none;
   user-select: none;
   display: flex;
   align-items: center;
-  line-height: 1.25;
+  line-height: 1.2;
   min-height: 0;
 }
 .funding-requirements-nested > summary::-webkit-details-marker { display: none; }
