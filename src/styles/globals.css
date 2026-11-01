@@ -846,7 +846,7 @@ input[type='range'] {
   white-space: nowrap;
 }
 .funding-body {
-  padding: 6px 20px 20px;
+  padding: 6px 20px 10px;
   border-top: 1px solid var(--border-color);
 }
 .funding-body p {
