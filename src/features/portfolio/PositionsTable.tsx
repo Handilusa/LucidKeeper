@@ -58,6 +58,10 @@ interface PositionsTableProps {
   onOpenCardModal: (pos: PositionItem) => void;
   onPositionClosed?: () => void;
   onSelectMarket?: (symbol: string) => void;
+  /** Total account equity in USDso (from getAccountHealth). Used for equity attribution. */
+  accountEquity?: number;
+  /** Total initial margin requirement in USDso across all positions (from getAccountHealth). */
+  accountImReq?: number;
 }
 const explorer = 'https://explorer.testnet.somnia.network/tokyo/tx/';
 
@@ -70,6 +74,8 @@ export function PositionsTable({
   onOpenCardModal,
   onPositionClosed,
   onSelectMarket,
+  accountEquity,
+  accountImReq,
 }: PositionsTableProps) {
   const publicClient = usePublicClient({ chainId: 50383 });
   const lifetime = useWalletLifetime(account);
@@ -281,7 +287,7 @@ export function PositionsTable({
                   <th scope="col">Quantity</th>
                   <th scope="col">Entry / mark</th>
                   <th scope="col">Unrealized PnL</th>
-                  <th scope="col" title="Position notional (size × entry price) and protocol minimum initial margin required. Cross-margin: your full equity backs all positions — there is no per-trade margin deposit stored on-chain.">Notional / IM req.</th>
+                  <th scope="col" title="Equity attributed to this position (proportional to its margin requirement). Sub-row shows actual notional (size × entry price). Cross-margin: your full equity backs all positions.">Equity attr. / Notional</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -322,14 +328,22 @@ export function PositionsTable({
                         {(() => {
                           const notional = pos.size * pos.entryPrice;
                           const imBps = pos.initialMarginBps;
-                          const imReq = imBps ? notional * imBps / 10000 : null;
+                          const posImReq = imBps ? notional * imBps / 10000 : null;
+                          // Proportional equity attribution: the share of account equity
+                          // that backs this position, weighted by its IM requirement.
+                          const attributed =
+                            posImReq !== null && accountImReq && accountImReq > 0 && accountEquity
+                              ? (posImReq / accountImReq) * accountEquity
+                              : null;
                           return (
                             <>
-                              {notional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {attributed !== null
+                                ? attributed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : notional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               <div className="muted mt-1">
-                                {imReq !== null
-                                  ? `IM req. ${imReq.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                  : 'IM req. —'}
+                                {attributed !== null
+                                  ? `notional ${notional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                  : 'equity n/a'}
                               </div>
                             </>
                           );

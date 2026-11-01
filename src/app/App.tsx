@@ -402,6 +402,8 @@ const AccountTerminal: React.FC<{ currentAccount?: `0x${string}` }> = ({ current
               error={positionsError}
               onOpenCardModal={setCardPosition}
               onPositionClosed={refreshAccount}
+              accountEquity={positionQuery.data ? Number(formatUnits(positionQuery.data.health[0], 18)) : undefined}
+              accountImReq={positionQuery.data ? Number(formatUnits(positionQuery.data.health[1], 18)) : undefined}
               onSelectMarket={(symbol) => {
                 const market = markets.find((m) => m.baseSymbol === symbol);
                 if (market) {
