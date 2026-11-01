@@ -281,7 +281,7 @@ export function PositionsTable({
                   <th scope="col">Quantity</th>
                   <th scope="col">Entry / mark</th>
                   <th scope="col">Unrealized PnL</th>
-                  <th scope="col">Margin / Lev</th>
+                  <th scope="col" title="Position notional (size × entry price) and protocol minimum initial margin required. Cross-margin: your full equity backs all positions — there is no per-trade margin deposit stored on-chain.">Notional / IM req.</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -320,16 +320,16 @@ export function PositionsTable({
                       </td>
                       <td>
                         {(() => {
-                          const imBps = pos.initialMarginBps;
-                          if (!imBps) return <span className="muted">—</span>;
                           const notional = pos.size * pos.entryPrice;
-                          const im = notional * imBps / 10000;
-                          const lev = imBps > 0 ? (10000 / imBps) : null;
+                          const imBps = pos.initialMarginBps;
+                          const imReq = imBps ? notional * imBps / 10000 : null;
                           return (
                             <>
-                              {im.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {notional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               <div className="muted mt-1">
-                                {lev !== null ? `${Math.round(lev)}× IMF` : '—'}
+                                {imReq !== null
+                                  ? `IM req. ${imReq.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                  : 'IM req. —'}
                               </div>
                             </>
                           );
